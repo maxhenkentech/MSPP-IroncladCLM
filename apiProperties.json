@@ -1,0 +1,470 @@
+{
+	"name": "shared_ironcladclm",
+	"id": "/providers/Microsoft.PowerApps/apis/shared_ironcladclm",
+	"type": "/providers/Microsoft.PowerApps/apis",	
+	"properties": {
+		"displayName": "Ironclad CLM Dynamic Max11",
+		"connectionParameters": {
+			"token": {
+				"type": "oauthSetting",
+				"oAuthSettings": {
+					"identityProvider": "oauth2",
+					"clientId": "dummy",
+					"scopes": [
+						"public.records.readRecords"
+					],
+					"redirectMode": "GlobalPerConnector",
+					"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+					"properties": {
+						"IsFirstParty": "False",
+						"IsOnbehalfofLoginSupported": false
+					},
+					"customParameters": {
+						"authorizationUrl": {
+							"value": "https://demo.ironcladapp.com/oauth/authorize"
+						},
+						"tokenUrl": {
+							"value": "https://demo.ironcladapp.com/oauth//token"
+						},
+						"refreshUrl": {
+							"value": "https://demo.ironcladapp.com/oauth/token"
+						}
+					}
+				},
+				"uiDefinition": {
+					"displayName": "Login to Irocnlad",
+					"description": "Login to Irocnlad",
+					"tooltip": "Login to Irocnlad",
+					"constraints": {
+						"required": "true"
+					}
+				}
+			},
+			"token:clientId": {
+				"type": "string",
+				"uiDefinition": {
+					"constraints": {
+						"tabIndex": 4,
+						"required": "true"
+					},
+					"description": "Enter Ironclad Client Id",
+					"displayName": "Ironclad Client Id",
+					"tooltip": "Ironclad Client Id"
+				}
+			},
+			"token:clientSecret": {
+				"type": "securestring",
+				"uiDefinition": {
+					"constraints": {
+						"tabIndex": 5,
+						"required": "true"
+					},
+					"description": "Enter Ironclad Client Secret",
+					"displayName": "Ironclad Client Secret",
+					"tooltip": "Ironclad Client Secret"
+				}
+			},
+			"token:customHost": {
+				"type": "string",
+				"uiDefinition": {
+					"constraints": {
+						"required": "true",
+						"tabIndex": 3,
+						"allowedValues": [
+							{
+								"text": "Default",
+								"value": "demo.ironcladapp.com"
+							}
+						]
+					},
+					"displayName": "Version",
+					"description": "Select default to continue"
+				}
+			}
+		},
+		"connectionParameterSets": {
+			"uiDefinition": {
+				"displayName": "Irocnlad Instance",
+				"description": "Select the Ironclad instance you with to connect to. If you are unsure, check with your Ironclad administrator."
+			},
+			"values": [
+				{
+					"name": "oauthDEMO",
+					"uiDefinition": {
+						"displayName": "Demo",
+						"description": "demo.ironcladapp.com"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.readRecords"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://demo.ironcladapp.com/oauth//token"
+									},
+									"refreshUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Irocnlad",
+								"description": "Login to Irocnlad",
+								"tooltip": "Login to Irocnlad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "demo.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthEU1",
+					"uiDefinition": {
+						"displayName": "EU1",
+						"description": "eu1.ironcladapp.com"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.readRecords"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth//token"
+									},
+									"refreshUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Irocnlad",
+								"description": "Login to Irocnlad",
+								"tooltip": "Login to Irocnlad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthUS",
+					"uiDefinition": {
+						"displayName": "Global",
+						"description": "ironcladapp.com"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.readRecords"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://ironcladapp.com/oauth//token"
+									},
+									"refreshUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Irocnlad",
+								"description": "Login to Irocnlad",
+								"tooltip": "Login to Irocnlad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthPREVIEW",
+					"uiDefinition": {
+						"displayName": "Preview",
+						"description": "preview.ironcladapp.com"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.readRecords"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://preview.ironcladapp.com/oauth//token"
+									},
+									"refreshUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Irocnlad",
+								"description": "Login to Irocnlad",
+								"tooltip": "Login to Irocnlad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				}
+			]
+		},
+		"capabilities": [
+			"actions"
+		],
+		"policyTemplateInstances": [
+			{
+				"templateId": "dynamichosturl",
+				"title": "Set host for connection",
+				"parameters": {
+					"x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('token:customHost')"
+				}
+			},
+			{
+				"templateId": "setheader",
+				"title": "Accept",
+				"parameters": {
+					"x-ms-apimTemplateParameter.name": "Accept",
+					"x-ms-apimTemplateParameter.value": "application/json",
+					"x-ms-apimTemplateParameter.existsAction": "override",
+					"x-ms-apimTemplate-policySection": "Request"
+				}
+			}
+		],
+		"publisher": "Amadeus IT Group, S.A.",
+		"stackOwner": "Amadeus IT Group, S.A."
+	}
+}
