@@ -1,11 +1,11 @@
 {
 	"swagger": "2.0",
 	"info": {
-		"title": "Ironclad CLM Dynamic Max11",
-		"description": "This Custom Connector for the Ironclad CLM Production and Demo environments",
-		"version": "1.0",
+		"title": "Ironclad CLM v3",
+		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. To use this connector, follow the instructions at https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret. Use these credentials to authenticate the connector and start using it.",
+		"version": "3.0",
 		"contact": {
-			"name": "Amadeus IT Group, S.A.",
+			"name": "Amadeus IT Group, S.A. - LEG TechOps",
 			"url": "https://www.amadeus.com",
 			"email": "LEGTechOps@amadeus.com"
 		}
@@ -28,7 +28,7 @@
 				"operationId": "ListPredictions",
 				"parameters": [
 					{
-						"description": "The record id of the imported record",
+						"description": "An Ironclad record ID. If provided, the response will contain the predictions for this record.",
 						"in": "query",
 						"name": "recordId",
 						"required": false,
@@ -37,7 +37,7 @@
 						"x-ms-visibility": "important"
 					},
 					{
-						"description": "The import id of the smart import run",
+						"description": "An Ironclad import ID. If provided, the response will contain the predictions for all records in this import.",
 						"in": "query",
 						"name": "importId",
 						"required": false,
@@ -54,13 +54,13 @@
 						}
 					}
 				},
-				"summary": "Get Smart Import Predictions",
+				"summary": "List Smart Import Predictions",
 				"x-ms-visibility": "important"
 			}
 		},
 		"/records": {
 			"get": {
-				"description": "List all repository records",
+				"description": "View all records in the company, with filtering available via query parameters.",
 				"operationId": "ListRecords",
 				"parameters": [
 					{
@@ -99,7 +99,7 @@
 									},
 									"type": "array",
 									"title": "Records",
-									"description": "The records as an array",
+									"description": "The records matching the query.",
 									"x-ms-visibility": "advanced"
 								},
 								"page": {
@@ -113,7 +113,7 @@
 						}
 					}
 				},
-				"summary": "List Records",
+				"summary": "List All Records",
 				"x-ms-visibility": "important"
 			},
 			"post": {
@@ -125,9 +125,9 @@
 						}
 					}
 				},
-				"summary": "Post Record",
-				"description": "Post a new repository record",
-				"operationId": "PostRecord",
+				"summary": "Create a Record",
+				"description": "Create a contract record by specifying its intended metadata properties.",
+				"operationId": "CreateRecord",
 				"x-ms-visibility": "important",
 				"parameters": [
 					{
@@ -147,8 +147,8 @@
 								},
 								"parent": {
 									"type": "object",
-									"title": "Parent Record",
-									"description": "The parent record of this record.",
+									"title": "Parent",
+									"description": "Object containing Record IDs or Ironclad IDs to be set as the parent of the current record.",
 									"x-ms-visibility": "important",
 									"properties": {
 										"recordId": {
@@ -161,30 +161,30 @@
 								},
 								"children": {
 									"type": "array",
-									"description": "Records related as children.",
+									"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as child records of the current record.",
 									"x-ms-visibility": "important",
-									"title": "Related Records",
+									"title": "Children",
 									"items": {
 										"type": "object",
 										"required": [
 											"recordId"
 										],
-										"title": "Related Record",
-										"description": "A related record.",
+										"title": "Record",
+										"description": "Object containing Record IDs or Ironclad IDs to be set as one of the children of the current record.",
 										"x-ms-visibility": "important",
 										"properties": {
 											"recordId": {
 												"type": "string",
 												"x-ms-visibility": "important",
-												"title": "Record ID",
-												"description": "The record id of the record."
+												"title": "Ironclad ID",
+												"description": "The Ironclad ID of the record."
 											}
 										}
 									}
 								},
 								"links": {
 									"type": "array",
-									"description": "Records related other than as parent or children.",
+									"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as related of the current record.",
 									"x-ms-visibility": "important",
 									"title": "Related Records",
 									"items": {
@@ -199,8 +199,8 @@
 											"recordId": {
 												"type": "string",
 												"x-ms-visibility": "important",
-												"title": "Record ID",
-												"description": "The record id of the record."
+												"title": "Ironclad ID",
+												"description": "The Ironclad ID of the record."
 											}
 										}
 									}
