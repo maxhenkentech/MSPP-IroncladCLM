@@ -1,8 +1,8 @@
 {
 	"swagger": "2.0",
 	"info": {
-		"title": "Ironclad CLM v3",
-		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. To use this connector, follow the instructions at https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret. Use these credentials to authenticate the connector and start using it.",
+		"title": "Ironclad Digital Contracting",
+		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. Follow https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret.",
 		"version": "3.0",
 		"contact": {
 			"name": "Amadeus IT Group, S.A. - LEG TechOps",
@@ -15,6 +15,20 @@
 	"schemes": [
 		"https"
 	],
+	"x-ms-connector-metadata": [
+		{
+			"propertyName": "Website",
+			"propertyValue": "https://www.amadeus.com"
+		},
+		{
+			"propertyName": "Privacy policy",
+			"propertyValue": "https://www.amadeus.com"
+		},
+		{
+			"propertyName": "Categories",
+			"propertyValue": "Commerce"
+		}
+	],
 	"consumes": [
 		"application/json"
 	],
@@ -25,43 +39,140 @@
 		"/records/smart-import": {
 			"get": {
 				"description": "Retrieve status of predictions of specific smart import record or all records in an import, one of Record Id or Import Id is required.",
-				"operationId": "ListPredictions",
+				"operationId": "RerievePredictions",
+				"summary": "Retrieve Predictions",
+				"x-ms-visibility": "important",
 				"parameters": [
 					{
-						"description": "An Ironclad record ID. If provided, the response will contain the predictions for this record.",
-						"in": "query",
-						"name": "recordId",
-						"required": false,
-						"type": "string",
-						"x-ms-summary": "Record ID",
-						"x-ms-visibility": "important"
+						"$ref": "#/parameters/recordId_query"
 					},
 					{
-						"description": "An Ironclad import ID. If provided, the response will contain the predictions for all records in this import.",
-						"in": "query",
-						"name": "importId",
-						"required": false,
-						"type": "string",
-						"x-ms-summary": "Import ID",
-						"x-ms-visibility": "important"
+						"$ref": "#/parameters/importId_query"
 					}
 				],
 				"responses": {
 					"200": {
 						"description": "default",
 						"schema": {
-							"type": "object"
+							"type": "array",
+							"title": "Predictions",
+							"description": "The prediction statuses for the smart import.",
+							"x-ms-visibility": "important",
+							"items": {
+								"title": "Prediction",
+								"type": "object",
+								"description": "The prediction status for a record in the smart import.",
+								"x-ms-visibility": "important",
+								"properties": {
+									"recordId": {
+										"$ref": "#/definitions/recordId"
+									},
+									"status": {
+										"type": "string",
+										"title": "Status",
+										"description": "The status of the prediction.",
+										"x-ms-visibility": "important"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a Smart Import Record",
+				"description": "Upload a file to create a record with smart import and predictions. Provide none of recordType, newRecordTypeId, or newRecordTypeDisplayName to default to Imported type.",
+				"operationId": "CreateSmartImportRecord",
+				"x-ms-visibility": "important",
+				"consumes": [
+					"multipart/form-data"
+				],
+				"parameters": [
+					{
+						"$ref": "#/parameters/recordType_formData"
+					},
+					{
+						"$ref": "#/parameters/newRecordTypeId_formData"
+					},
+					{
+						"$ref": "#/parameters/newRecordTypeDisplayName_formData"
+					},
+					{
+						"$ref": "#/parameters/attachment_formData"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful operation",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"recordId": {
+									"$ref": "#/definitions/recordId"
+								},
+								"importId": {
+									"$ref": "#/definitions/importId"
+								},
+								"remainingCredits": {
+									"$ref": "#/definitions/remainingCredits"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/records/smart-import/{SmartImport}/": {
+			"post": {
+				"consumes": [
+					"multipart/form-data"
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"recordId": {
+									"$ref": "#/definitions/recordId"
+								},
+								"importId": {
+									"$ref": "#/definitions/importId"
+								},
+								"remainingCredits": {
+									"$ref": "#/definitions/remainingCredits"
+								}
+							}
 						}
 					}
 				},
-				"summary": "List Smart Import Predictions",
-				"x-ms-visibility": "important"
+				"summary": "Upload a Smart Import Record to an existing Import",
+				"description": "Upload a file to an existing import and create a record with smart import and predictions. Provide none of recordType, newRecordTypeId, or newRecordTypeDisplayName to default to Imported type.",
+				"operationId": "ExistingSmartImportRecord",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/smartImport_path"
+					},
+					{
+						"$ref": "#/parameters/recordType_formData"
+					},
+					{
+						"$ref": "#/parameters/newRecordTypeId_formData"
+					},
+					{
+						"$ref": "#/parameters/newRecordTypeDisplayName_formData"
+					},
+					{
+						"$ref": "#/parameters/attachment_formData"
+					}
+				]
 			}
 		},
 		"/records": {
 			"get": {
 				"description": "View all records in the company, with filtering available via query parameters.",
-				"operationId": "ListRecords",
+				"operationId": "ListAllRecords",
 				"parameters": [
 					{
 						"$ref": "#/parameters/page_query"
@@ -143,67 +254,18 @@
 									"properties": {
 
 									},
-									"description": "properties"
+									"description": "The properties of the record.",
+									"x-ms-visibility": "important",
+									"title": "Properties"
 								},
 								"parent": {
-									"type": "object",
-									"title": "Parent",
-									"description": "Object containing Record IDs or Ironclad IDs to be set as the parent of the current record.",
-									"x-ms-visibility": "important",
-									"properties": {
-										"recordId": {
-											"type": "string",
-											"x-ms-visibility": "important",
-											"title": "Record ID",
-											"description": "The record id of the record."
-										}
-									}
+									"$ref": "#/definitions/parent"
 								},
 								"children": {
-									"type": "array",
-									"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as child records of the current record.",
-									"x-ms-visibility": "important",
-									"title": "Children",
-									"items": {
-										"type": "object",
-										"required": [
-											"recordId"
-										],
-										"title": "Record",
-										"description": "Object containing Record IDs or Ironclad IDs to be set as one of the children of the current record.",
-										"x-ms-visibility": "important",
-										"properties": {
-											"recordId": {
-												"type": "string",
-												"x-ms-visibility": "important",
-												"title": "Ironclad ID",
-												"description": "The Ironclad ID of the record."
-											}
-										}
-									}
+									"$ref": "#/definitions/children"
 								},
 								"links": {
-									"type": "array",
-									"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as related of the current record.",
-									"x-ms-visibility": "important",
-									"title": "Related Records",
-									"items": {
-										"type": "object",
-										"required": [
-											"recordId"
-										],
-										"title": "Related Record",
-										"description": "A related record.",
-										"x-ms-visibility": "important",
-										"properties": {
-											"recordId": {
-												"type": "string",
-												"x-ms-visibility": "important",
-												"title": "Ironclad ID",
-												"description": "The Ironclad ID of the record."
-											}
-										}
-									}
+									"$ref": "#/definitions/links"
 								},
 								"type": {
 									"$ref": "#/definitions/record_type_body"
@@ -217,7 +279,7 @@
 				]
 			}
 		},
-		"/workflows/{Workflow_ID}/document/{Document_Key}/download": {
+		"/workflows/{Workflow}/document/{Key}/download": {
 			"get": {
 				"description": "Retrieve a document from a Workflow",
 				"operationId": "GetWorkflowDocument",
@@ -260,8 +322,8 @@
 		},
 		"/records/metadata": {
 			"get": {
-				"description": "Retrieve the Ironclad repository record schema",
-				"operationId": "GetRecordSchema",
+				"description": "View the schema associated with contract records, including available record types and metadata properties.",
+				"operationId": "RetrieveRecordSchema",
 				"parameters": [
 
 				],
@@ -293,14 +355,14 @@
 						}
 					}
 				},
-				"summary": "Get Record Schema",
+				"summary": "Retrieve Records Schema",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/records/{Record_ID}": {
+		"/records/{Record}": {
 			"get": {
-				"description": "Retrieve a single Ironclad repository record",
-				"operationId": "GetRecord",
+				"description": "View a specific record and its associated data.",
+				"operationId": "RetrieveRecord",
 				"parameters": [
 					{
 						"$ref": "#/parameters/record_ID_path"
@@ -314,7 +376,7 @@
 						}
 					}
 				},
-				"summary": "Get Record",
+				"summary": "Retrieve Record",
 				"x-ms-visibility": "important"
 			},
 			"delete": {
@@ -326,8 +388,8 @@
 						"description": "Success"
 					}
 				},
-				"summary": "Delete Record",
-				"description": "Delete a repository record",
+				"summary": "Delete a Record",
+				"description": "Delete an existing record.",
 				"operationId": "DeleteRecord",
 				"x-ms-visibility": "important",
 				"parameters": [
@@ -353,9 +415,9 @@
 						}
 					}
 				},
-				"summary": "Put a Record",
-				"description": "Put (replace) an existing record",
-				"operationId": "PutRecord",
+				"summary": "Replace a Record",
+				"description": "Update an existing record with a new set of metadata.",
+				"operationId": "ReplaceRecord",
 				"parameters": [
 					{
 						"$ref": "#/parameters/record_ID_path"
@@ -394,9 +456,9 @@
 						}
 					}
 				},
-				"summary": "Patch a Record",
-				"description": "Patch an existing record",
-				"operationId": "PatchRecord",
+				"summary": "Update Record Metadata",
+				"description": "Update specific fields on a record.",
+				"operationId": "UpdateRecordMetadata",
 				"parameters": [
 					{
 						"$ref": "#/parameters/record_ID_path"
@@ -658,7 +720,7 @@
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflow-schemas/{Workflow_Template_ID}": {
+		"/workflow-schemas/{Template}": {
 			"get": {
 				"description": "Retrieve a single Workflow schema",
 				"operationId": "GetWorkflowSchema",
@@ -801,8 +863,8 @@
 				"summary": "List Workflows"
 			},
 			"post": {
-				"description": "Post a new Workflow based on a template",
-				"operationId": "PostWorkflow",
+				"description": "Launch a new Workflow synchronously.",
+				"operationId": "CreateWorkflow",
 				"parameters": [
 					{
 						"name": "body",
@@ -845,14 +907,14 @@
 						}
 					}
 				},
-				"summary": "Post Workflow",
+				"summary": "Create a Workflow Synchronously",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflows/{Workflow_ID}": {
+		"/workflows/{Workflow}": {
 			"get": {
-				"description": "Retrieve a single Workflow",
-				"operationId": "GetWorkflow",
+				"description": "Retrieve a Workflow",
+				"operationId": "RetrieveWorkflow",
 				"parameters": [
 					{
 						"$ref": "#/parameters/workflow_ID_path"
@@ -866,13 +928,13 @@
 						}
 					}
 				},
-				"summary": "Get Workflow",
+				"summary": "View the data associated with a specific workflow.",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflows/{Workflow_ID}/signatures": {
+		"/workflows/{Workflow}/signatures": {
 			"get": {
-				"description": "Retrieve signatures for a Workflow",
+				"description": "Returns a list of workflow signers and the status of their signature.",
 				"operationId": "ListWorkflowSignatures",
 				"parameters": [
 					{
@@ -908,7 +970,7 @@
 									"$ref": "#/definitions/code"
 								},
 								"message": {
-									"$ref": "#/definitions/message"
+									"$ref": "#/definitions/errorMessage"
 								}
 							}
 						}
@@ -922,7 +984,7 @@
 									"$ref": "#/definitions/code"
 								},
 								"message": {
-									"$ref": "#/definitions/message"
+									"$ref": "#/definitions/errorMessage"
 								},
 								"param": {
 									"$ref": "#/definitions/param"
@@ -931,13 +993,13 @@
 						}
 					}
 				},
-				"summary": "List Workflow Signatures",
+				"summary": "List All Workflow Signers",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflows/{Workflow_ID}/approvals": {
+		"/workflows/{Workflow}/approvals": {
 			"get": {
-				"description": "List approvals for a Workflow",
+				"description": "List all Workflow Approvals",
 				"operationId": "ListWorkflowApprovals",
 				"parameters": [
 					{
@@ -959,49 +1021,39 @@
 								"approvalGroups": {
 									"type": "array",
 									"items": {
+										"title": "Approval Group",
+										"description": "An approval group in this Workflow.",
+										"x-ms-visibility": "important",
 										"type": "object",
 										"properties": {
 											"reviewers": {
 												"type": "array",
+												"title": "Reviewers",
+												"description": "A list of reviewers for this Workflow.",
 												"items": {
-													"type": "object",
 													"title": "Reviewer",
 													"description": "A reviewer for this Workflow",
 													"x-ms-visibility": "important",
+													"type": "object",
 													"properties": {
 														"role": {
-															"type": "string",
-															"description": "The id of this reviewer",
-															"title": "Id",
-															"x-ms-visibility": "important"
+															"$ref": "#/definitions/roleId"
 														},
 														"displayName": {
-															"type": "string",
-															"description": "The display name of this reviewer",
-															"title": "Display Name",
-															"x-ms-visibility": "important"
+															"$ref": "#/definitions/roleDisplayName"
 														},
 														"reviewerType": {
-															"type": "string",
-															"description": "The reviewer type",
-															"title": "Type",
-															"x-ms-visibility": "important"
+															"$ref": "#/definitions/reviewerType"
 														},
 														"status": {
-															"type": "string",
-															"description": "The ststus of the review task",
-															"title": "Status",
-															"x-ms-visibility": "important"
+															"$ref": "#/definitions/reviewerStatus"
 														}
 													}
-												},
-												"description": "Reviewer groups assigned to this Workflow",
-												"title": "Reviewer",
-												"x-ms-visibility": "important"
+												}
 											}
 										}
 									},
-									"description": "Approval groups assigned to this Workflow",
+									"description": "Approval groups assigned to this Workflow.",
 									"title": "Approval Groups",
 									"x-ms-visibility": "important"
 								},
@@ -1012,14 +1064,14 @@
 						}
 					}
 				},
-				"summary": "List Workflow Approvals",
+				"summary": "Returns a list of approvals for the workflow. The approvalGroups property will display only triggered approvals (i.e. conditional approvals that have not been triggered will not appear).",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflows/{Workflow_ID}/approvals/{Role_ID}": {
+		"/workflows/{Workflow}/approvals/{Role}": {
 			"patch": {
-				"description": "Patch approvals for a Workflow",
-				"operationId": "PatchWorkflowApprovals",
+				"description": "Updates an approval to the specified status. Approvals can only be updated during the Review step.",
+				"operationId": "UpdateWorkflowApprovals",
 				"parameters": [
 					{
 						"$ref": "#/parameters/workflow_ID_path"
@@ -1038,13 +1090,17 @@
 									"type": "object",
 									"x-ms-visibility": "important",
 									"title": "User Object",
+									"description": "The Ironclad user approving the workflow. The user must be currently assigned as the approver.",
 									"properties": {
 										"type": {
 											"type": "string",
-											"x-ms-visibility": "internal",
+											"x-ms-visibility": "important",
 											"default": "email",
 											"title": "User Attribute Type",
-											"description": "The attribute to identify the user"
+											"description": "The attribute to identify the user",
+											"enum": [
+												"email"
+											]
 										},
 										"email": {
 											"$ref": "#/definitions/userEmail"
@@ -1059,7 +1115,7 @@
 									"x-ms-visibility": "important",
 									"type": "string",
 									"title": "Status",
-									"description": "The status of the approval role",
+									"description": "The new approval status.",
 									"enum": [
 										"approved",
 										"pending"
@@ -1077,21 +1133,18 @@
 					"200": {
 						"description": "default",
 						"schema": {
-
-						}
-					},
-					"500": {
-						"description": "default",
-						"schema": {
-
+							"type": "boolean",
+							"description": "True if the approval was successfully updated, false otherwise.",
+							"x-ms-visibility": "important",
+							"title": "Approval Updated"
 						}
 					}
 				},
-				"summary": "Patch Workflow Approvals",
+				"summary": "Update Approval on a Workflow",
 				"x-ms-visibility": "important"
 			}
 		},
-		"/workflows/{Workflow_ID}/comments": {
+		"/workflows/{Workflow}/comments": {
 			"post": {
 				"responses": {
 					"500": {
@@ -1101,9 +1154,9 @@
 						}
 					}
 				},
-				"summary": "Post Comment",
-				"description": "Add a comment to an Ironclad Workflow.",
-				"operationId": "PostComment",
+				"summary": "Create a Comment on a Workflow",
+				"description": "Creates a comment in the specified workflow's activity feed.",
+				"operationId": "CreateComment",
 				"parameters": [
 					{
 						"$ref": "#/parameters/workflow_ID_path"
@@ -1122,7 +1175,10 @@
 									"$ref": "#/definitions/creator_body"
 								},
 								"comment": {
-									"$ref": "#/definitions/comment"
+									"$ref": "#/definitions/commentText"
+								},
+								"repliedToActivityFeedMessageId": {
+									"$ref": "#/definitions/repliedToActivityFeedMessageId"
 								}
 							},
 							"required": [
@@ -1133,9 +1189,47 @@
 					}
 				],
 				"x-ms-visibility": "important"
+			},
+			"get": {
+				"description": "Return a list of comments on a workflow.",
+				"operationId": "ListWorkflowComments",
+				"summary": "List all Comments on a Workflow",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/page_query"
+					},
+					{
+						"$ref": "#/parameters/pageSize_query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"count": {
+									"$ref": "#/definitions/count"
+								},
+								"page": {
+									"$ref": "#/definitions/page"
+								},
+								"pageSize": {
+									"$ref": "#/definitions/pageSize"
+								},
+								"list": {
+									"$ref": "#/definitions/commentsGet"
+								}
+							}
+						}
+					}
+				}
 			}
 		},
-		"/records/{Record_ID}/attachments/signedCopy": {
+		"/records/{Record}/attachments/signedCopy": {
 			"post": {
 				"responses": {
 					"200": {
@@ -1221,7 +1315,7 @@
 				"description": "Retrieve a repository record attachment by its key."
 			}
 		},
-		"/records/{Record_ID}/attachments/{Document_Key}": {
+		"/records/{Record}/attachments/{Key}": {
 			"get": {
 				"responses": {
 					"200": {
@@ -1241,8 +1335,8 @@
 						}
 					}
 				},
-				"summary": "Get Record Document",
-				"operationId": "GetRecordDocument",
+				"summary": "Retrieve an Attachment on a Record",
+				"operationId": "RetrieveAttachment",
 				"x-ms-visibility": "important",
 				"parameters": [
 					{
@@ -1260,7 +1354,7 @@
 						"x-ms-visibility": "internal"
 					}
 				],
-				"description": "Retrieve a repository record attachment by its key."
+				"description": "View an attachment associated with a specific record."
 			},
 			"delete": {
 				"responses": {
@@ -1277,8 +1371,8 @@
 						}
 					}
 				},
-				"summary": "Delete Record Document",
-				"operationId": "DeleteRecordDocument",
+				"summary": "Delete an Attachment on a Record",
+				"operationId": "DeleteAttachment",
 				"x-ms-visibility": "important",
 				"parameters": [
 					{
@@ -1296,20 +1390,524 @@
 						"x-ms-visibility": "internal"
 					}
 				],
-				"description": "Delete a repository record attachment by its key."
+				"description": "Remove an attachment associated with a specific record."
+			}
+		},
+		"/workflows/async": {
+			"post": {
+				"description": "Launch a new Workflow asynchronously for non-blocking performance, which is helpful when/if you provide files to the Workflow.",
+				"operationId": "CreateWorkflowAsync",
+				"summary": "Create a Workflow Asynchronously",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"name": "body",
+						"in": "body",
+						"required": true,
+						"schema": {
+							"type": "object",
+							"properties": {
+								"creator": {
+									"$ref": "#/definitions/creator_body"
+								},
+								"template": {
+									"$ref": "#/definitions/workflow_template_ID_body"
+								},
+								"attributes": {
+									"$ref": "#/definitions/attributes"
+								}
+							},
+							"required": [
+								"creator",
+								"template",
+								"attributes"
+							]
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"properties": {
+								"asyncJobId": {
+									"$ref": "#/definitions/asyncJobId"
+								},
+								"asyncJobStatusUrl": {
+									"$ref": "#/definitions/asyncJobStatusUrl"
+								}
+							},
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/async/{asyncJob_path}": {
+			"get": {
+				"description": "",
+				"parameters": [
+					{
+						"$ref": "#/parameters/asyncJob_path"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"properties": {
+								"status": {
+									"description": "The status of the asynchronous job",
+									"title": "Status",
+									"type": "string",
+									"x-ms-visibility": "important"
+								}
+							},
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/approval-requests": {
+			"get": {
+				"description": "Returns a list of approval requests that have taken place on the workflow.",
+				"operationId": "ListApprovalRequests",
+				"summary": "Retrieve the Approval Requests on a Workflow",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/page_query"
+					},
+					{
+						"$ref": "#/parameters/pageSize_query"
+					},
+					{
+						"$ref": "#/parameters/actionDetails_query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"properties": {
+								"count": {
+									"$ref": "#/definitions/count"
+								},
+								"list": {
+									"description": "The approval requests as an array",
+									"title": "Approval Requests",
+									"items": {
+										"type": "object",
+										"properties": {
+											"startTime": {
+												"$ref": "#/definitions/startTime"
+											},
+											"endTime": {
+												"$ref": "#/definitions/endTime"
+											},
+											"status": {
+												"$ref": "#/definitions/approvalStatus"
+											},
+											"actorId": {
+												"$ref": "#/definitions/actorId"
+											},
+											"actorType": {
+												"$ref": "#/definitions/actorType"
+											},
+											"duration": {
+												"$ref": "#/definitions/duration"
+											},
+											"role": {
+												"$ref": "#/definitions/roleId"
+											},
+											"roleName": {
+												"$ref": "#/definitions/roleDisplayName"
+											},
+											"approvalType": {
+												"$ref": "#/definitions/approvalType"
+											}
+										}
+									},
+									"type": "array"
+								},
+								"page": {
+									"$ref": "#/definitions/page"
+								},
+								"pageSize": {
+									"$ref": "#/definitions/pageSize"
+								}
+							},
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/turn-history": {
+			"get": {
+				"x-ms-visibility": "important",
+				"summary": "Retrieve the Turn History on a Workflow",
+				"operationId": "ListTurnHistory",
+				"description": "An array of objects for each turn on a workflow.",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/page_query"
+					},
+					{
+						"$ref": "#/parameters/pageSize_query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"properties": {
+								"count": {
+									"$ref": "#/definitions/count"
+								},
+								"list": {
+									"description": "The turn history as an array",
+									"title": "Turn History",
+									"items": {
+										"type": "object",
+										"properties": {
+											"turnParty": {
+												"$ref": "#/definitions/turnParty"
+											},
+											"turnStartTime": {
+												"$ref": "#/definitions/turnStartTime"
+											},
+											"turnLocation": {
+												"$ref": "#/definitions/turnLocation"
+											},
+											"turnUser": {
+												"$ref": "#/definitions/userId"
+											},
+											"turnUserEmail": {
+												"$ref": "#/definitions/userEmail"
+											},
+											"turnEndTime": {
+												"$ref": "#/definitions/turnEndTime"
+											},
+											"turnNumber": {
+												"$ref": "#/definitions/turnNumber"
+											}
+										}
+									},
+									"type": "array"
+								},
+								"page": {
+									"$ref": "#/definitions/page"
+								},
+								"pageSize": {
+									"$ref": "#/definitions/pageSize"
+								}
+							},
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/upload-signed": {
+			"get": {
+				"summary": "Create a Signed Document on a Workflow",
+				"operationId": "UploadSignedDocument",
+				"x-ms-visibility": "important",
+				"description": "Upload a fully or partially signed document to a specified workflow that is in sign step.",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/participants": {
+			"get": {
+				"summary": "List All Workflow Participants",
+				"description": "Returns a list of workflow participants.",
+				"operationId": "ListWorkflowParticipants",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/page_query"
+					},
+					{
+						"$ref": "#/parameters/pageSize_query"
+					},
+					{
+						"$ref": "#/parameters/userEmail_query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"properties": {
+								"count": {
+									"$ref": "#/definitions/count"
+								},
+								"list": {
+									"description": "The participants as an array.",
+									"title": "Participants",
+									"items": {
+										"type": "object",
+										"properties": {
+											"email": {
+												"$ref": "#/definitions/userEmail"
+											},
+											"userId": {
+												"$ref": "#/definitions/userId"
+											}
+										}
+									},
+									"type": "array"
+								},
+								"page": {
+									"$ref": "#/definitions/page"
+								},
+								"pageSize": {
+									"$ref": "#/definitions/pageSize"
+								}
+							},
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/revert-to-review": {
+			"post": {
+				"description": "Reverts a workflow to the Review step. Only workflows sourced from Workflow Designer and in the Sign step can be reverted.",
+				"operationId": "RevertToReview",
+				"summary": "Revert a Workflow to the Review Step",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/revertingUser_body"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/cancel": {
+			"post": {
+				"description": "Cancel a Workflow.",
+				"operationId": "CancelWorkflow",
+				"summary": "Cancel Workflow",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"in": "body",
+						"name": "user",
+						"required": true,
+						"schema": {
+							"type": "object",
+							"properties": {
+								"notifyCounterparty": {
+									"$ref": "#/definitions/notifyCounterparty"
+								},
+								"comment": {
+									"$ref": "#/definitions/commentText"
+								}
+							},
+							"required": [
+								"type",
+								"email"
+							]
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "default",
+						"schema": {
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/pause": {
+			"post": {
+				"description": "Pause a Workflow.",
+				"operationId": "PauseWorkflow",
+				"summary": "Pause Workflow",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"in": "body",
+						"name": "user",
+						"required": true,
+						"schema": {
+							"type": "object",
+							"properties": {
+								"notifyCounterparty": {
+									"$ref": "#/definitions/notifyCounterparty"
+								},
+								"comment": {
+									"$ref": "#/definitions/commentText"
+								}
+							},
+							"required": [
+								"type",
+								"email"
+							]
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "default",
+						"schema": {
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/resume": {
+			"post": {
+				"description": "Resume a Workflow.",
+				"operationId": "ResumeWorkflow",
+				"summary": "Resume Workflow",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"in": "body",
+						"name": "user",
+						"required": true,
+						"schema": {
+							"type": "object",
+							"properties": {
+								"notifyCounterparty": {
+									"$ref": "#/definitions/notifyCounterparty"
+								},
+								"comment": {
+									"$ref": "#/definitions/commentText"
+								}
+							},
+							"required": [
+								"type",
+								"email"
+							]
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "default",
+						"schema": {
+							"type": "object"
+						}
+					}
+				}
+			}
+		},
+		"/workflows/{Workflow}/comments/{Comment}": {
+			"get": {
+				"description": "Return a single comment for a specified workflow.",
+				"operationId": "RetrieveComment",
+				"summary": "Retrieve a Comment from a Specified Workflow",
+				"x-ms-visibility": "important",
+				"parameters": [
+					{
+						"$ref": "#/parameters/workflow_ID_path"
+					},
+					{
+						"$ref": "#/parameters/comment_ID_path"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "default",
+						"schema": {
+							"$ref": "#/definitions/commentObjectGet"
+						}
+					}
+				}
 			}
 		}
 	},
 	"definitions": {
-		"addUsersToWorkflow": {
-			"default": true,
-			"description": "Set to true to add mentioned users to the workflow",
-			"title": "Add to Workflow",
-			"type": "boolean",
+		"activityItem": {
+			"title": "Activity Item",
+			"description": "Identifier of the activity being replied to.",
+			"type": "string",
 			"x-ms-visibility": "important"
 		},
+		"actorId": {
+			"title": "Actor ID",
+			"description": "The identifier of the actor.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"actorType": {
+			"title": "Actor Type",
+			"description": "The type of actor.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"addedParticipants": {
+			"title": "Added Participants",
+			"description": "Users added to the conversation.",
+			"type": "array",
+			"x-ms-visibility": "advanced",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"$ref": "#/definitions/userId"
+					},
+					"displayName": {
+						"$ref": "#/definitions/userDisplayName"
+					}
+				}
+			}
+		},
+		"addUsersToWorkflow": {
+			"title": "Add to Workflow",
+			"description": "Set to true to add mentioned users to the workflow",
+			"type": "boolean",
+			"x-ms-visibility": "important",
+			"default": true
+		},
 		"agreementDate": {
+			"title": "Agreement Date",
 			"description": "The date of the agreement",
+			"type": "object",
+			"x-ms-visibility": "important",
 			"properties": {
 				"type": {
 					"$ref": "#/definitions/dataType"
@@ -1317,26 +1915,31 @@
 				"value": {
 					"$ref": "#/definitions/propertyValue"
 				}
-			},
-			"title": "Agreement Date",
-			"type": "object",
+			}
+		},
+		"approvalStatus": {
+			"title": "Status",
+			"description": "The status of the approval.",
+			"type": "string",
+			"x-ms-visibility": "important",
+			"enum": [
+				"approved",
+				"pending"
+			]
+		},
+		"approvalType": {
+			"title": "Approval Type",
+			"description": "The type of approval.",
+			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"approvalState": {
-			"description": "The approval states of the Workflow",
-			"properties": {
-				"state": {
-					"description": "The current approval state of the Workflow",
-					"title": "Approval State",
-					"type": "string"
-				}
-			},
-			"title": "Approval States",
-			"type": "object"
-		},
 		"assignees": {
+			"title": "Assignees",
 			"description": "The assigned users",
+			"type": "array",
+			"x-ms-visibility": "advanced",
 			"items": {
+				"type": "object",
 				"properties": {
 					"email": {
 						"$ref": "#/definitions/userEmail"
@@ -1347,18 +1950,818 @@
 					"userName": {
 						"$ref": "#/definitions/username"
 					}
+				}
+			}
+		},
+		"asyncJobId": {
+			"title": "Async Job ID",
+			"description": "The ID of the asynchronous job",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"asyncJobStatusUrl": {
+			"title": "Async Job Status URL",
+			"description": "The URL to check the status of the asynchronous job",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"attachmentDisplayName": {
+			"title": "Display Name",
+			"description": "The display name of the attachment.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"attachmentName": {
+			"title": "System Name",
+			"description": "The internal name of the attachment.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"attributes": {
+			"title": "Workflow Attributes",
+			"description": "The data that will be used to populate the workflow's fields.",
+			"type": "object"
+		},
+		"author": {
+			"title": "Author",
+			"description": "Information about the author of the original comment.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"type": {
+					"$ref": "#/definitions/userType"
+				},
+				"displayName": {
+					"$ref": "#/definitions/userDisplayName"
+				},
+				"email": {
+					"$ref": "#/definitions/userEmail"
+				},
+				"userId": {
+					"$ref": "#/definitions/userId"
+				},
+				"companyName": {
+					"$ref": "#/definitions/userCompanyName"
+				}
+			}
+		},
+		"child": {
+			"title": "Record",
+			"description": "Object containing Record IDs or Ironclad IDs to be set as one of the children of the current record.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"required": [
+				"recordId"
+			],
+			"properties": {
+				"recordId": {
+					"$ref": "#/definitions/recordId"
+				}
+			}
+		},
+		"childIds": {
+			"title": "Child Records",
+			"description": "Child records in the repository.",
+			"type": "array",
+			"x-ms-visibility": "advanced",
+			"items": {
+				"type": "string",
+				"title": "ID",
+				"description": "The identifier of a child record in the repository.",
+				"x-ms-visibility": "advanced"
+			}
+		},
+		"children": {
+			"title": "Children",
+			"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as child records of the current record.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"$ref": "#/definitions/child"
+			}
+		},
+		"code": {
+			"title": "Code",
+			"description": "The error code returned by the api.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"commentId": {
+			"title": "ID",
+			"description": "Identifier of the comment.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"commentMetadata": {
+			"title": "Metadata",
+			"description": "Additional information about the comment.",
+			"type": "object",
+			"x-ms-visibility": "advanced",
+			"properties": {
+				"message": {
+					"$ref": "#/definitions/commentText"
+				},
+				"addedParticipants": {
+					"$ref": "#/definitions/addedParticipants"
+				},
+				"repliedTo": {
+					"type": "object",
+					"title": "Replied To",
+					"description": "Information about the comment being replied to.",
+					"x-ms-visibility": "advanced",
+					"properties": {
+						"activityItem": {
+							"$ref": "#/definitions/activityItem"
+						},
+						"author": {
+							"$ref": "#/definitions/author"
+						}
+					}
+				},
+				"mentionedUserDetails": {
+					"type": "array",
+					"title": "Mentioned Users",
+					"description": "Details of users mentioned in the comment.",
+					"x-ms-visibility": "advanced",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"title": "ID",
+								"description": "Unique identifier of the mentioned user.",
+								"x-ms-visibility": "important"
+							},
+							"email": {
+								"type": "string",
+								"title": "Email",
+								"description": "Email of the mentioned user.",
+								"x-ms-visibility": "important"
+							},
+							"displayName": {
+								"type": "string",
+								"title": "Display Name",
+								"description": "Name of the mentioned user.",
+								"x-ms-visibility": "important"
+							}
+						}
+					}
+				}
+			}
+		},
+		"commentObjectGet": {
+			"title": "Comment",
+			"description": "A comment on the workflow.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"metadata": {
+					"$ref": "#/definitions/commentMetadata"
+				},
+				"id": {
+					"$ref": "#/definitions/commentId"
+				},
+				"commentType": {
+					"$ref": "#/definitions/commentType"
+				},
+				"author": {
+					"$ref": "#/definitions/author"
+				},
+				"isExternal": {
+					"$ref": "#/definitions/isExternal"
+				},
+				"reactions": {
+					"$ref": "#/definitions/reactions"
+				}
+			}
+		},
+		"commentObjectPost": {
+			"title": "Comment",
+			"description": "The comment object.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"message": {
+					"$ref": "#/definitions/commentText"
+				},
+				"addUsersToWorkflow": {
+					"$ref": "#/definitions/addUsersToWorkflow"
+				}
+			}
+		},
+		"commentText": {
+			"title": "Text",
+			"description": "The text of the comment.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"commentType": {
+			"title": "Type",
+			"description": "Type of the activity item.",
+			"type": "string",
+			"x-ms-visibility": "advanced"
+		},
+		"commentsGet": {
+			"title": "Comments",
+			"description": "The list of comments.",
+			"type": "array",
+			"x-ms-visibility": "advanced",
+			"items": {
+				"$ref": "#/definitions/commentObjectGet"
+			}
+		},
+		"contentType": {
+			"title": "Content Type",
+			"description": "The content type of the attachment.",
+			"type": "string",
+			"x-ms-visibility": "advanced"
+		},
+		"count": {
+			"title": "Count",
+			"description": "The number of records matching your criteria.",
+			"type": "integer",
+			"x-ms-visibility": "advanced",
+			"format": "int32"
+		},
+		"counterpartyName": {
+			"title": "Counterparty Name",
+			"description": "The name of the counterparty.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"type": {
+					"$ref": "#/definitions/dataType"
+				},
+				"value": {
+					"$ref": "#/definitions/propertyValue"
+				}
+			}
+		},
+		"created": {
+			"title": "Created Date Time",
+			"description": "The date and time when the Workflow or record was created.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"creator": {
+			"title": "Creator",
+			"description": "The Ironclad user that launched the workflow.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"displayName": {
+					"$ref": "#/definitions/userDisplayName"
+				},
+				"email": {
+					"$ref": "#/definitions/userEmail"
+				},
+				"id": {
+					"$ref": "#/definitions/userId"
+				},
+				"title": {
+					"$ref": "#/definitions/userTitle"
+				},
+				"username": {
+					"$ref": "#/definitions/username"
+				}
+			}
+		},
+		"creator_body": {
+			"title": "Creator",
+			"description": "The Ironclad user (must be a user in your Ironclad account) to be used for launching the workflow.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"email": {
+					"$ref": "#/definitions/userEmail"
+				},
+				"id": {
+					"$ref": "#/definitions/userId"
+				},
+				"type": {
+					"$ref": "#/definitions/userIdentificationAttribute"
+				}
+			},
+			"required": [
+				"email",
+				"type"
+			]
+		},
+		"dataType": {
+			"title": "Data Type",
+			"description": "The data type of the property.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"download": {
+			"title": "Download Path",
+			"description": "The path to the current version of the document.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"downloadLink": {
+			"title": "Download Link",
+			"description": "The link to download the attachment.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"duration": {
+			"title": "Duration",
+			"description": "The duration of the approval request.",
+			"type": "integer",
+			"x-ms-visibility": "important"
+		},
+		"emojiId": {
+			"title": "Emoji ID",
+			"description": "Identifier of the emoji used in the reaction.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"endTime": {
+			"title": "End Time",
+			"description": "The end time of the approval request.",
+			"type": "string",
+			"x-ms-visibility": "important",
+			"format": "date-time"
+		},
+		"errorMessage": {
+			"title": "Message",
+			"description": "The error message returned by the api.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"event": {
+			"title": "Type",
+			"description": "The type of the event.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"importId": {
+			"title": "Import ID",
+			"description": "The unique identifier of the import operation.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"isExternal": {
+			"title": "Is External",
+			"description": "Indicates if the comment is from an external user.",
+			"type": "boolean",
+			"x-ms-visibility": "advanced"
+		},
+		"lastUpdated": {
+			"title": "Last Updated Date Time",
+			"description": "Workflow or record last updated since.",
+			"type": "string",
+			"x-ms-visibility": "advanced",
+			"format": "date"
+		},
+		"link": {
+			"title": "Related Record",
+			"description": "A related record.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"required": [
+				"recordId"
+			],
+			"properties": {
+				"recordId": {
+					"$ref": "#/definitions/recordId"
+				}
+			}
+		},
+		"links": {
+			"title": "Related Records",
+			"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as related of the current record.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"$ref": "#/definitions/link"
+			}
+		},
+		"notifyCounterparty": {
+			"title": "Notify Counterparty",
+			"description": "Set to true to notify the counterparty of the cancellation.",
+			"type": "boolean",
+			"x-ms-visibility": "important"
+		},
+		"page": {
+			"title": "Page",
+			"description": "The index of the page.",
+			"type": "integer",
+			"x-ms-visibility": "advanced",
+			"format": "int32"
+		},
+		"pageSize": {
+			"title": "Page Size",
+			"description": "A limit of the number of results.",
+			"type": "integer",
+			"x-ms-visibility": "advanced",
+			"format": "int32"
+		},
+		"param": {
+			"title": "Parameter",
+			"description": "The parameter causing the error.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"parent": {
+			"title": "Parent",
+			"description": "Object containing Record IDs or Ironclad IDs to be set as the parent of the current record.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"recordId": {
+					"$ref": "#/definitions/recordId"
+				}
+			}
+		},
+		"parentId": {
+			"title": "Parent Record ID",
+			"description": "The identifier of the parent record in the repository.",
+			"type": "string",
+			"x-ms-visibility": "advanced"
+		},
+		"propertyArray": {
+			"title": "Property Array",
+			"description": "The record properties as an array.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"type": "object",
+				"description": "A record property.",
+				"x-ms-visibility": "important",
+				"title": "Property",
+				"properties": {
+					"propertyName": {
+						"$ref": "#/definitions/propertyName"
+					},
+					"propertyProperties": {
+						"title": "Properties",
+						"description": "The properties of the property.",
+						"type": "object",
+						"x-ms-visibility": "important",
+						"properties": {
+							"type": {
+								"title": "Type",
+								"description": "The attribute type.",
+								"x-ms-visibility": "important",
+								"type": "string"
+							},
+							"value": {
+								"title": "Value",
+								"description": "The value given to this property.",
+								"x-ms-visibility": "important"
+							}
+						}
+					}
+				}
+			}
+		},
+		"propertyDisplayName": {
+			"title": "Display Name",
+			"description": "The display name of the property.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"propertyName": {
+			"title": "System Name",
+			"description": "The internal name of the property.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"propertyValue": {
+			"title": "Value",
+			"description": "The value of the property.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"reactor": {
+			"title": "Reactor",
+			"description": "A user who reacted to the comment.",
+			"type": "object",
+			"x-ms-visibility": "advanced",
+			"properties": {
+				"id": {
+					"$ref": "#/definitions/userId"
+				},
+				"displayName": {
+					"$ref": "#/definitions/userDisplayName"
+				}
+			}
+		},
+		"reactors": {
+			"title": "Reactors",
+			"description": "Users who reacted to the comment.",
+			"type": "array",
+			"x-ms-visibility": "advanced",
+			"items": {
+				"$ref": "#/definitions/reactor"
+			}
+		},
+		"reactions": {
+			"title": "Reactions",
+			"description": "Reactions to the comment.",
+			"type": "object",
+			"x-ms-visibility": "advanced",
+			"properties": {
+				"emojiId": {
+					"$ref": "#/definitions/emojiId"
+				},
+				"reactors": {
+					"$ref": "#/definitions/reactors"
+				}
+			}
+		},
+		"record": {
+			"title": "Record",
+			"description": "A repository record and its associated data.",
+			"type": "object",
+			"properties": {
+				"attachments": {
+					"$ref": "#/definitions/recordAttachments"
+				},
+				"id": {
+					"$ref": "#/definitions/recordId"
+				},
+				"lastUpdated": {
+					"$ref": "#/definitions/lastUpdated"
+				},
+				"links": {
+					"$ref": "#/definitions/links"
+				},
+				"childIds": {
+					"$ref": "#/definitions/childIds"
+				},
+				"parentId": {
+					"$ref": "#/definitions/parentId"
+				},
+				"name": {
+					"$ref": "#/definitions/recordName"
+				},
+				"propertiesArray": {
+					"$ref": "#/definitions/propertyArray"
+				},
+				"properties": {
+					"title": "Properties",
+					"description": "The properties of the record.",
+					"type": "object",
+					"x-ms-visibility": "important",
+					"properties": {
+						"agreementDate": {
+							"$ref": "#/definitions/agreementDate"
+						},
+						"counterpartyName": {
+							"$ref": "#/definitions/counterpartyName"
+						}
+					}
+				},
+				"source": {
+					"$ref": "#/definitions/source"
+				},
+				"type": {
+					"$ref": "#/definitions/recordType"
+				}
+			}
+		},
+		"recordAttachments": {
+			"title": "Attachments",
+			"description": "The documents attached to the record.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"contentType": {
+					"$ref": "#/definitions/contentType"
+				},
+				"filename": {
+					"$ref": "#/definitions/recordFileName"
+				},
+				"href": {
+					"$ref": "#/definitions/downloadLink"
+				}
+			}
+		},
+		"recordAttachmentsArray": {
+			"title": "Attachments",
+			"description": "The attachments of the record.",
+			"type": "array",
+			"items": {
+				"title": "Attachment",
+				"type": "object",
+				"x-ms-visibility": "important",
+				"properties": {
+					"attachmentName": {
+						"$ref": "#/definitions/attachmentName"
+					},
+					"attachmentAttributes": {
+						"title": "Attributes",
+						"description": "The attributes of the record attachment.",
+						"type": "object",
+						"x-ms-visibility": "important",
+						"properties": {
+							"displayName": {
+								"$ref": "#/definitions/attachmentDisplayName"
+							}
+						}
+					}
+				}
+			}
+		},
+		"recordAttachmentsDictionary": {
+			"title": "Attachments Dictionary",
+			"description": "A dictionary of record attachments",
+			"type": "object",
+			"x-ms-visibility": "advanced"
+		},
+		"recordFileName": {
+			"title": "File Name",
+			"description": "The name of the attachment",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordId": {
+			"title": "ID",
+			"description": "The identifier of the repository record.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordName": {
+			"title": "Name",
+			"description": "The name of the repository record.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertiesArray": {
+			"title": "Record Properties",
+			"description": "The properties for this record.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"title": "Object",
+				"description": "A record property object.",
+				"x-ms-visibility": "important",
+				"properties": {
+					"propertyName": {
+						"$ref": "#/definitions/propertyName"
+					},
+					"propertyAttributes": {
+						"title": "Attributes",
+						"description": "The attributes of the record property.",
+						"type": "object",
+						"x-ms-visibility": "important",
+						"properties": {
+							"displayName": {
+								"$ref": "#/definitions/propertyDisplayName"
+							},
+							"type": {
+								"$ref": "#/definitions/dataType"
+							},
+							"visible": {
+								"$ref": "#/definitions/visible"
+							}
+						}
+					}
 				},
 				"type": "object"
-			},
-			"title": "Assignees",
-			"type": "array",
+			}
+		},
+		"recordPropertiesDictionary": {
+			"title": "Properties Dictionary",
+			"description": "A dictionary of record properties for this record.",
+			"type": "object",
 			"x-ms-visibility": "advanced"
+		},
+		"recordType": {
+			"title": "Type",
+			"description": "The type of the record or Workflow",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordTypeDescription": {
+			"title": "Description",
+			"description": "The description of the record type.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordTypeDisplayName": {
+			"title": "Display Name",
+			"description": "The display name of the record or Workflow type",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordTypesDictionary": {
+			"title": "Record Type Dictionary",
+			"description": "A dictionary of record types available in this instance.",
+			"type": "object",
+			"x-ms-visibility": "advanced"
+		},
+		"recordTypesArray": {
+			"title": "Record Types",
+			"description": "An array of record types available in this instance.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"properties": {
+					"recordTypeName": {
+						"$ref": "#/definitions/recordType"
+					},
+					"recordTypeProperties": {
+						"title": "Properties",
+						"description": "The record type properties",
+						"type": "object",
+						"properties": {
+							"displayName": {
+								"$ref": "#/definitions/recordTypeDisplayName"
+							},
+							"description": {
+								"$ref": "#/definitions/recordTypeDescription"
+							}
+						}
+					}
+				},
+				"type": "object"
+			}
+		},
+		"record_type_body": {
+			"title": "Type",
+			"description": "The type of record to be created. You can view available record types by retrieving records metadata.",
+			"type": "string",
+			"x-ms-visibility": "important",
+			"x-ms-dynamic-values": {
+				"operationId": "GetRecordSchema",
+				"value-collection": "recordTypesArray",
+				"value-path": "recordTypeName",
+				"value-title": "recordTypeProperties/displayName"
+			},
+			"x-ms-summary": "Type"
+		},
+		"remainingCredits": {
+			"title": "Remaining Credits",
+			"description": "The number of credits remaining after the operation.",
+			"type": "integer",
+			"x-ms-visibility": "important"
+		},
+		"repliedToActivityFeedMessageId": {
+			"title": "Replied To Activity Feed Message ID",
+			"description": "The identifier of the activity feed message that this message is a reply to.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"reviewerStatus": {
+			"title": "Status",
+			"description": "The status of the review task",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"reviewerType": {
+			"title": "Type",
+			"description": "The reviewer type",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"roleDisplayName": {
+			"title": "Display Name",
+			"description": "The display name of the role.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"roleId": {
+			"title": "ID",
+			"description": "The identifier of the role.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"roles": {
+			"title": "Roles",
+			"description": "The roles in this Workflow.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"properties": {
+					"assignees": {
+						"$ref": "#/definitions/assignees"
+					},
+					"displayName": {
+						"$ref": "#/definitions/roleDisplayName"
+					},
+					"id": {
+						"$ref": "#/definitions/roleId"
+					}
+				},
+				"type": "object"
+			}
+		},
+		"routingOrder": {
+			"title": "Routing Order",
+			"description": "The routing order of the signer.",
+			"type": "integer",
+			"x-ms-visibility": "important",
+			"format": "int32"
 		},
 		"schemaArray": {
 			"title": "Schema Array",
 			"description": "The workflow schema as an array.",
-			"x-ms-visibility": "important",
 			"type": "array",
+			"x-ms-visibility": "important",
 			"items": {
 				"type": "object",
 				"description": "A schema definition.",
@@ -1414,474 +2817,44 @@
 				}
 			}
 		},
-		"propertyArray": {
-			"title": "Property Array",
-			"description": "The record properties as an array.",
-			"x-ms-visibility": "important",
-			"type": "array",
-			"items": {
-				"type": "object",
-				"description": "A record property.",
-				"x-ms-visibility": "important",
-				"title": "Property",
-				"properties": {
-					"propertyName": {
-						"type": "string",
-						"title": "System Name",
-						"description": "The name of the property.",
-						"x-ms-visibility": "important"
-					},
-					"propertyProperties": {
-						"title": "Properties",
-						"description": "The properties of the property.",
-						"type": "object",
-						"x-ms-visibility": "important",
-						"properties": {
-							"type": {
-								"title": "Type",
-								"description": "The attribute type.",
-								"x-ms-visibility": "important",
-								"type": "string"
-							},
-							"value": {
-								"title": "Value",
-								"description": "The value given to this property.",
-								"x-ms-visibility": "important"
-							}
-						}
-					}
+		"signatureState": {
+			"title": "Signature State Object",
+			"description": "The signature state of the Workflow.",
+			"type": "object",
+			"x-ms-visibility": "internal",
+			"properties": {
+				"state": {
+					"title": "State",
+					"description": "The signature state of the Workflow.",
+					"type": "string",
+					"x-ms-visibility": "important"
 				}
 			}
 		},
-		"attachmentDisplayName": {
-			"description": "The display name of the attachment",
-			"title": "Attachment Display Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"attachmentName": {
-			"description": "The internal name of the attachment",
-			"title": "Attachment System Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"comment": {
-			"description": "The comment text in the activity feed",
-			"title": "Comment Text",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"contentType": {
-			"description": "The content type of the document",
-			"title": "Content Type",
-			"type": "string",
-			"x-ms-visibility": "advanced"
-		},
-		"count": {
-			"description": "The number of records returned",
-			"format": "int32",
-			"title": "Count",
-			"type": "integer",
-			"x-ms-visibility": "advanced"
-		},
-		"counterpartyName": {
-			"description": "The name of the counterparty",
-			"properties": {
-				"type": {
-					"$ref": "#/definitions/dataType"
-				},
-				"value": {
-					"$ref": "#/definitions/propertyValue"
-				}
-			},
-			"title": "Counterparty Name",
+		"signatureStatus": {
+			"title": "Signature Status Object",
+			"description": "The signature status object",
 			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"code": {
-			"type": "string",
-			"title": "Code",
-			"description": "The error code returned by the api",
-			"x-ms-visibility": "important"
-		},
-		"param": {
-			"type": "string",
-			"description": "The parameter causing the error",
-			"title": "Parameter",
-			"x-ms-visibility": "important"
-		},
-		"message": {
-			"type": "string",
-			"title": "Message",
-			"description": "The error message returned by the api",
-			"x-ms-visibility": "important"
-		},
-		"created": {
-			"description": "The date and time when the Workflow or record was created",
-			"title": "Created Date Time",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"creator": {
-			"description": "The user that launched the Workflow",
+			"x-ms-visibility": "internal",
 			"properties": {
-				"displayName": {
-					"$ref": "#/definitions/userDisplayName"
-				},
-				"email": {
-					"$ref": "#/definitions/userEmail"
-				},
-				"id": {
-					"$ref": "#/definitions/userId"
-				},
-				"title": {
-					"$ref": "#/definitions/userTitle"
-				},
-				"username": {
-					"$ref": "#/definitions/username"
-				}
-			},
-			"title": "Creator",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"creator_body": {
-			"description": "The user creating the record",
-			"properties": {
-				"email": {
-					"$ref": "#/definitions/userEmail"
-				},
-				"type": {
-					"$ref": "#/definitions/userIdentificationAttribute"
-				}
-			},
-			"required": [
-				"email",
-				"type"
-			],
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"dataType": {
-			"description": "The data type of the property",
-			"title": "Data Type",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"download": {
-			"description": "The path to the current verion of the document",
-			"title": "Download Path",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"downloadLink": {
-			"description": "The link to download the document",
-			"title": "Document Download Link",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"event": {
-			"description": "The event type that triggered the webhook",
-			"title": "Event Type",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"fileName": {
-			"description": "The name of the document",
-			"title": "File Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"filename": {
-			"description": "The file name of the Workflow document",
-			"title": "File Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"lastUpdated": {
-			"description": "The date and time the Workflow or record was last updated",
-			"format": "date",
-			"title": "Last Updated Date Time",
-			"type": "string",
-			"x-ms-visibility": "advanced"
-		},
-		"page": {
-			"description": "The page returned",
-			"format": "int32",
-			"title": "Page",
-			"type": "integer",
-			"x-ms-visibility": "advanced"
-		},
-		"pageSize": {
-			"description": "The size of the page returned",
-			"format": "int32",
-			"title": "Page Size",
-			"type": "integer",
-			"x-ms-visibility": "advanced"
-		},
-		"propertyDisplayName": {
-			"description": "The display name of the record property",
-			"title": "Property Display Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"propertyName": {
-			"description": "The internal name of the property",
-			"title": "Property System Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"propertyValue": {
-			"description": "The value of the property",
-			"title": "Property Value",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"record": {
-			"description": "An Ironclad repository record",
-			"properties": {
-				"attachments": {
-					"$ref": "#/definitions/recordAttachments"
-				},
-				"id": {
-					"$ref": "#/definitions/recordId"
-				},
-				"lastUpdated": {
-					"$ref": "#/definitions/lastUpdated"
-				},
-				"links": {
-					"$ref": "#/definitions/relatedRecords"
-				},
-				"name": {
-					"$ref": "#/definitions/recordName"
-				},
-				"propertiesArray": {
-					"$ref": "#/definitions/propertyArray"
-				},
-				"properties": {
-					"description": "The properties of the record",
-					"properties": {
-						"agreementDate": {
-							"$ref": "#/definitions/agreementDate"
-						},
-						"counterpartyName": {
-							"$ref": "#/definitions/counterpartyName"
-						}
-					},
-					"title": "Properties",
-					"type": "object",
+				"status": {
+					"type": "string",
+					"description": "The signature status of the role.",
+					"title": "Signature Status",
 					"x-ms-visibility": "important"
-				},
-				"source": {
-					"$ref": "#/definitions/source"
-				},
-				"type": {
-					"$ref": "#/definitions/recordType"
 				}
-			},
-			"title": "Ironclad Record",
-			"type": "object"
-		},
-		"recordAttachments": {
-			"description": "The documents attached to the record",
-			"properties": {
-				"contentType": {
-					"$ref": "#/definitions/contentType"
-				},
-				"filename": {
-					"$ref": "#/definitions/fileName"
-				},
-				"href": {
-					"$ref": "#/definitions/downloadLink"
-				}
-			},
-			"title": "Attachments",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"recordAttachmentsArray": {
-			"description": "The record properties as an array",
-			"items": {
-				"properties": {
-					"attachmentName": {
-						"$ref": "#/definitions/attachmentName"
-					},
-					"attachmentProperties": {
-						"description": "The record properties properties",
-						"properties": {
-							"displayName": {
-								"$ref": "#/definitions/attachmentDisplayName"
-							}
-						},
-						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Properties",
-			"type": "array"
-		},
-		"recordAttachmentsDictionary": {
-			"description": "A dictionary of record attachments",
-			"properties": {
-
-			},
-			"title": "Record Attachments Dictionary",
-			"type": "object",
-			"x-ms-visibility": "advanced"
-		},
-		"recordId": {
-			"description": "The ID of the repository record",
-			"title": "ID",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"recordName": {
-			"description": "The name of the repository record",
-			"title": "Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"recordPropertiesArray": {
-			"description": "The record properties as an array",
-			"items": {
-				"properties": {
-					"propertyName": {
-						"$ref": "#/definitions/propertyName"
-					},
-					"propertyProperties": {
-						"description": "The record properties properties",
-						"properties": {
-							"displayName": {
-								"$ref": "#/definitions/propertyDisplayName"
-							},
-							"type": {
-								"$ref": "#/definitions/dataType"
-							},
-							"visible": {
-								"$ref": "#/definitions/visible"
-							}
-						},
-						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Properties",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
-		"recordPropertiesDictionary": {
-			"description": "A dictionary of record properties",
-			"properties": {
-
-			},
-			"title": "Property Dictionary",
-			"type": "object",
-			"x-ms-visibility": "advanced"
-		},
-		"recordType": {
-			"description": "The type of the record or Workflow",
-			"title": "Type",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"recordTypeDisplayName": {
-			"description": "The display name of the record or Workflow type",
-			"title": "Record Type Display Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"recordTypesArray": {
-			"description": "The record types as array",
-			"items": {
-				"properties": {
-					"recordTypeName": {
-						"$ref": "#/definitions/recordType"
-					},
-					"recordTypeProperties": {
-						"description": "The record type properties",
-						"properties": {
-							"displayName": {
-								"$ref": "#/definitions/recordTypeDisplayName"
-							}
-						},
-						"title": "Properties",
-						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Types",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
-		"recordTypesDictionary": {
-			"description": "A dictionary of record types",
-			"properties": {
-
-			},
-			"title": "Type Dictionary",
-			"type": "object",
-			"x-ms-visibility": "advanced"
-		},
-		"relatedRecords": {
-			"description": "The related records in the repository",
-			"items": {
-				"properties": {
-					"recordId": {
-						"$ref": "#/definitions/recordId"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Related Records",
-			"type": "array",
-			"x-ms-visibility": "advanced"
-		},
-		"roleDisplayName": {
-			"description": "The display name of the role",
-			"title": "Display Name",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"roleId": {
-			"description": "The role ID",
-			"title": "Id",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
-		"roles": {
-			"description": "The roles for the Workflow",
-			"items": {
-				"properties": {
-					"assignees": {
-						"$ref": "#/definitions/assignees"
-					},
-					"displayName": {
-						"$ref": "#/definitions/roleDisplayName"
-					},
-					"id": {
-						"$ref": "#/definitions/roleId"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Workflow Roles",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
-		"routingOrder": {
-			"type": "integer",
-			"format": "int32",
-			"description": "The signature routing number of the signer",
-			"title": "Routing number",
-			"x-ms-visibility": "important"
+			}
 		},
 		"signers": {
+			"title": "Signers",
+			"description": "The signers in this Workflow.",
 			"type": "array",
+			"x-ms-visibility": "important",
 			"items": {
 				"type": "object",
+				"description": "A signer in this Workflow.",
+				"title": "Signer",
+				"x-ms-visibility": "important",
 				"properties": {
 					"roleName": {
 						"$ref": "#/definitions/roleDisplayName"
@@ -1899,147 +2872,191 @@
 						"$ref": "#/definitions/routingOrder"
 					}
 				}
-			},
-			"description": "The signers for this Workflow",
-			"title": "Signers",
-			"x-ms-visibility": "important"
-		},
-		"signatureState": {
-			"description": "The signature state of the Workflow",
-			"properties": {
-				"state": {
-					"description": "The signature state of the Workflow",
-					"title": "Signature State",
-					"type": "string",
-					"x-ms-visibility": "important"
-				}
-			},
-			"title": "Signature State",
-			"type": "object",
-			"x-ms-visibility": "advanced"
-		},
-		"signatureStatus": {
-			"type": "object",
-			"properties": {
-				"status": {
-					"type": "string",
-					"description": "The signatiure status value of the role",
-					"title": "Display Value",
-					"x-ms-visibility": "important"
-				}
-			},
-			"description": "The sigature status object",
-			"title": "Signature Status",
-			"x-ms-visibility": "internal"
+			}
 		},
 		"source": {
-			"description": "The source of the record",
+			"title": "Source",
+			"description": "The source of the record.",
+			"type": "object",
+			"x-ms-visibility": "advanced",
 			"properties": {
 				"type": {
-					"description": "The source type",
-					"title": "Source Type",
+					"title": "Type",
+					"description": "The type of the source.",
 					"type": "string",
 					"x-ms-visibility": "important"
 				},
 				"workflowId": {
 					"$ref": "#/definitions/workflowId"
 				}
-			},
-			"title": "Source",
-			"type": "object",
-			"x-ms-visibility": "advanced"
+			}
 		},
-		"status": {
-			"description": "The current status of the Workflow",
-			"title": "Workflow Status",
+		"startTime": {
+			"title": "Start Time",
+			"description": "The start time of the approval request.",
 			"type": "string",
-			"x-ms-visibility": "important"
+			"x-ms-visibility": "important",
+			"format": "date-time"
 		},
 		"step": {
-			"description": "The current Workflow step",
-			"title": "Workflow Step",
+			"title": "Step",
+			"description": "The current step of the Workflow.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"timestamp": {
-			"description": "The timestamp of the event",
 			"title": "Timestamp",
+			"description": "The timestamp of the event.",
 			"type": "string",
-			"x-ms-visbility": "advanced"
+			"x-ms-visibility": "advanced"
+		},
+		"turnEndTime": {
+			"title": "Turn End Time",
+			"description": "The time the turn ended.",
+			"type": "string",
+			"x-ms-visibility": "important",
+			"format": "date-time"
+		},
+		"turnLocation": {
+			"title": "Turn Location",
+			"description": "The location of the turn.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"turnNumber": {
+			"title": "Turn Number",
+			"description": "The number of the turn.",
+			"type": "integer",
+			"x-ms-visibility": "important"
+		},
+		"turnParty": {
+			"title": "Turn Party",
+			"description": "The party that took the turn.",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"turnStartTime": {
+			"title": "Turn Start Time",
+			"description": "The time the turn started.",
+			"type": "string",
+			"x-ms-visibility": "important",
+			"format": "date-time"
+		},
+		"user": {
+			"title": "User",
+			"description": "The Ironclad user.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"type": {
+					"$ref": "#/definitions/userIdentificationAttribute"
+				},
+				"email": {
+					"$ref": "#/definitions/userEmail"
+				}
+			}
+		},
+		"userCompanyName": {
+			"title": "Company Name",
+			"description": "Company name of the author.",
+			"type": "string",
+			"x-ms-visibility": "advanced"
 		},
 		"userDisplayName": {
-			"description": "The display name of the user",
-			"title": "User Display Name",
+			"title": "Display Name",
+			"description": "The display name of the user.",
 			"type": "string",
-			"x-ms-vibility": "important"
+			"x-ms-visibility": "important"
 		},
 		"userEmail": {
-			"description": "The email address of the user",
-			"title": "User Email",
+			"title": "Email",
+			"description": "The email address of the Ironclad user.",
 			"type": "string",
-			"x-ms-vibility": "important"
+			"x-ms-visibility": "important"
 		},
 		"userId": {
-			"description": "The ID of the user",
-			"title": "User ID",
+			"title": "ID",
+			"description": "The user ID of the Ironclad user.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"userIdentificationAttribute": {
-			"description": "The attribute to identify the user",
-			"enum": [
-				"email"
-			],
-			"title": "User Identification Type",
+			"title": "Attribute",
+			"description": "The type of value used to identify the user.",
 			"type": "string",
 			"x-ms-visibility": "internal",
-			"default": "email"
+			"default": "email",
+			"enum": [
+				"email",
+				"id"
+			],
+			"x-ms-enum-values": [
+				{
+					"displayName": "User Email",
+					"value": "email"
+				},
+				{
+					"displayName": "User ID",
+					"value": "id"
+				}
+			]
 		},
 		"userTitle": {
-			"description": "The title address of the user",
-			"title": "User Title",
+			"title": "Title",
+			"description": "The job title of the user.",
 			"type": "string",
-			"x-ms-vibility": "advanced"
+			"x-ms-visibility": "advanced"
+		},
+		"userType": {
+			"title": "Type",
+			"description": "Type of the user.",
+			"type": "string",
+			"x-ms-visibility": "advanced"
 		},
 		"username": {
-			"description": "The username of the user",
 			"title": "Username",
+			"description": "The username of the user.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"version": {
-			"description": "The verion ID of the Workflow document",
-			"title": "Document Version",
+			"title": "Version",
+			"description": "The version identifier of the Workflow document.",
 			"type": "string",
 			"x-ms-visibility": "advanced"
 		},
 		"visible": {
-			"description": "The visibility of the item",
+			"title": "Visibility",
+			"description": "The visibility of the item.",
+			"type": "boolean",
+			"x-ms-visibility": "important",
 			"enum": [
 				true,
 				false
-			],
-			"title": "Visibility",
-			"type": "boolean",
-			"x-ms-visibility": "important"
+			]
 		},
 		"webhookId": {
-			"description": "The ID of the registered webhook",
 			"title": "Webhook ID",
+			"description": "The identifier of the registered webhook.",
 			"type": "string",
 			"x-ms-visibility": "advanced"
 		},
 		"webhookNotificationContent": {
-			"description": "The data received from Ironclad",
+			"title": "Event Data",
+			"description": "The webhook data received from the event.",
+			"type": "object",
 			"properties": {
 				"companyID": {
-					"description": "The company ID of the Irocnlad instance",
-					"title": "Company ID",
+					"title": "Instance ID",
+					"description": "The identifier of the Ironclad instance.",
 					"type": "string",
 					"x-ms-visibility": "internal"
 				},
 				"payload": {
-					"description": "The trigger payload",
+					"title": "Trigger Payload",
+					"description": "The contents of the trigger payload.",
+					"type": "object",
+					"x-ms-visibility": "advanced",
 					"properties": {
 						"event": {
 							"$ref": "#/definitions/event"
@@ -2050,10 +3067,7 @@
 						"workflowID": {
 							"$ref": "#/definitions/workflowId"
 						}
-					},
-					"title": "Payload",
-					"type": "object",
-					"x-ms-visibility": "advanced"
+					}
 				},
 				"timestamp": {
 					"$ref": "#/definitions/timestamp"
@@ -2061,29 +3075,24 @@
 				"webhookID": {
 					"$ref": "#/definitions/webhookId"
 				}
-			},
-			"title": "Webhook Data",
-			"type": "object"
+			}
 		},
 		"workflow": {
-			"description": "An Ironclad Workflow",
+			"title": "Workflow",
+			"description": "An Ironclad Workflow.",
+			"type": "object",
 			"properties": {
 				"approvals": {
-					"$ref": "#/definitions/approvalState"
+					"$ref": "#/definitions/approvalStatus"
 				},
 				"attributes": {
+					"type": "object",
 					"properties": {
 						"readableId": {
 							"type": "string",
-							"description": "The readable ID of the workflow.",
-							"title": "Readable ID",
+							"description": "The Ironclad ID of the workflow.",
+							"title": "Ironclad ID",
 							"x-ms-visibility": "important"
-						},
-						"acceptanceType": {
-							"description": "The accepted signature method",
-							"title": "Acceptance Type",
-							"type": "string",
-							"x-ms-visibility": "advanced"
 						},
 						"counterpartyName": {
 							"description": "The company name of the Counterparty",
@@ -2095,7 +3104,7 @@
 							"$ref": "#/definitions/workflowDraftDocuments"
 						},
 						"paperSource": {
-							"description": "The paper source of the Workflow",
+							"description": "The source of the Workflow documents.",
 							"title": "Paper Source",
 							"type": "string",
 							"x-ms-visibility": "important"
@@ -2103,8 +3112,7 @@
 						"signed": {
 							"$ref": "#/definitions/workflowSignedDocuments"
 						}
-					},
-					"type": "object"
+					}
 				},
 				"created": {
 					"$ref": "#/definitions/created"
@@ -2128,7 +3136,7 @@
 					"$ref": "#/definitions/signatureState"
 				},
 				"status": {
-					"$ref": "#/definitions/status"
+					"$ref": "#/definitions/workflowStatus"
 				},
 				"step": {
 					"$ref": "#/definitions/step"
@@ -2139,87 +3147,99 @@
 				"title": {
 					"$ref": "#/definitions/workflowTitle"
 				}
-			},
-			"title": "Workflow",
-			"type": "object"
+			}
 		},
 		"workflowDocument": {
-			"description": "The Workflow document",
-			"format": "byte",
-			"title": "Workflow Document",
+			"title": "Document",
+			"description": "A workflow document.",
 			"type": "object",
-			"x-ms-visibility": "important"
+			"x-ms-visibility": "important",
+			"format": "byte"
 		},
 		"workflowDraftDocuments": {
-			"description": "The currect WOrkflow drafts",
+			"title": "Document Drafts",
+			"description": "If available, the draft documents in the Workflow.",
+			"type": "array",
+			"x-ms-visibility": "important",
 			"items": {
 				"properties": {
 					"download": {
 						"$ref": "#/definitions/download"
 					},
 					"filename": {
-						"$ref": "#/definitions/filename"
+						"$ref": "#/definitions/workflowFileName"
 					},
 					"version": {
 						"$ref": "#/definitions/version"
 					}
 				},
 				"type": "object"
-			},
-			"title": "Document Drafts",
-			"type": "array",
+			}
+		},
+		"workflowFileName": {
+			"title": "File Name",
+			"description": "The file name of the document.",
+			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflowId": {
-			"description": "The ID of the Workflow",
 			"title": "ID",
+			"description": "The unique identifier or Ironclad ID of a workflow.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflowSchema": {
-			"description": "The field schema of the Workflow launch form",
 			"title": "Workflow Schema",
+			"description": "The fields used in the workflow launch form.",
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
 		"workflowSignedDocuments": {
-			"description": "The signed documents in teh Workflow",
+			"title": "Signed Documents",
+			"description": "If available, the signed documents in the Workflow.",
+			"type": "object",
+			"x-ms-visibility": "important",
 			"properties": {
 				"download": {
 					"$ref": "#/definitions/download"
 				},
 				"filename": {
-					"$ref": "#/definitions/filename"
+					"$ref": "#/definitions/workflowFileName"
 				},
 				"version": {
 					"$ref": "#/definitions/version"
 				}
-			},
-			"title": "Signed Documents",
-			"type": "object",
+			}
+		},
+		"workflowStatus": {
+			"title": "Workflow Status",
+			"description": "The current status of the Workflow.",
+			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflowTemplateId": {
-			"description": "The ID of the Workflow template",
-			"title": "Template ID",
+			"title": "Template",
+			"description": "The identifier of the workflow template.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflowTemplateTitle": {
-			"description": "The title of the Workflow template",
 			"title": "Template Title",
+			"description": "The title of the workflow template.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflowTitle": {
-			"description": "The title of the Workflow",
 			"title": "Workflow Title",
+			"description": "The title used for the launched workflow.",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"workflow_template_ID_body": {
-			"description": "The Ironclad Workflow template",
+			"title": "Template",
+			"description": "The identifier of the workflow template.",
 			"type": "string",
+			"x-ms-visibility": "important",
 			"x-ms-dynamic-values": {
 				"operationId": "ListWorkflowSchemas",
 				"parameters": {
@@ -2229,40 +3249,76 @@
 				"value-path": "id",
 				"value-title": "name"
 			},
-			"x-ms-summary": "Ironclad Workflow Template",
-			"x-ms-visibility": "important"
-		},
-		"attributes": {
-			"type": "object",
-			"title": "Workflow Attributes",
-			"description": "The Workflow attributes in the lauch form"
-		},
-		"record_type_body": {
-			"description": "The Ironclad record type",
-			"type": "string",
-			"x-ms-dynamic-values": {
-				"operationId": "GetRecordSchema",
-				"value-collection": "recordTypesArray",
-				"value-path": "recordTypeName",
-				"value-title": "recordTypeProperties/displayName"
-			},
-			"x-ms-summary": "Ironclad Record Type",
-			"x-ms-visibility": "important"
+			"x-ms-summary": "Template"
 		}
 	},
 	"parameters": {
-		"documentKey_path": {
-			"description": "The key of the document to be retrieved",
+		"recordType_formData": {
+			"name": "recordType",
+			"in": "formData",
+			"description": "Upload a smart import record as an existing record type.",
+			"required": false,
+			"type": "string",
+			"x-ms-visibility": "important",
+			"x-ms-summary": "Record Type"
+		},
+		"newRecordTypeId_formData": {
+			"name": "newRecordTypeId",
+			"in": "formData",
+			"description": "The record type ID for a not-yet-existing record type. Must be provided along with a newRecordTypeDisplayName.",
+			"required": false,
+			"type": "string",
+			"x-ms-visibility": "important",
+			"x-ms-summary": "New Record Type ID"
+		},
+		"newRecordTypeDisplayName_formData": {
+			"name": "newRecordTypeDisplayName",
+			"in": "formData",
+			"description": "The display name of the new record type to create.",
+			"required": false,
+			"type": "string",
+			"x-ms-visibility": "important",
+			"x-ms-summary": "New Record Type Display Name"
+		},
+		"attachment_formData": {
+			"name": "attachment",
+			"in": "formData",
+			"description": "The file to upload.",
+			"required": true,
+			"type": "file",
+			"x-ms-visibility": "important",
+			"x-ms-summary": "Attachment"
+		},
+		"comment_ID_path": {
+			"description": "The unique identifier of a comment.",
 			"in": "path",
-			"name": "Document_Key",
+			"name": "Comment",
 			"required": true,
 			"type": "string",
-			"x-ms-summary": "Document Key",
+			"x-ms-summary": "Comment",
+			"x-ms-visibility": "important"
+		},
+		"documentKey_path": {
+			"description": "The unique identifier for the attachment. This key can be located using the Retrieve a Workflow endpoint. In the response, locate the file attribute (e.g., draft) and look at its download parameter. The download parameter includes the key at the end of the URL .../document/{ATTACHMENT_KEY}/download.",
+			"in": "path",
+			"name": "Key",
+			"required": true,
+			"type": "string",
+			"x-ms-summary": "Key",
+			"x-ms-visibility": "important"
+		},
+		"asyncJob_path": {
+			"description": "The identifier provided in the response of creating a Workflow asynchronously.",
+			"in": "path",
+			"name": "job",
+			"required": true,
+			"type": "string",
+			"x-ms-summary": "Job",
 			"x-ms-visibility": "important"
 		},
 		"form_query": {
 			"default": "launch",
-			"description": "The form to retrieve field from",
+			"description": "The form to retrieve the schema for.",
 			"enum": [
 				"launch"
 			],
@@ -2280,18 +3336,18 @@
 			"x-ms-visibility": "important"
 		},
 		"lastUpdated_query": {
-			"description": "The date and time the item was last updated",
 			"format": "date",
 			"in": "query",
 			"name": "lastUpdated",
 			"required": false,
 			"type": "string",
-			"x-ms-summary": "Last Updated Date Time",
-			"x-ms-visibility": "important"
+			"x-ms-summary": "Last Updated",
+			"x-ms-visibility": "important",
+			"description": "Get records/workflows updated since (UTC)."
 		},
 		"pageSize_query": {
 			"default": 100,
-			"description": "The page size of record to retrieve",
+			"description": "A limit of the number of results to return.",
 			"in": "query",
 			"name": "pageSize",
 			"required": true,
@@ -2301,7 +3357,7 @@
 		},
 		"page_query": {
 			"default": 0,
-			"description": "The page to retrieve",
+			"description": "The page number used when paginating through a list of results.",
 			"in": "query",
 			"name": "page",
 			"required": true,
@@ -2310,13 +3366,13 @@
 			"x-ms-visibility": "important"
 		},
 		"record_ID_path": {
-			"description": "The Ironclad Workflow",
+			"description": "The ID or Ironclad ID of the Record.",
 			"in": "path",
-			"name": "Record_ID",
+			"name": "Record",
 			"required": true,
 			"type": "string",
 			"x-ms-dynamic-values": {
-				"operationId": "ListRecords",
+				"operationId": "ListAllRecords",
 				"parameters": {
 					"page": 0,
 					"pageSize": 100,
@@ -2327,11 +3383,29 @@
 				"value-path": "id",
 				"value-title": "name"
 			},
-			"x-ms-summary": "Ironclad Record",
+			"x-ms-summary": "Record",
+			"x-ms-visibility": "important"
+		},
+		"recordId_query": {
+			"description": "The ID of the Record for prediction status.",
+			"in": "query",
+			"name": "recordId",
+			"required": false,
+			"type": "string",
+			"x-ms-summary": "Record ID",
+			"x-ms-visibility": "important"
+		},
+		"importId_query": {
+			"description": "The ID of the Import for prediction statuses.",
+			"in": "query",
+			"name": "importId",
+			"required": false,
+			"type": "string",
+			"x-ms-summary": "Import ID",
 			"x-ms-visibility": "important"
 		},
 		"record_type_query": {
-			"description": "The Ironclad record type",
+			"description": "Comma separated (no spaces) record types to export. Use the Retrieve Records Schema endpoint to retrieve a list of types.",
 			"in": "query",
 			"name": "types",
 			"required": false,
@@ -2342,12 +3416,12 @@
 				"value-path": "recordTypeName",
 				"value-title": "recordTypeProperties/displayName"
 			},
-			"x-ms-summary": "Ironclad Record Type",
+			"x-ms-summary": "Types",
 			"x-ms-visibility": "important"
 		},
 		"sortDirection_query": {
 			"default": "DESC",
-			"description": "The sorting direction for the sort field selected",
+			"description": "The direction the records are sorted by in correlation with the sortField.",
 			"enum": [
 				"DESC",
 				"ASC"
@@ -2380,7 +3454,7 @@
 		},
 		"sortField_query": {
 			"default": "lastUpdated",
-			"description": "The field to sort by",
+			"description": "The field to sort Records. Only one field is supported in the sort operation.",
 			"enum": [
 				"lastUpdated",
 				"agreementDate",
@@ -2408,12 +3482,12 @@
 			"x-ms-visibility": "important"
 		},
 		"workflow_ID_path": {
-			"description": "The Ironclad Workflow",
+			"description": "The identifier or Ironclad ID of a workflow.",
 			"in": "path",
-			"name": "Workflow_ID",
+			"name": "Workflow",
 			"required": true,
 			"type": "string",
-			"x-ms-summary": "Ironclad Workflow",
+			"x-ms-summary": "Workflow",
 			"x-ms-visibility": "important",
 			"x-ms-dynamic-values": {
 				"operationId": "ListWorkflows",
@@ -2426,17 +3500,46 @@
 				}
 			}
 		},
-		"role_ID_path": {
-			"description": "The Workflow Role ID",
+		"smartImport_path": {
+			"description": "The Import Id. You can upload a record to an existing import in the repository.",
 			"in": "path",
-			"name": "Role_ID",
+			"name": "importId",
 			"required": true,
 			"type": "string",
-			"x-ms-summary": "Ironclad Role ID",
+			"x-ms-summary": "Smart Import",
+			"x-ms-visibility": "important"
+		},
+		"role_ID_path": {
+			"description": "The unique identifier of the approver role whose status should be changed.",
+			"in": "path",
+			"name": "Role",
+			"required": true,
+			"type": "string",
+			"x-ms-summary": "Role",
+			"x-ms-visibility": "important"
+		},
+		"userEmail_query": {
+			"description": "The Ironclad user's email address.",
+			"in": "query",
+			"name": "email",
+			"required": true,
+			"type": "string",
+			"x-ms-summary": "Email",
+			"x-ms-visibility": "important"
+		},
+		"revertingUser_body": {
+			"description": "The Ironclad user reverting the workflow to the Review step. The user must be a participant on the workflow.",
+			"in": "body",
+			"name": "user",
+			"required": true,
+			"schema": {
+				"$ref": "#/definitions/user"
+			},
+			"x-ms-summary": "Reverting User",
 			"x-ms-visibility": "important"
 		},
 		"workflow_status_query": {
-			"description": "The status of the Workflow",
+			"description": "The status of the Workflow.",
 			"enum": [
 				"active",
 				"paused",
@@ -2451,9 +3554,9 @@
 			"x-ms-visibility": "important"
 		},
 		"workflow_template_ID_path": {
-			"description": "The Ironclad Workflow template",
+			"description": "The identifier of the workflow template.",
 			"in": "path",
-			"name": "Workflow_Template_ID",
+			"name": "Template",
 			"required": true,
 			"type": "string",
 			"x-ms-dynamic-values": {
@@ -2469,7 +3572,7 @@
 			"x-ms-visibility": "important"
 		},
 		"workflow_template_ID_query": {
-			"description": "The Ironclad Workflow template",
+			"description": "The identifier of the workflow template.",
 			"in": "query",
 			"name": "template",
 			"required": false,
@@ -2483,7 +3586,15 @@
 				"value-path": "id",
 				"value-title": "name"
 			},
-			"x-ms-summary": "Ironclad Workflow Template",
+			"x-ms-summary": "Template ID",
+			"x-ms-visibility": "important"
+		},
+		"actionDetails_query": {
+			"name": "actorDetails",
+			"in": "query",
+			"type": "boolean",
+			"description": "An optional boolean parameter that adds additional information about the actor to each item in the response. Defaults to false.",
+			"x-ms-summary": "Actor Details",
 			"x-ms-visibility": "important"
 		}
 	},
