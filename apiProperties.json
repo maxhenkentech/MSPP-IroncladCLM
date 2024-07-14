@@ -3,7 +3,6 @@
 	"id": "/providers/Microsoft.PowerApps/apis/shared_ironcladclm",
 	"type": "/providers/Microsoft.PowerApps/apis",
 	"properties": {
-		"displayName": "Ironclad CLM v3",
 		"publisher": "Amadeus IT Group, S.A. - LEG TechOps",
 		"stackOwner": "Amadeus IT Group, S.A. - LEG TechOps",
 		"description": "Multi-tenant security definitions for Ironclad CLM custom connector (v3).",
@@ -67,7 +66,7 @@
 							"value": "https://demo.ironcladapp.com/oauth/authorize"
 						},
 						"tokenUrl": {
-							"value": "https://demo.ironcladapp.com/oauth//token"
+							"value": "https://demo.ironcladapp.com/oauth/token"
 						},
 						"refreshUrl": {
 							"value": "https://demo.ironcladapp.com/oauth/token"
@@ -75,9 +74,9 @@
 					}
 				},
 				"uiDefinition": {
-					"displayName": "Login to Irocnlad",
-					"description": "Login to Irocnlad",
-					"tooltip": "Login to Irocnlad",
+					"displayName": "Login to Ironclad",
+					"description": "Login to Ironclad",
+					"tooltip": "Login to Ironclad",
 					"constraints": {
 						"required": "true"
 					}
@@ -127,7 +126,7 @@
 		},
 		"connectionParameterSets": {
 			"uiDefinition": {
-				"displayName": "Irocnlad Instance",
+				"displayName": "Ironclad Instance",
 				"description": "Select the Ironclad instance you with to connect to. If you are unsure, check with your Ironclad administrator."
 			},
 			"values": [
@@ -197,7 +196,7 @@
 										"value": "https://demo.ironcladapp.com/oauth/authorize"
 									},
 									"tokenUrl": {
-										"value": "https://demo.ironcladapp.com/oauth//token"
+										"value": "https://demo.ironcladapp.com/oauth/token"
 									},
 									"refreshUrl": {
 										"value": "https://demo.ironcladapp.com/oauth/token"
@@ -205,9 +204,9 @@
 								}
 							},
 							"uiDefinition": {
-								"displayName": "Login to Irocnlad",
-								"description": "Login to Irocnlad",
-								"tooltip": "Login to Irocnlad",
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
 								"constraints": {
 									"required": "true"
 								}
@@ -325,7 +324,7 @@
 										"value": "https://eu1.ironcladapp.com/oauth/authorize"
 									},
 									"tokenUrl": {
-										"value": "https://eu1.ironcladapp.com/oauth//token"
+										"value": "https://eu1.ironcladapp.com/oauth/token"
 									},
 									"refreshUrl": {
 										"value": "https://eu1.ironcladapp.com/oauth/token"
@@ -333,9 +332,9 @@
 								}
 							},
 							"uiDefinition": {
-								"displayName": "Login to Irocnlad",
-								"description": "Login to Irocnlad",
-								"tooltip": "Login to Irocnlad",
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
 								"constraints": {
 									"required": "true"
 								}
@@ -453,7 +452,7 @@
 										"value": "https://ironcladapp.com/oauth/authorize"
 									},
 									"tokenUrl": {
-										"value": "https://ironcladapp.com/oauth//token"
+										"value": "https://ironcladapp.com/oauth/token"
 									},
 									"refreshUrl": {
 										"value": "https://ironcladapp.com/oauth/token"
@@ -461,9 +460,9 @@
 								}
 							},
 							"uiDefinition": {
-								"displayName": "Login to Irocnlad",
-								"description": "Login to Irocnlad",
-								"tooltip": "Login to Irocnlad",
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
 								"constraints": {
 									"required": "true"
 								}
@@ -502,7 +501,7 @@
 									"allowedValues": [
 										{
 											"text": "Default",
-											"value": "eu1.ironcladapp.com"
+											"value": "ironcladapp.com"
 										}
 									]
 								},
@@ -581,7 +580,7 @@
 										"value": "https://preview.ironcladapp.com/oauth/authorize"
 									},
 									"tokenUrl": {
-										"value": "https://preview.ironcladapp.com/oauth//token"
+										"value": "https://preview.ironcladapp.com/oauth/token"
 									},
 									"refreshUrl": {
 										"value": "https://preview.ironcladapp.com/oauth/token"
@@ -589,9 +588,9 @@
 								}
 							},
 							"uiDefinition": {
-								"displayName": "Login to Irocnlad",
-								"description": "Login to Irocnlad",
-								"tooltip": "Login to Irocnlad",
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
 								"constraints": {
 									"required": "true"
 								}
@@ -630,7 +629,7 @@
 									"allowedValues": [
 										{
 											"text": "Default",
-											"value": "eu1.ironcladapp.com"
+											"value": "preview.ironcladapp.com"
 										}
 									]
 								},
@@ -650,12 +649,12 @@
 		],
 		"policyTemplateInstances": [
 			{
-				"templateId": "dynamichosturl",
-				"title": "Set host for connection",
-				"parameters": {
-					"x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('token:customHost')"
+				"templateId":"dynamichosturl",
+				"title":"Set host for connection",
+				"parameters":{
+				   "x-ms-apimTemplateParameter.urlTemplate":"https://@connectionParameters('token:customHost')/public/api/v1/"
 				}
-			},
+			 },
 			{
 				"templateId": "setheader",
 				"title": "Accept",

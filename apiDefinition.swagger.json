@@ -1933,24 +1933,30 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
+"assignee": {
+	"type": "object",
+	"title": "Assignee",
+	"description": "A user assigned to the workflow.",
+	"x-ms-visibility": "important",
+	"properties": {
+		"email": {
+			"$ref": "#/definitions/userEmail"
+		},
+		"userId": {
+			"$ref": "#/definitions/userId"
+		},
+		"userName": {
+			"$ref": "#/definitions/username"
+		}
+	}
+},
 		"assignees": {
 			"title": "Assignees",
 			"description": "The assigned users",
 			"type": "array",
-			"x-ms-visibility": "advanced",
+			"x-ms-visibility": "important",
 			"items": {
-				"type": "object",
-				"properties": {
-					"email": {
-						"$ref": "#/definitions/userEmail"
-					},
-					"userId": {
-						"$ref": "#/definitions/userId"
-					},
-					"userName": {
-						"$ref": "#/definitions/username"
-					}
-				}
+				"$ref": "#/definitions/assignee"
 			}
 		},
 		"asyncJobId": {
@@ -3240,15 +3246,6 @@
 			"description": "The identifier of the workflow template.",
 			"type": "string",
 			"x-ms-visibility": "important",
-			"x-ms-dynamic-values": {
-				"operationId": "ListWorkflowSchemas",
-				"parameters": {
-					"form": "launch"
-				},
-				"value-collection": "list",
-				"value-path": "id",
-				"value-title": "name"
-			},
 			"x-ms-summary": "Template"
 		}
 	},
