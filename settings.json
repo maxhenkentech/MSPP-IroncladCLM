@@ -1,9 +1,10 @@
 {
-  "connectorId": "shared_ironclad-20clm-20v3-2e2-5fc5a881361aac4da3-5fcb7d0050e05bc519",
+  "connectorId": "shared_ironclad-20clm-5fc5a881361aac4da3-5fcb7d0050e05bc519",
   "environment": "2709296f-2f61-4bd8-bb57-063d0e934803",
   "apiProperties": "apiProperties.json",
   "apiDefinition": "apiDefinition.swagger.json",
-  "icon": null,
+  "icon": "icon.png",
   "powerAppsUrl": "https://api.powerapps.com",
-  "powerAppsApiVersion": "2016-11-01"
+  "powerAppsApiVersion": "2016-11-01",
+  "script": "script.csx"
 }

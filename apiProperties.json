@@ -6,6 +6,7 @@
 		"publisher": "Amadeus IT Group, S.A. - LEG TechOps",
 		"stackOwner": "Amadeus IT Group, S.A. - LEG TechOps",
 		"description": "Multi-tenant security definitions for Ironclad CLM custom connector (v3).",
+		"iconBrandColor": "#FFFFFF",
 		"connectionParameters": {
 			"token": {
 				"type": "oauthSetting",
@@ -641,6 +642,107 @@
 					"metadata": {
 						"allowSharing": false
 					}
+				},
+				{
+					"name": "ClientCredentials",
+					"uiDefinition": {
+						"displayName": "Client Credentials",
+						"description": "Connect using client credentials"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2generic",
+								"clientId": "{clientId}",
+								"scopes": [
+									"public.records.readRecords"
+								],
+								"redirectMode": "Global",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect",
+								"properties": {
+									"IsFirstParty": "False"
+								},
+								"customParameters": {
+									"authorizationUrlTemplate": {
+										"value": "https://{customHost}/oauth/authorize"
+									},
+									"refreshBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords"
+									},
+									"refreshUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									},
+									"scopeListDelimiter": {
+										"value": " "
+									},
+									"tokenBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords"
+									},
+									"tokenUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									}
+								}
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"allowedValues": [
+										{
+											"text": "Demo",
+											"value": "demo.ironcladapp.com"
+										},
+										{
+											"text": "EU1",
+											"value": "eu1.ironcladapp.com"
+										},
+										{
+											"text": "Global",
+											"value": "ironcladapp.com"
+										},
+										{
+											"text": "Preview",
+											"value": "preview.ironcladapp.com"
+										}
+									],
+									"tabIndex": 2,
+									"required": "true"
+								},
+								"displayName": "Ironclad Instance",
+								"description": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator.",
+								"tooltip": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator."
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 3,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
 				}
 			]
 		},
@@ -649,12 +751,12 @@
 		],
 		"policyTemplateInstances": [
 			{
-				"templateId":"dynamichosturl",
-				"title":"Set host for connection",
-				"parameters":{
-				   "x-ms-apimTemplateParameter.urlTemplate":"https://@connectionParameters('token:customHost')/public/api/v1/"
+				"templateId": "dynamichosturl",
+				"title": "Set host for connection",
+				"parameters": {
+					"x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('token:customHost')"
 				}
-			 },
+			},
 			{
 				"templateId": "setheader",
 				"title": "Accept",
