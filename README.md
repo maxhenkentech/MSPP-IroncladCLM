@@ -165,3 +165,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 For more detailed information on Ironclad's API, visit the [Ironclad API documentation](https://developer.ironcladapp.com/reference).
 
 Remember to always test the connector thoroughly in a non-production environment before deploying to production. Regular updates to this connector may be released to support new Ironclad API features or improve existing functionality.
+
+Amadeus
