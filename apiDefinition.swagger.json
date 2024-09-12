@@ -3512,6 +3512,9 @@
 				},
 				"source": {
 					"$ref": "#/definitions/recordSource_object"
+				},
+				"label":{
+					"$ref": "#/definitions/recordLabelGet_string"
 				}
 			},
 			"title": "Record",
@@ -3541,6 +3544,12 @@
 				"value-title": "ironcladId"
 			},
 			"x-ms-visibility": "important"
+		},
+		"recordLabelGet_string":{
+			"description": "The display label of the record.",
+			"title": "Label",
+			"type": "string",
+			"x-ms-visibility": "internal"
 		},
 		"recordLinkGet_object": {
 			"description": "An object containing the Record ID of a record related of the current record.",
@@ -5379,6 +5388,12 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
+		"workflowLabel_string":{
+			"description": "The display label of the workflow.",
+			"title": "Label",
+			"type": "string",
+			"x-ms-visibility": "internal"
+		},
 		"workflowParticipantsGet_object": {
 			"properties": {
 				"count": {
@@ -5916,6 +5931,9 @@
 				},
 				"title": {
 					"$ref": "#/definitions/workflowTitle_string"
+				},
+				"label":{
+					"$ref": "#/definitions/workflowLabel_string"
 				}
 			},
 			"title": "Workflow",
@@ -6257,7 +6275,7 @@
 				},
 				"value-collection": "list",
 				"value-path": "id",
-				"value-title": "ironcladId"
+				"value-title": "label"
 			},
 			"x-ms-summary": "Record",
 			"x-ms-url-encoding": "single",
@@ -6783,7 +6801,7 @@
 				},
 				"value-collection": "list",
 				"value-path": "id",
-				"value-title": "ironcladId"
+				"value-title": "label"
 			},
 			"x-ms-summary": "Workflow",
 			"x-ms-url-encoding": "single",

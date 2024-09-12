@@ -87,6 +87,9 @@ public class Script : ScriptBase
             case "ListAllRecords":
                 await this.TransformResponseJsonBody(this.lstAllRcd_TransformListAllRecordsResponse, response).ConfigureAwait(false);
                 break;
+            case "ListAllWorkflows":
+                await this.TransformResponseJsonBody(this.lstAllWfl_TransformListAllWorkflowsResponse, response).ConfigureAwait(false);
+                break;  
         }
     }
 
@@ -817,6 +820,28 @@ private JObject rtrWflSch_FormatDocumentArrayProperty(string displayName, string
 }
 
     // ################################################################################
+    // List All Workflow ##############################################################
+    // ################################################################################
+
+private JObject lstAllWfl_TransformListAllWorkflowsResponse(JObject body)
+{
+    if (body.ContainsKey("list") && body["list"] is JArray list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i] is JObject workflowObject)
+            {
+                string ironcladId = workflowObject["ironcladId"]?.ToString() ?? "";
+                string title = workflowObject["title"]?.ToString() ?? "";
+                workflowObject["label"] = $"{ironcladId}: {title}";
+            }
+        }
+    }
+
+    return body;
+}
+
+    // ################################################################################
     // Retrieve Workflow ##############################################################
     // ################################################################################
 private JObject rtrWfl_TransformRetrieveWorkflow(JObject body)
@@ -1416,6 +1441,7 @@ private JObject lstAllRcd_TransformListAllRecordsResponse(JObject body)
         {
             if (list[i] is JObject recordObject)
             {
+                // Add counterpartyName property
                 if (recordObject.ContainsKey("properties") && recordObject["properties"] is JObject properties)
                 {
                     if (properties.ContainsKey("counterpartyName"))
@@ -1431,6 +1457,11 @@ private JObject lstAllRcd_TransformListAllRecordsResponse(JObject body)
                 {
                     recordObject["counterpartyName"] = null;
                 }
+
+                // Add new label property
+                string ironcladId = recordObject["ironcladId"]?.ToString() ?? "";
+                string name = recordObject["name"]?.ToString() ?? "";
+                recordObject["label"] = $"{ironcladId}: {name}";
             }
         }
     }
