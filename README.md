@@ -21,14 +21,15 @@ The custom script included in this connector plays a crucial role in transformin
    - [Record Operations](#record-operations)
    - [User Operations](#user-operations)
    - [Group Operations](#group-operations)
-3. [Authentication](#Authentication)
-   - [[#Registering an OAuth Client in Ironclad]]
-   - [[#Environments]]
-   - [[#Entering Credentials in the Custom Connector]]
-4. [[#Usage Examples]]
-   - [[#Create a Workflow Synchronously]]
-   - [[#Update Approval on a Workflow]]
-   - [[#Create a Record]]
+3. [Authentication](#authentication)
+   - [Registering an OAuth Client in Ironclad](#registering-an-oauth-client-in-ironclad)
+   - [Environments](#environments)
+   - [Entering Credentials in the Custom Connector](#entering-credentials-in-the-custom-connector)
+4. [Usage Examples](#usage-examples)
+   - [Create a Workflow Synchronously](#create-a-workflow-synchronously)
+   - [Update Approval on a Workflow](#update-approval-on-a-workflow)
+   - [Create a Record](#create-a-record)
+  
 ## Supported Endpoints
 
 >**Note**: Endpoints that are affected by scripts return transformed properties that may look or behave differently to the official [Ironclad API Reference](https://developer.ironcladapp.com/reference/getting-started-api) documentation. This is to ensure compatibility with the OpenAPI standard. For some of the endpoints, you will find examples of use towards the end of this document. They are indicated with * in the table below.
