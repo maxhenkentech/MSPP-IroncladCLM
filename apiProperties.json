@@ -743,6 +743,128 @@
 					"metadata": {
 						"allowSharing": false
 					}
+				},
+				{
+					"name": "Debug",
+					"uiDefinition": {
+						"displayName": "Debug",
+						"description": "Debug"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3
+								},
+								"displayName": "Target Server",
+								"description": "Enter the endpont of the listening server."
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
 				}
 			]
 		},

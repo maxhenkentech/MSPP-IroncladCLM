@@ -322,7 +322,7 @@ private async Task updRcd_TransformUpdateRecordMetadataRequest()
     {
         foreach (var attribute in attributes.Properties())
         {
-            if (attribute.Value is JArray arrayValue)
+            if (attribute.Value is JArray arrayValue && arrayValue.Any(item => item is JObject obj && obj.ContainsKey("fileContent")))
             {
                 crtWfl_ProcessFileArrayAttribute(attribute.Name, arrayValue, multipartContent, jsonBody);
             }
@@ -418,58 +418,69 @@ private JObject lstUsr_TransformUsersList(JObject body)
     // ################################################################################
 
 private JObject rtrWflSch_TransformRetrieveWorkflowSchema(JObject body)
+{
+    var schema = body["schema"] as JObject;
+    if (schema != null)
     {
-        var schema = body["schema"] as JObject;
-        if (schema != null)
+        var launchSchema = new JObject();
+        var formattedSchema = new JObject();
+        var schemaAsArray = new JArray();
+        var documentSchemaAsArray = new JArray();
+
+        foreach (var property in schema.Properties())
         {
-            var launchSchema = new JObject();
-            var formattedSchema = new JObject();
-            var schemaAsArray = new JArray();
-            var documentSchemaAsArray = new JArray();
-
-            foreach (var property in schema.Properties())
+            string propertyName = property.Name;
+            var propertyValue = property.Value as JObject;
+            if (propertyValue != null)
             {
-                string propertyName = property.Name;
-                var propertyValue = property.Value as JObject;
-                if (propertyValue != null)
+                string displayName = propertyValue["displayName"]?.ToString() ?? propertyName;
+                string propertyType = propertyValue["type"]?.ToString().ToLower();
+                bool isReadOnly = propertyValue["readOnly"]?.ToObject<bool>() ?? false;
+
+                // Fix: Use the correct property type for special cases
+                string effectivePropertyType = propertyType;
+                if (propertyType == "object")
                 {
-                    string displayName = propertyValue["displayName"]?.ToString() ?? propertyName;
-                    string propertyType = propertyValue["type"]?.ToString().ToLower();
-                    bool isReadOnly = propertyValue["readOnly"]?.ToObject<bool>() ?? false;
-
-                    var formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(propertyType, displayName, propertyName, propertyValue);
-                    launchSchema[propertyName] = formattedLaunchProperty;
-
-                    var formattedProperty = rtrWflSch_FormatProperty(propertyType, displayName, propertyName, propertyValue);
-                    formattedSchema[propertyName] = formattedProperty;
-
-                    var schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(propertyName, displayName, propertyType, isReadOnly);
-                    schemaAsArray.Add(schemaArrayItem);
-
-                    if (propertyType == "array" && propertyValue["elementType"] is JObject arrayElementType && arrayElementType["type"]?.ToString().ToLower() == "document")
+                    var objectType = propertyValue["objectType"]?.ToString().ToLower();
+                    if (objectType == "address" || objectType == "monetaryamount" || objectType == "duration")
                     {
-                        documentSchemaAsArray.Add(rtrWflSch_ParseDocumentSchemaItem(propertyName, displayName, isReadOnly));
+                        effectivePropertyType = objectType;
                     }
                 }
-            }
 
-            body["launchSchema"] = new JObject
-            {
-                ["type"] = "object",
-                ["properties"] = launchSchema
-            };
-            body["formattedSchema"] = new JObject
-            {
-                ["type"] = "object",
-                ["properties"] = formattedSchema,
-                ["required"] = new JArray { "counterpartyName", "agreementDate" }
-            };
-            body["schemaAsArray"] = schemaAsArray;
-            body["documentSchemaAsArray"] = documentSchemaAsArray;
+                var formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(effectivePropertyType, displayName, propertyName, propertyValue);
+                launchSchema[propertyName] = formattedLaunchProperty;
+
+                var formattedProperty = rtrWflSch_FormatProperty(effectivePropertyType, displayName, propertyName, propertyValue);
+                formattedSchema[propertyName] = formattedProperty;
+
+                var schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(propertyName, displayName, effectivePropertyType, isReadOnly);
+                schemaAsArray.Add(schemaArrayItem);
+
+                if (propertyType == "array" && propertyValue["elementType"] is JObject arrayElementType && arrayElementType["type"]?.ToString().ToLower() == "document")
+                {
+                    documentSchemaAsArray.Add(rtrWflSch_ParseDocumentSchemaItem(propertyName, displayName, isReadOnly));
+                }
+            }
         }
 
-        return body;
+        body["launchSchema"] = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = launchSchema,
+            ["required"] = new JArray { "counterpartyName" }  // Add the required property here
+        };
+        body["formattedSchema"] = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = formattedSchema
+        };
+        body["schemaAsArray"] = schemaAsArray;
+        body["documentSchemaAsArray"] = documentSchemaAsArray;
     }
+
+    return body;
+}
 
 private JObject rtrWflSch_FormatLaunchProperty(string propertyType, string displayName, string propertyName, JObject propertyValue)
 {
@@ -564,8 +575,24 @@ private JObject rtrWflSch_FormatTableProperty(string displayName, string propert
             string columnDisplayName = columnSchema["displayName"].ToString();
             string columnType = columnSchema["type"].ToString().ToLower();
 
-            JObject formattedColumn = rtrWflSch_FormatBasicProperty(columnType, columnDisplayName, column.Name);
-            itemsObject[column.Name] = formattedColumn;
+            // Handle special types
+            if (columnType == "monetaryamount")
+            {
+                itemsObject[column.Name] = rtrWflSch_FormatMonetaryAmountProperty(columnDisplayName, column.Name);
+            }
+            else if (columnType == "duration")
+            {
+                itemsObject[column.Name] = rtrWflSch_FormatDurationProperty(columnDisplayName, column.Name);
+            }
+            else if (columnType == "address")
+            {
+                itemsObject[column.Name] = rtrWflSch_FormatAddressProperty(columnDisplayName, column.Name);
+            }
+            else
+            {
+                JObject formattedColumn = rtrWflSch_FormatBasicProperty(columnType, columnDisplayName, column.Name);
+                itemsObject[column.Name] = formattedColumn;
+            }
         }
     }
 
@@ -591,6 +618,7 @@ return new JObject
         ["title"] = displayName,
         ["description"] = $"The {displayName}.",
         ["x-ms-visibility"] = "important",
+        ["x-ms-client-flatten"] = false,
         ["properties"] = new JObject
         {
             ["lines"] = new JObject {
@@ -614,11 +642,11 @@ return new JObject
                 ["x-ms-visibility"] = "important",
                 ["description"] = $"The region of {displayName}."
                 },
-            ["postalCode"] = new JObject {
+            ["postcode"] = new JObject {
                 ["type"] = "string",
-                ["title"] = "Postal Code",
+                ["title"] = "Postcode",
                 ["x-ms-visibility"] = "important",
-                ["description"] = $"The postal code of {displayName}."
+                ["description"] = $"The postcode of {displayName}."
                 },
             ["country"] = new JObject {
                 ["type"] = "string",
@@ -638,6 +666,7 @@ private JObject rtrWflSch_FormatMonetaryAmountProperty(string displayName, strin
         ["title"] = displayName,
         ["description"] = $"The {displayName}.",
         ["x-ms-visibility"] = "important",
+        ["x-ms-client-flatten"] = false,
         ["properties"] = new JObject
         {
             ["amount"] = new JObject { ["type"] = "number", ["title"] = "Amount", ["x-ms-visibility"] = "important", ["description"] = $"The amount of {displayName}." },
@@ -654,6 +683,7 @@ private JObject rtrWflSch_FormatDurationProperty(string displayName, string prop
         ["title"] = displayName,
         ["description"] = $"The {displayName}.",
         ["x-ms-visibility"] = "important",
+        ["x-ms-client-flatten"] = false,
         ["properties"] = new JObject
         {
             ["years"] = new JObject { 
@@ -690,7 +720,8 @@ private JObject rtrWflSch_FormatBasicProperty(string propertyType, string displa
     {
         ["title"] = displayName,
         ["description"] = $"The {displayName}.",
-        ["x-ms-visibility"] = "important"
+        ["x-ms-visibility"] = "important",
+        ["x-ms-client-flatten"] = false
     };
 
     switch (propertyType)
@@ -1111,11 +1142,11 @@ private JObject rtrWfl_FormatAddressProperty(string displayName, string property
                 ["x-ms-visibility"] = "important",
                 ["description"] = $"The region of {displayName}."
                 },
-            ["postalCode"] = new JObject {
+            ["postcode"] = new JObject {
                 ["type"] = "string",
-                ["title"] = "Postal Code",
+                ["title"] = "Postcode",
                 ["x-ms-visibility"] = "important",
-                ["description"] = $"The postal code of {displayName}."
+                ["description"] = $"The postcode of {displayName}."
                 },
             ["country"] = new JObject {
                 ["type"] = "string",
@@ -1642,7 +1673,7 @@ private JObject rtrRcd_FormatAddressPropertySchema(string displayName, string pr
             },
             ["locality"] = new JObject { ["type"] = "string", ["title"] = "Locality" },
             ["region"] = new JObject { ["type"] = "string", ["title"] = "Region" },
-            ["postalCode"] = new JObject { ["type"] = "string", ["title"] = "Postal Code" },
+            ["postcode"] = new JObject { ["type"] = "string", ["title"] = "Postcode" },
             ["country"] = new JObject { ["type"] = "string", ["title"] = "Country" }
         }
     };

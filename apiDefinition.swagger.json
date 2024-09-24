@@ -4121,7 +4121,7 @@
 					"$ref": "#/definitions/scimSchemasGet_array"
 				}
 			},
-			"title": "User",
+			"title": "Group",
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
@@ -4216,6 +4216,22 @@
 			"type": "array",
 			"x-ms-visibility": "important"
 		},
+		"scimGroupSchemasPost_array": {
+			"description": "The lists of schemas to be applied.",
+			"items": {
+				"$ref": "#/definitions/scimGroupSchemaPost_string"
+			},
+			"title": "SCIM Schemas",
+			"type": "array",
+			"x-ms-visibility": "internal"
+		},
+		"scimGroupSchemaPost_string": {
+			"default": "urn:ietf:params:scim:schemas:core:2.0:Group",
+			"description": "The SCIM schema for groups.",
+			"title": "Schema",
+			"type": "string",
+			"x-ms-visibility": "internal"
+		},
 		"scimName_object": {
 			"description": "The components of the user's real name.",
 			"properties": {
@@ -4254,7 +4270,7 @@
 		"scimPatchOpSchemaPost_object": {
 			"default": "urn:ietf:params:scim:api:messages:2.0:PatchOp",
 			"description": "The SCIM schema for patchops.",
-			"title": "internal",
+			"title": "Schema",
 			"type": "string",
 			"x-ms-visibility": "internal"
 		},
@@ -4386,17 +4402,17 @@
 			"type": "array",
 			"x-ms-visibility": "important"
 		},
-		"scimUserSchemaPost_object": {
+		"scimUserSchemaPost_string": {
 			"default": "urn:ietf:params:scim:schemas:core:2.0:User",
 			"description": "The SCIM schema for users.",
-			"title": "internal",
+			"title": "Schema",
 			"type": "string",
 			"x-ms-visibility": "internal"
 		},
 		"scimUserSchemasPost_array": {
 			"description": "The lists of schemas to be applied.",
 			"items": {
-				"$ref": "#/definitions/scimUserSchemaPost_object"
+				"$ref": "#/definitions/scimUserSchemaPost_string"
 			},
 			"title": "SCIM Schemas",
 			"type": "array",
@@ -6484,7 +6500,7 @@
 						"$ref": "#/definitions/scimGroupMembersPost_array"
 					},
 					"schemas": {
-						"$ref": "#/definitions/scimUserSchemasPost_array"
+						"$ref": "#/definitions/scimGroupSchemasPost_array"
 					}
 				},
 				"required": [
