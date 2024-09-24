@@ -418,57 +418,58 @@ private JObject lstUsr_TransformUsersList(JObject body)
     // ################################################################################
 
 private JObject rtrWflSch_TransformRetrieveWorkflowSchema(JObject body)
-{
-    var schema = body["schema"] as JObject;
-    if (schema != null)
     {
-        var launchSchema = new JObject();
-        var formattedSchema = new JObject();
-        var schemaAsArray = new JArray();
-        var documentSchemaAsArray = new JArray();
-
-        foreach (var property in schema.Properties())
+        var schema = body["schema"] as JObject;
+        if (schema != null)
         {
-            string propertyName = property.Name;
-            var propertyValue = property.Value as JObject;
-            if (propertyValue != null)
+            var launchSchema = new JObject();
+            var formattedSchema = new JObject();
+            var schemaAsArray = new JArray();
+            var documentSchemaAsArray = new JArray();
+
+            foreach (var property in schema.Properties())
             {
-                string displayName = propertyValue["displayName"]?.ToString() ?? propertyName;
-                string propertyType = propertyValue["type"]?.ToString().ToLower();
-                bool isReadOnly = propertyValue["readOnly"]?.ToObject<bool>() ?? false;
-
-                var formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(propertyType, displayName, propertyName, propertyValue);
-                launchSchema[propertyName] = formattedLaunchProperty;
-
-                var formattedProperty = rtrWflSch_FormatProperty(propertyType, displayName, propertyName, propertyValue);
-                formattedSchema[propertyName] = formattedProperty;
-
-                var schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(propertyName, displayName, propertyType, isReadOnly);
-                schemaAsArray.Add(schemaArrayItem);
-
-                if (propertyType == "array" && propertyValue["elementType"] is JObject arrayElementType && arrayElementType["type"]?.ToString().ToLower() == "document")
+                string propertyName = property.Name;
+                var propertyValue = property.Value as JObject;
+                if (propertyValue != null)
                 {
-                    documentSchemaAsArray.Add(rtrWflSch_ParseDocumentSchemaItem(propertyName, displayName, isReadOnly));
+                    string displayName = propertyValue["displayName"]?.ToString() ?? propertyName;
+                    string propertyType = propertyValue["type"]?.ToString().ToLower();
+                    bool isReadOnly = propertyValue["readOnly"]?.ToObject<bool>() ?? false;
+
+                    var formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(propertyType, displayName, propertyName, propertyValue);
+                    launchSchema[propertyName] = formattedLaunchProperty;
+
+                    var formattedProperty = rtrWflSch_FormatProperty(propertyType, displayName, propertyName, propertyValue);
+                    formattedSchema[propertyName] = formattedProperty;
+
+                    var schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(propertyName, displayName, propertyType, isReadOnly);
+                    schemaAsArray.Add(schemaArrayItem);
+
+                    if (propertyType == "array" && propertyValue["elementType"] is JObject arrayElementType && arrayElementType["type"]?.ToString().ToLower() == "document")
+                    {
+                        documentSchemaAsArray.Add(rtrWflSch_ParseDocumentSchemaItem(propertyName, displayName, isReadOnly));
+                    }
                 }
             }
+
+            body["launchSchema"] = new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = launchSchema
+            };
+            body["formattedSchema"] = new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = formattedSchema,
+                ["required"] = new JArray { "counterpartyName", "agreementDate" }
+            };
+            body["schemaAsArray"] = schemaAsArray;
+            body["documentSchemaAsArray"] = documentSchemaAsArray;
         }
 
-        body["launchSchema"] = new JObject
-        {
-            ["type"] = "object",
-            ["properties"] = launchSchema
-        };
-        body["formattedSchema"] = new JObject
-        {
-            ["type"] = "object",
-            ["properties"] = formattedSchema
-        };
-        body["schemaAsArray"] = schemaAsArray;
-        body["documentSchemaAsArray"] = documentSchemaAsArray;
+        return body;
     }
-
-    return body;
-}
 
 private JObject rtrWflSch_FormatLaunchProperty(string propertyType, string displayName, string propertyName, JObject propertyValue)
 {
