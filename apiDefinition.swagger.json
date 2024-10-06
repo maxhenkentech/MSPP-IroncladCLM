@@ -4203,6 +4203,20 @@
 				"displayName",
 				"externalId"
 			],
+			"x-ms-enum-values": [
+				{
+					"displayName": "Members",
+					"value": "members"
+				},
+				{
+					"displayName": "Display Name",
+					"value": "displayName"
+				},
+				{
+					"displayName": "External ID",
+					"value": "externalId"
+				}
+			],
 			"title": "Path",
 			"type": "string",
 			"x-ms-visibility": "important"
@@ -4246,7 +4260,6 @@
 				"familyName",
 				"givenName"
 			],
-			"title": "Name",
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
@@ -4267,7 +4280,7 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"scimPatchOpSchemaPost_object": {
+		"scimPatchOpSchemaPost_string": {
 			"default": "urn:ietf:params:scim:api:messages:2.0:PatchOp",
 			"description": "The SCIM schema for patchops.",
 			"title": "Schema",
@@ -4277,7 +4290,7 @@
 		"scimPatchOpSchemasPost_array": {
 			"description": "The lists of schemas to be applied.",
 			"items": {
-				"$ref": "#/definitions/scimPatchOpSchemaPost_object"
+				"$ref": "#/definitions/scimPatchOpSchemaPost_string"
 			},
 			"title": "internal",
 			"type": "array",
@@ -6171,7 +6184,7 @@
 				"value-path": "id",
 				"value-title": "displayName"
 			},
-			"x-ms-summary": "User",
+			"x-ms-summary": "Group",
 			"x-ms-url-encoding": "single",
 			"x-ms-visibility": "important"
 		},

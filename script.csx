@@ -54,6 +54,12 @@ public class Script : ScriptBase
             case "CreateWorkflowDocument":
                 await crtWflDoc_TransformToMultipartRequest().ConfigureAwait(false);
                 break;
+            case "UpdateGroup":
+                await updGrp_TransformUpdateGroupRequest().ConfigureAwait(false);
+                break;
+            case "UpdateUser":
+                await updUsr_TransformUpdateUserRequest().ConfigureAwait(false);
+                break;
         }
     }
 
@@ -300,23 +306,96 @@ private async Task updRcd_TransformUpdateRecordMetadataRequest()
     // Create Workflow ################################################################
     // ################################################################################
 
-    private async Task crtWfl_TransformToMultipartRequestForWorkflows()
+   private async Task crtWfl_TransformToMultipartRequestForWorkflows()
+{
+    var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+    var jsonBody = JObject.Parse(content);
+
+    // Unflatten the JSON
+    jsonBody = crtWfl_UnflattenJson(jsonBody);
+
+    var multipartContent = new MultipartFormDataContent();
+
+    if (jsonBody.TryGetValue("attributes", out var attributesToken) && attributesToken is JObject attributes)
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
-
-        var multipartContent = new MultipartFormDataContent();
-
-        if (jsonBody.TryGetValue("attributes", out var attributesToken) && attributesToken is JObject attributes)
-        {
-            crtWfl_ProcessWorkflowAttributes(attributes, multipartContent, jsonBody);
-        }
-
-        var dataContent = new StringContent(jsonBody.ToString(), Encoding.UTF8, "application/json");
-        multipartContent.Add(dataContent, "data");
-
-        this.Context.Request.Content = multipartContent;
+        crtWfl_ProcessWorkflowAttributes(attributes, multipartContent, jsonBody);
     }
+
+    var dataContent = new StringContent(jsonBody.ToString(), Encoding.UTF8, "application/json");
+    multipartContent.Add(dataContent, "data");
+
+    this.Context.Request.Content = multipartContent;
+}
+
+private JObject crtWfl_UnflattenJson(JObject flatJson)
+{
+    var result = new JObject();
+
+    foreach (var prop in flatJson.Properties())
+    {
+        SetNestedProperty(result, prop.Name, prop.Value);
+    }
+
+    return result;
+}
+
+private void SetNestedProperty(JObject obj, string path, JToken value)
+{
+    var parts = path.Split('/');
+    JToken current = obj;
+
+    for (int i = 0; i < parts.Length; i++)
+    {
+        var part = parts[i];
+        if (i == parts.Length - 1)
+        {
+            // Last part, set the value
+            if (current is JObject currentObj)
+            {
+                currentObj[part] = value;
+            }
+        }
+        else
+        {
+            // Not the last part, ensure the path exists
+            if (current is JObject currentObj)
+            {
+                if (!currentObj.ContainsKey(part))
+                {
+                    currentObj[part] = new JObject();
+                }
+                current = currentObj[part];
+            }
+        }
+    }
+}
+
+private JObject crtWfl_HandleLinesProperty(JObject unflattenedJson)
+{
+    if (unflattenedJson.TryGetValue("properties", out var propertiesToken) && propertiesToken is JObject properties)
+    {
+        foreach (var property in properties.Properties().ToList())
+        {
+            if (property.Value is JObject propertyObj)
+            {
+                foreach (var subProp in propertyObj.Properties().ToList())
+                {
+                    if (subProp.Name.EndsWith("/lines") && subProp.Value is JArray linesArray)
+                    {
+                        var addressPropName = subProp.Name.Substring(0, subProp.Name.Length - "/lines".Length);
+                        if (!propertyObj.ContainsKey(addressPropName))
+                        {
+                            propertyObj[addressPropName] = new JObject();
+                        }
+                        ((JObject)propertyObj[addressPropName])["lines"] = linesArray;
+                        propertyObj.Remove(subProp.Name);
+                    }
+                }
+            }
+        }
+    }
+    return unflattenedJson;
+}
 
     private void crtWfl_ProcessWorkflowAttributes(JObject attributes, MultipartFormDataContent multipartContent, JObject jsonBody)
     {
@@ -411,6 +490,58 @@ private JObject lstUsr_TransformUsersList(JObject body)
         }
     }
     return body;
+}
+
+    // ################################################################################
+    // Update Group ###################################################################
+    // ################################################################################
+
+private async Task updGrp_TransformUpdateGroupRequest()
+{
+    var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+    var jsonBody = JObject.Parse(content);
+
+    // Ensure the "schemas" property exists and has the correct value
+    if (!jsonBody.ContainsKey("schemas") || !(jsonBody["schemas"] is JArray))
+    {
+        jsonBody["schemas"] = new JArray();
+    }
+
+    var schemas = (JArray)jsonBody["schemas"];
+    if (!schemas.Any(s => s.Type == JTokenType.String && s.Value<string>() == "urn:ietf:params:scim:api:messages:2.0:PatchOp"))
+    {
+        schemas.Clear(); // Remove any existing values
+        schemas.Add("urn:ietf:params:scim:api:messages:2.0:PatchOp");
+    }
+
+    // Update the request content with the modified body
+    this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+}
+
+    // ################################################################################
+    // Update User ####################################################################
+    // ################################################################################
+
+private async Task updUsr_TransformUpdateUserRequest()
+{
+    var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+    var jsonBody = JObject.Parse(content);
+
+    // Ensure the "schemas" property exists and has the correct value
+    if (!jsonBody.ContainsKey("schemas") || !(jsonBody["schemas"] is JArray))
+    {
+        jsonBody["schemas"] = new JArray();
+    }
+
+    var schemas = (JArray)jsonBody["schemas"];
+    if (!schemas.Any(s => s.Type == JTokenType.String && s.Value<string>() == "urn:ietf:params:scim:api:messages:2.0:PatchOp"))
+    {
+        schemas.Clear(); // Remove any existing values
+        schemas.Add("urn:ietf:params:scim:api:messages:2.0:PatchOp");
+    }
+
+    // Update the request content with the modified body
+    this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
 }
  
     // ################################################################################
