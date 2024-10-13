@@ -13,11 +13,11 @@
 	"x-ms-connector-metadata": [
 		{
 			"propertyName": "Website",
-			"propertyValue": "https://www.amadeus.com"
+			"propertyValue": "https://ironcladapp.com/"
 		},
 		{
-			"propertyName": "Privacy policy",
-			"propertyValue": "https://www.amadeus.com"
+			"propertyName": "Privacy Policy",
+			"propertyValue": "https://legal.ironcladapp.com/privacy-policy"
 		},
 		{
 			"propertyName": "Categories",
@@ -177,106 +177,13 @@
 									"$ref": "#/definitions/recordTypesDictionary_object"
 								},
 								"formattedRecordTypes": {
-									"title": "Record Types",
-									"description": "The formatted record types of the record schema.",
-									"type": "array",
-									"x-ms-visibility": "important",
-									"items": {
-										"title": "Record Type",
-										"description": "A record type of the record schema.",
-										"type": "object",
-										"x-ms-visibility": "important",
-										"properties": {
-											"systemName": {
-												"description": "The system name of the record type.",
-												"title": "System Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"displayName": {
-												"description": "The display name of the record type.",
-												"title": "Display Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"description": {
-												"description": "The description of the record type.",
-												"title": "Description",
-												"type": "string",
-												"x-ms-visibility": "important"
-											}
-										}
-									}
+									"$ref": "#/definitions/recordTypesFormatted_array"
 								},
 								"formattedProperties": {
-									"title": "Formatted Properties",
-									"description": "The formatted properties of the record schema.",
-									"type": "array",
-									"x-ms-visibility": "important",
-									"items": {
-										"type": "object",
-										"title": "Formatted Property",
-										"description": "A property of the record schema.",
-										"x-ms-visibility": "important",
-										"properties": {
-											"systemName": {
-												"description": "The system name of the property.",
-												"title": "System Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"displayName": {
-												"description": "The display name of the property.",
-												"title": "Display Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"type": {
-												"description": "The type of the property.",
-												"title": "Type",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"visible": {
-												"description": "Whether the property is visible.",
-												"title": "Visible",
-												"type": "boolean",
-												"x-ms-visibility": "important"
-											},
-											"resolvesTo": {
-												"description": "The resolves to of the property.",
-												"title": "Resolves To",
-												"type": "string",
-												"x-ms-visibility": "important"
-											}
-										}
-									}
+									"$ref": "#/definitions/recordPropertiesFormatted_array"
 								},
 								"formattedAttachments": {
-									"title": "Formatted Attachments",
-									"description": "The formatted attachments of the record schema.",
-									"type": "array",
-									"x-ms-visibility": "important",
-									"items": {
-										"type": "object",
-										"title": "Attachment",
-										"description": "An attachment of the record schema.",
-										"x-ms-visibility": "important",
-										"properties": {
-											"systemName": {
-												"description": "The system name of the attachment.",
-												"title": "System Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											},
-											"displayName": {
-												"description": "The display name of the attachment.",
-												"title": "Display Name",
-												"type": "string",
-												"x-ms-visibility": "important"
-											}
-										}
-									}
+									"$ref": "#/definitions/recordAttachmentsFormatted_array"
 								}
 							},
 							"type": "object"
@@ -1616,42 +1523,6 @@
 				"x-ms-visibility": "important"
 			}
 		},
-		"/public/api/v1/workflows/{Workflow}/emails/{Email}/attachments/{Attachment}": {
-			"get": {
-				"description": "Retrieve an attachment from the specified email thread.",
-				"operationId": "RetrieveEmailThreadAttachment",
-				"parameters": [
-					{
-						"$ref": "#/parameters/workflowId_path"
-					},
-					{
-						"$ref": "#/parameters/workflowEmailID_path"
-					},
-					{
-						"$ref": "#/parameters/workflowEmailAttachmentID_path"
-					},
-					{
-						"$ref": "#/parameters/x-as-user-email_header"
-					},
-					{
-						"$ref": "#/parameters/x-as-user-id_header"
-					}
-				],
-				"responses": {
-					"200": {
-						"description": "default",
-						"schema": {
-							"description": "The document as a file.",
-							"title": "Document",
-							"type": "file",
-							"x-ms-visibility": "important"
-						}
-					}
-				},
-				"summary": "Retrieve an Attachment from an Email Thread",
-				"x-ms-visibility": "important"
-			}
-		},
 		"/public/api/v1/workflows/{Workflow}/participants": {
 			"get": {
 				"description": "Returns a list of workflow participants.",
@@ -2345,12 +2216,6 @@
 		}
 	},
 	"definitions": {
-		"activityItem_string": {
-			"description": "Identifier of the activity being replied to.",
-			"title": "Activity Item",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
 		"actorDetails_object": {
 			"description": "Details of the actor.",
 			"properties": {
@@ -2643,27 +2508,36 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
+		"commentMentionedUserDisplayName_string":{
+			"description": "Name of the mentioned user.",
+			"title": "Display Name",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"commentMentionedUserEmail_string": {
+			"description": "Email of the mentioned user.",
+			"title": "Email",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"commentMentionedUserUserId_string": {
+			"description": "Unique identifier of the mentioned user.",
+			"title": "ID",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
 		"commentMentionedUserDetails": {
 			"description": "Details of users mentioned in the comment.",
 			"items": {
 				"properties": {
 					"displayName": {
-						"description": "Name of the mentioned user.",
-						"title": "Display Name",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/commentMentionedUserDisplayName_string"
 					},
 					"email": {
-						"description": "Email of the mentioned user.",
-						"title": "Email",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/commentMentionedUserEmail_string"
 					},
 					"id": {
-						"description": "Unique identifier of the mentioned user.",
-						"title": "ID",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/commentMentionedUserUserId_string"
 					}
 				},
 				"type": "object"
@@ -2729,12 +2603,6 @@
 			"title": "Message",
 			"type": "string",
 			"x-ms-visibility": "important"
-		},
-		"commentType_string": {
-			"description": "Type of the activity item.",
-			"title": "Type",
-			"type": "string",
-			"x-ms-visibility": "advanced"
 		},
 		"count_integer": {
 			"default": 25,
@@ -2862,18 +2730,7 @@
 					"$ref": "#/definitions/attachmentFilename_string"
 				},
 				"comment": {
-					"title": "Comment",
-					"x-ms-visibility": "important",
-					"description": "The comment associated with creating the worklfow document.",
-					"type": "object",
-					"properties": {
-						"message": {
-							"$ref": "#/definitions/commentText_string"
-						}
-					},
-					"required": [
-						"message"
-					]
+					"$ref": "#/definitions/documentMetadataComment_object"
 				}
 			},
 			"title": "Metadata",
@@ -2883,6 +2740,20 @@
 				"comment",
 				"filename"
 			]
+		},
+		"documentMetadataComment_object": {
+			"description": "The comment associated with creating the workflow document.",
+			"properties": {
+				"message": {
+					"$ref": "#/definitions/commentText_string"
+				}
+			},
+			"required": [
+				"message"
+			],
+			"title": "Comment",
+			"type": "object",
+			"x-ms-visibility": "important"
 		},
 		"documentVersion_string": {
 			"description": "The version identifier of the workflow document.",
@@ -3214,13 +3085,6 @@
 			"type": "array",
 			"x-ms-visibility": "advanced"
 		},
-		"record_type_body": {
-			"description": "The type of record to be created. You can view available record types by retrieving records metadata.",
-			"title": "Type",
-			"type": "string",
-			"x-ms-summary": "Type",
-			"x-ms-visibility": "important"
-		},
 		"recordAddChildren_array": {
 			"description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as child records of the current record.",
 			"items": {
@@ -3297,32 +3161,6 @@
 			},
 			"x-ms-visibility": "important"
 		},
-		"recordAddProperties_object": {
-			"description": "Properties to be added to the record.",
-			"title": "Add Properties",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"recordAgreementDateGet_object": {
-			"description": "The Agreement date for this record.",
-			"properties": {
-				"type": {
-					"description": "The data type of the Agreement Date field (by default, this is a string with format date-time).",
-					"title": "Type",
-					"type": "string",
-					"x-ms-visibility": "internal"
-				},
-				"value": {
-					"description": "The Agreement Date for this record.",
-					"title": "Agreement Date",
-					"type": "string",
-					"x-ms-visibility": "important"
-				}
-			},
-			"title": "Agreement Date",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
 		"recordAttachmentsAsArrayScriptGet_array": {
 			"description": "The attachments of the record.",
 			"items": {
@@ -3349,6 +3187,29 @@
 			"title": "Attachments",
 			"type": "object",
 			"x-ms-visibility": "internal"
+		},
+		"recordAttachmentsFormatted_object": {
+			"type": "object",
+			"title": "Attachment",
+			"description": "An attachment of the record schema.",
+			"x-ms-visibility": "important",
+			"properties": {
+				"systemName": {
+					"$ref": "#/definitions/attachmentDisplayName_string"
+				},
+				"displayName": {
+					"$ref": "#/definitions/attachmentName_string"
+				}
+			}
+		},
+		"recordAttachmentsFormatted_array":{
+			"title": "Formatted Attachments",
+			"description": "The formatted attachments of the record schema.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"$ref": "#/definitions/recordAttachmentsFormatted_object"
+			}
 		},
 		"recordAttachmentsInternalGet_object": {
 			"description": "The attachments on this record.",
@@ -3378,26 +3239,6 @@
 			},
 			"title": "Children",
 			"type": "array",
-			"x-ms-visibility": "important"
-		},
-		"recordCounterpartyNameGet_object": {
-			"description": "The name of the counterparty.",
-			"properties": {
-				"type": {
-					"description": "The data type of the Counterparty Name field (by default, this is a string).",
-					"title": "Type",
-					"type": "string",
-					"x-ms-visibility": "internal"
-				},
-				"value": {
-					"description": "The Counterparty Name for this workflow.",
-					"title": "Counterparty Name",
-					"type": "string",
-					"x-ms-visibility": "important"
-				}
-			},
-			"title": "Counterparty Name",
-			"type": "object",
 			"x-ms-visibility": "important"
 		},
 		"recordGetDynamic_object": {
@@ -3437,10 +3278,7 @@
 					"x-ms-visibility": "important"
 				},
 				"formattedSchema": {
-					"description": "The OpenAPI compatible schema of the record.",
-					"title": "Formatted Property Schema",
-					"type": "object",
-					"x-ms-visibility": "internal"
+					"$ref": "#/definitions/recordSchemaFormatted_object"
 				},
 				"id": {
 					"$ref": "#/definitions/recordId_string"
@@ -3513,7 +3351,7 @@
 				"source": {
 					"$ref": "#/definitions/recordSource_object"
 				},
-				"label":{
+				"label": {
 					"$ref": "#/definitions/recordLabelGet_string"
 				}
 			},
@@ -3545,11 +3383,11 @@
 			},
 			"x-ms-visibility": "important"
 		},
-		"recordLabelGet_string":{
+		"recordLabelGet_string": {
 			"description": "The display label of the record.",
 			"title": "Label",
 			"type": "string",
-			"x-ms-visibility": "internal"
+			"x-ms-visibility": "important"
 		},
 		"recordLinkGet_object": {
 			"description": "An object containing the Record ID of a record related of the current record.",
@@ -3709,6 +3547,50 @@
 			"type": "array",
 			"x-ms-visibility": "important"
 		},
+		"recordPropertiesFormatted_array":{
+			"title": "Formatted Properties",
+			"description": "The formatted properties of the record schema.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"type": "object",
+				"title": "Formatted Property",
+				"description": "A property of the record schema.",
+				"x-ms-visibility": "important",
+				"properties": {
+					"systemName": {
+						"description": "The system name of the property.",
+						"title": "System Name",
+						"type": "string",
+						"x-ms-visibility": "important"
+					},
+					"displayName": {
+						"description": "The display name of the property.",
+						"title": "Display Name",
+						"type": "string",
+						"x-ms-visibility": "important"
+					},
+					"type": {
+						"description": "The type of the property.",
+						"title": "Type",
+						"type": "string",
+						"x-ms-visibility": "important"
+					},
+					"visible": {
+						"description": "Whether the property is visible.",
+						"title": "Visible",
+						"type": "boolean",
+						"x-ms-visibility": "important"
+					},
+					"resolvesTo": {
+						"description": "The resolves to of the property.",
+						"title": "Resolves To",
+						"type": "string",
+						"x-ms-visibility": "important"
+					}
+				}
+			}
+		},
 		"recordPropertiesGet_object": {
 			"description": "The properties of the record.",
 			"title": "Properties",
@@ -3830,6 +3712,12 @@
 				"value-title": "label"
 			}
 		},
+		"recordSchemaFormatted_object": {
+			"description": "The OpenAPI compatible schema of the record.",
+			"title": "Formatted Property Schema",
+			"type": "object",
+			"x-ms-visibility": "internal"
+		},
 		"recordSchemaPropertiesAsArrayAttributesGet_object": {
 			"properties": {
 				"description": {
@@ -3849,29 +3737,6 @@
 				}
 			},
 			"title": "Attribute",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
-		"recordSchemaPropertiesAsArrayGet_array": {
-			"description": "The schema properties as an array.",
-			"items": {
-				"$ref": "#/definitions/recordSchemaPropertiesAsArrayGet_object"
-			},
-			"title": "Schema properties as Array",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
-		"recordSchemaPropertiesAsArrayGet_object": {
-			"description": "The attributes of the property.",
-			"properties": {
-				"propertyAttributes": {
-					"$ref": "#/definitions/recordSchemaPropertiesAsArrayAttributesGet_object"
-				},
-				"propertySystemName": {
-					"$ref": "#/definitions/propertySystemName_string"
-				}
-			},
-			"title": "Property Attributes",
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
@@ -3921,20 +3786,6 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"recordTypeAttributes_object": {
-			"description": "The attributes of the record type.",
-			"properties": {
-				"description": {
-					"$ref": "#/definitions/recordTypeDescription_string"
-				},
-				"displayName": {
-					"$ref": "#/definitions/recordTypeDisplayName_string"
-				}
-			},
-			"title": "Attributes",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
 		"recordTypeDescription_string": {
 			"description": "The description of the record type.",
 			"title": "Description",
@@ -3948,7 +3799,7 @@
 			"x-ms-visibility": "important"
 		},
 		"recordTypeGet_string": {
-			"description": "The type of the workflow.",
+			"description": "The system name of the record type.",
 			"title": "Type",
 			"type": "string",
 			"x-ms-visibility": "important"
@@ -3965,54 +3816,43 @@
 			},
 			"x-ms-visibility": "important"
 		},
-		"recordTypesAsArray_array": {
-			"description": "An array of record types available in this instance.",
-			"items": {
-				"properties": {
-					"systemName": {
-						"$ref": "#/definitions/recordTypeSystemName_string"
-					},
-					"typeAttributes": {
-						"$ref": "#/definitions/recordTypeAttributes_object"
-					}
-				},
-				"type": "object"
-			},
-			"title": "Record Types",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
 		"recordTypesDictionary_object": {
 			"description": "A dictionary of record types available in this instance.",
 			"title": "Record Types Dictionary",
 			"type": "object",
 			"x-ms-visibility": "advanced"
 		},
-		"recordTypeSystemName_string": {
-			"description": "The system name of the record type.",
-			"title": "System Name",
-			"type": "string",
-			"x-ms-visibility": "important"
+		"recordTypesFormatted_array":{
+			"title": "Record Types",
+			"description": "The formatted record types of the record schema.",
+			"type": "array",
+			"x-ms-visibility": "important",
+			"items": {
+				"$ref": "#/definitions/recordTypesFormatted_object"
+			}
+		},
+		"recordTypesFormatted_object":{
+			"title": "Record Type",
+			"description": "A record type of the record schema.",
+			"type": "object",
+			"x-ms-visibility": "important",
+			"properties": {
+				"systemName": {
+					"$ref": "#/definitions/recordTypeGet_string"
+				},
+				"displayName": {
+					"$ref": "#/definitions/recordTypeDisplayName_string"
+				},
+				"description": {
+					"$ref": "#/definitions/recordTypeDescription_string"
+				}
+			}
 		},
 		"remainingCredits_integer": {
 			"description": "The number of credits remaining after the operation.",
 			"title": "Remaining Credits",
 			"type": "integer",
 			"x-ms-visibility": "important"
-		},
-		"repliedTo_object": {
-			"description": "Information about the comment being replied to.",
-			"properties": {
-				"activityItem": {
-					"$ref": "#/definitions/activityItem_string"
-				},
-				"author": {
-					"$ref": "#/definitions/authorGet_object"
-				}
-			},
-			"title": "Replied To",
-			"type": "object",
-			"x-ms-visibility": "advanced"
 		},
 		"repliedToActivityFeedMessageId_string": {
 			"description": "The identifier of the activity feed message that this message is a reply to.",
@@ -4343,6 +4183,9 @@
 				},
 				"username": {
 					"$ref": "#/definitions/username_string"
+				},
+				"combinedLabel": {
+					"$ref": "#/definitions/userLabel_string"
 				}
 			},
 			"title": "User",
@@ -4630,27 +4473,12 @@
 				"operationId": "ListUsers",
 				"parameters": {
 					"count": 100,
-					"excludedAttributes": "emails,title",
 					"startIndex": 1
 				},
 				"value-collection": "Resources",
 				"value-path": "username",
-				"value-title": "displayName"
+				"value-title": "combinedLabel"
 			},
-			"x-ms-visibility": "important"
-		},
-		"userGet_object": {
-			"description": "An Ironclad user.",
-			"properties": {
-				"email": {
-					"$ref": "#/definitions/userUsername_string"
-				},
-				"type": {
-					"$ref": "#/definitions/userId_string"
-				}
-			},
-			"title": "User",
-			"type": "object",
 			"x-ms-visibility": "important"
 		},
 		"userId_string": {
@@ -4661,14 +4489,19 @@
 				"operationId": "ListUsers",
 				"parameters": {
 					"count": 100,
-					"excludedAttributes": "emails,title",
 					"startIndex": 1
 				},
 				"value-collection": "Resources",
 				"value-path": "id",
-				"value-title": "displayName"
+				"value-title": "combinedLabel"
 			},
 			"x-ms-visibility": "important"
+		},
+		"userLabel_string": {
+			"title": "Combined Label",
+			"type": "string",
+			"x-ms-visibility": "advanced",
+			"description": "A label combining the user's full name and email address."
 		},
 		"userIdentificationAttribute_string": {
 			"default": "email",
@@ -5199,6 +5032,9 @@
 				},
 				"filename": {
 					"$ref": "#/definitions/documentFileName_string"
+				},
+				"key":{
+					"$ref": "#/definitions/documentKey_string"
 				}
 			},
 			"title": "Attachment",
@@ -5270,7 +5106,7 @@
 					"$ref": "#/definitions/workflowEmailType_string"
 				}
 			},
-			"title": "Email",
+			"title": "Email Thread",
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
@@ -5307,7 +5143,7 @@
 			"items": {
 				"$ref": "#/definitions/workflowEmailGet_object"
 			},
-			"title": "Emails",
+			"title": "Email Threads",
 			"type": "array",
 			"x-ms-visibility": "important"
 		},
@@ -5382,15 +5218,6 @@
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
-		"workflowEmailTransformedAttachments_array": {
-			"description": "The attachments of the email.",
-			"items": {
-				"$ref": "#/definitions/workflowEmailTransformedAttachment_object"
-			},
-			"title": "Attachments",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
 		"workflowEmailType_string": {
 			"description": "The type of the email.",
 			"title": "Type",
@@ -5417,11 +5244,11 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"workflowLabel_string":{
+		"workflowLabel_string": {
 			"description": "The display label of the workflow.",
 			"title": "Label",
 			"type": "string",
-			"x-ms-visibility": "internal"
+			"x-ms-visibility": "advanced"
 		},
 		"workflowParticipantsGet_object": {
 			"properties": {
@@ -5860,15 +5687,6 @@
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
-		"workflowSignedDocumentsGet_array": {
-			"description": "If available, the signed documents in the workflow.",
-			"items": {
-				"$ref": "#/definitions/workflowSignedDocuments_object"
-			},
-			"title": "Signed Documents",
-			"type": "array",
-			"x-ms-visibility": "important"
-		},
 		"workflowSigner_object": {
 			"description": "A signer in this workflow.",
 			"properties": {
@@ -5961,7 +5779,7 @@
 				"title": {
 					"$ref": "#/definitions/workflowTitle_string"
 				},
-				"label":{
+				"label": {
 					"$ref": "#/definitions/workflowLabel_string"
 				}
 			},
@@ -6112,14 +5930,14 @@
 				"value-title": "displayName"
 			}
 		},
-		"workflowDocument_formData":{
-				"description": "The document to upload.",
-				"in": "formData",
-				"name": "attachment",
-				"required": true,
-				"type": "file",
-				"x-ms-summary": "Document",
-				"x-ms-visibility": "important"
+		"workflowDocument_formData": {
+			"description": "The document to upload.",
+			"in": "formData",
+			"name": "attachment",
+			"required": true,
+			"type": "file",
+			"x-ms-summary": "Document",
+			"x-ms-visibility": "important"
 		},
 		"workflowEmailID_path": {
 			"description": "The unique identifier of the email.",
@@ -6870,12 +6688,11 @@
 				"operationId": "ListUsers",
 				"parameters": {
 					"count": 100,
-					"excludedAttributes": "emails,title",
 					"startIndex": 1
 				},
 				"value-collection": "Resources",
 				"value-path": "username",
-				"value-title": "displayName"
+				"value-title": "combinedLabel"
 			},
 			"x-ms-summary": "Actor Email Address",
 			"x-ms-visibility": "advanced"
@@ -6890,12 +6707,11 @@
 				"operationId": "ListUsers",
 				"parameters": {
 					"count": 100,
-					"excludedAttributes": "emails,title",
 					"startIndex": 1
 				},
 				"value-collection": "Resources",
 				"value-path": "id",
-				"value-title": "displayName"
+				"value-title": "combinedLabel"
 			},
 			"x-ms-summary": "Actor ID",
 			"x-ms-visibility": "advanced"
