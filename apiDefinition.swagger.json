@@ -7,8 +7,8 @@
 			"url": "https://www.amadeus.com"
 		},
 		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. Follow https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret.",
-		"title": "Ironclad CLM",
-		"version": "3.0"
+		"title": "Ironclad CLM (Independent Publisher)",
+		"version": "1.0"
 	},
 	"x-ms-connector-metadata": [
 		{
@@ -27,7 +27,7 @@
 	"schemes": [
 		"https"
 	],
-	"host": "eu1.ironcladapp.com",
+	"host": "ironcladapp.com",
 	"basePath": "/",
 	"consumes": [
 		"application/json"
@@ -43,6 +43,9 @@
 				"parameters": [
 					{
 						"$ref": "#/parameters/page_query"
+					},
+					{
+						"$ref": "#/parameters/recordProperties_query"
 					},
 					{
 						"$ref": "#/parameters/pageSize_query"
@@ -78,7 +81,7 @@
 									"$ref": "#/definitions/count_integer"
 								},
 								"list": {
-									"$ref": "#/definitions/recordsGet_array"
+									"$ref": "#/definitions/recordsGetFormatted_array"
 								},
 								"page": {
 									"$ref": "#/definitions/page_integer"
@@ -126,7 +129,7 @@
 				"operationId": "ExportRecords",
 				"parameters": [
 					{
-						"$ref": "#/parameters/recordsProperties_query"
+						"$ref": "#/parameters/recordProperties_query"
 					},
 					{
 						"$ref": "#/parameters/recordTypes_query"
@@ -163,6 +166,9 @@
 					},
 					{
 						"$ref": "#/parameters/x-as-user-id_header"
+					},
+					{
+						"$ref": "#/parameters/recordProperties_query"
 					}
 				],
 				"responses": {
@@ -182,8 +188,17 @@
 								"formattedProperties": {
 									"$ref": "#/definitions/recordPropertiesFormatted_array"
 								},
+								"formattedClauses": {
+									"$ref": "#/definitions/recordPropertiesFormatted_array"
+								},
 								"formattedAttachments": {
 									"$ref": "#/definitions/recordAttachmentsFormatted_array"
+								},
+								"requestedProperties": {
+									"$ref": "#/definitions/requestedProperties_string"
+								},
+								"formattedSchema":{
+									"$ref": "#/definitions/recordSchemaFormatted_object"
 								}
 							},
 							"type": "object"
@@ -671,7 +686,7 @@
 						"schema": {
 							"properties": {
 								"events": {
-									"$ref": "#/definitions/webhookEvent_object"
+									"$ref": "#/definitions/webhookEvents_array"
 								},
 								"targetURL": {
 									"$ref": "#/definitions/webhookTargetUrlPost_string"
@@ -2508,7 +2523,7 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"commentMentionedUserDisplayName_string":{
+		"commentMentionedUserDisplayName_string": {
 			"description": "Name of the mentioned user.",
 			"title": "Display Name",
 			"type": "string",
@@ -2931,12 +2946,6 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"propertyDescription_string": {
-			"description": "The description of the property.",
-			"title": "Description",
-			"type": "string",
-			"x-ms-visibility": "important"
-		},
 		"propertyDisplayName_string": {
 			"description": "The display name of the property.",
 			"title": "Display Name",
@@ -2947,12 +2956,6 @@
 			"description": "The true, the property is read-only.",
 			"title": "Read-Only",
 			"type": "boolean",
-			"x-ms-visibility": "important"
-		},
-		"propertyResolvesTo_string": {
-			"description": "The property this property resolves to.",
-			"title": "Resolves To",
-			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"propertyToAddSystemName_string": {
@@ -3202,7 +3205,7 @@
 				}
 			}
 		},
-		"recordAttachmentsFormatted_array":{
+		"recordAttachmentsFormatted_array": {
 			"title": "Formatted Attachments",
 			"description": "The formatted attachments of the record schema.",
 			"type": "array",
@@ -3344,6 +3347,74 @@
 				},
 				"properties": {
 					"$ref": "#/definitions/recordPropertiesGet_object"
+				},
+				"recordType": {
+					"$ref": "#/definitions/recordTypeGet_string"
+				},
+				"source": {
+					"$ref": "#/definitions/recordSource_object"
+				},
+				"label": {
+					"$ref": "#/definitions/recordLabelGet_string"
+				}
+			},
+			"title": "Record",
+			"type": "object",
+			"x-ms-visibility": "important"
+		},
+		"recordGetFormatted_object": {
+			"description": "A record and its associated data.",
+			"properties": {
+				"counterpartyName": {
+					"$ref": "#/definitions/counterpartyNameGet_string"
+				},
+				"attachments": {
+					"$ref": "#/definitions/recordAttachmentsGet_object"
+				},
+				"childIds": {
+					"$ref": "#/definitions/recordChildIdsGet_array"
+				},
+				"id": {
+					"$ref": "#/definitions/recordId_string"
+				},
+				"ironcladId": {
+					"$ref": "#/definitions/recordIroncladId_string"
+				},
+				"lastUpdated": {
+					"$ref": "#/definitions/lastUpdated_string"
+				},
+				"links": {
+					"$ref": "#/definitions/recordLinksGet_array"
+				},
+				"name": {
+					"$ref": "#/definitions/recordName_string"
+				},
+				"parentId": {
+					"$ref": "#/definitions/recordParentGet_string"
+				},
+				"formattedProperties": {
+					"description": "The OpenAPI formatted properties of the record.",
+					"title": "Formatted Properties",
+					"type": "object",
+					"x-ms-dynamic-properties": {
+						"itemValuePath": "formattedSchema",
+						"operationId": "RetrieveRecordSchemas",
+						"parameters": {
+							"recordPorperties": {
+								"parameterReference": "recordPorperties"
+							}
+						}
+					},
+					"x-ms-dynamic-schema": {
+						"operationId": "RetrieveRecordSchemas",
+						"parameters": {
+							"recordPorperties": {
+								"parameter": "recordPorperties"
+							}
+						},
+						"value-path": "formattedSchema"
+					},
+					"x-ms-visibility": "important"
 				},
 				"recordType": {
 					"$ref": "#/definitions/recordTypeGet_string"
@@ -3547,7 +3618,7 @@
 			"type": "array",
 			"x-ms-visibility": "important"
 		},
-		"recordPropertiesFormatted_array":{
+		"recordPropertiesFormatted_array": {
 			"title": "Formatted Properties",
 			"description": "The formatted properties of the record schema.",
 			"type": "array",
@@ -3559,34 +3630,22 @@
 				"x-ms-visibility": "important",
 				"properties": {
 					"systemName": {
-						"description": "The system name of the property.",
-						"title": "System Name",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/propertySystemName_string"
 					},
 					"displayName": {
-						"description": "The display name of the property.",
-						"title": "Display Name",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/recordPropertyDisplayName_string"
 					},
 					"type": {
-						"description": "The type of the property.",
-						"title": "Type",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/recordPropertyType_string"
 					},
 					"visible": {
-						"description": "Whether the property is visible.",
-						"title": "Visible",
-						"type": "boolean",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/recordPropertyvisible_boolean"
 					},
 					"resolvesTo": {
-						"description": "The resolves to of the property.",
-						"title": "Resolves To",
-						"type": "string",
-						"x-ms-visibility": "important"
+						"$ref": "#/definitions/recordPropertyResolvesTo_string"
+					},
+					"label": {
+						"$ref": "#/definitions/recordPropertyLabel_string"
 					}
 				}
 			}
@@ -3631,6 +3690,36 @@
 			],
 			"title": "Property",
 			"type": "object",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertyDisplayName_string":{
+			"description": "The display name of the property.",
+			"title": "Display Name",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertyType_string": {
+			"description": "The type of the property.",
+			"title": "Type",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertyvisible_boolean": {
+			"description": "Whether the property is visible.",
+			"title": "Visible",
+			"type": "boolean",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertyResolvesTo_string": {
+			"description": "The resolves to of the property.",
+			"title": "Resolves To",
+			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"recordPropertyLabel_string": {
+			"description": "The label of the property.",
+			"title": "Label",
+			"type": "string",
 			"x-ms-visibility": "important"
 		},
 		"recordRemoveChildren_array": {
@@ -3713,38 +3802,16 @@
 			}
 		},
 		"recordSchemaFormatted_object": {
-			"description": "The OpenAPI compatible schema of the record.",
-			"title": "Formatted Property Schema",
+			"title": "Formatted Schema",
 			"type": "object",
-			"x-ms-visibility": "internal"
-		},
-		"recordSchemaPropertiesAsArrayAttributesGet_object": {
-			"properties": {
-				"description": {
-					"$ref": "#/definitions/propertyDescription_string"
-				},
-				"displayName": {
-					"$ref": "#/definitions/propertyDisplayName_string"
-				},
-				"resolvesTo": {
-					"$ref": "#/definitions/propertyResolvesTo_string"
-				},
-				"type": {
-					"$ref": "#/definitions/propertyType_string"
-				},
-				"visible": {
-					"$ref": "#/definitions/visible_boolean"
-				}
-			},
-			"title": "Attribute",
-			"type": "object",
-			"x-ms-visibility": "important"
+			"x-ms-visibility": "advanced",
+			"description": "The formatted schema (if requested by adding a properties query)."
 		},
 		"recordSchemaPropertiesGet_object": {
-			"description": "The schema properties.",
-			"title": "Properties",
+			"description": "The schema properties as a dictionary.",
+			"title": "Properties Dictionary",
 			"type": "object",
-			"x-ms-visibility": "important"
+			"x-ms-visibility": "advanced"
 		},
 		"recordSetParent_object": {
 			"description": "Object containing Record IDs or Ironclad IDs to be set as the parent of the current record.",
@@ -3757,10 +3824,10 @@
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
-		"recordsGet_array": {
+		"recordsGetFormatted_array": {
 			"description": "The records matching the query.",
 			"items": {
-				"$ref": "#/definitions/recordGetStatic_object"
+				"$ref": "#/definitions/recordGetFormatted_object"
 			},
 			"title": "Records",
 			"type": "array",
@@ -3822,7 +3889,7 @@
 			"type": "object",
 			"x-ms-visibility": "advanced"
 		},
-		"recordTypesFormatted_array":{
+		"recordTypesFormatted_array": {
 			"title": "Record Types",
 			"description": "The formatted record types of the record schema.",
 			"type": "array",
@@ -3831,7 +3898,7 @@
 				"$ref": "#/definitions/recordTypesFormatted_object"
 			}
 		},
-		"recordTypesFormatted_object":{
+		"recordTypesFormatted_object": {
 			"title": "Record Type",
 			"description": "A record type of the record schema.",
 			"type": "object",
@@ -3869,9 +3936,15 @@
 				},
 				"value-collection": "list",
 				"value-path": "id",
-				"value-title": "metadata/message"
+				"value-title": "commentMessage"
 			},
 			"x-ms-visibility": "important"
+		},
+		"requestedProperties_string":{
+				"title": "Requested Properties",
+				"type": "string",
+				"x-ms-visibility": "advanced",
+				"description": "The properties requested in the query."
 		},
 		"reviewRollbacked_boolean": {
 			"description": "If true, the workflow was reverted to review.",
@@ -4577,16 +4650,6 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"visible_boolean": {
-			"description": "The visibility of the item.",
-			"enum": [
-				true,
-				false
-			],
-			"title": "Visibility",
-			"type": "boolean",
-			"x-ms-visibility": "important"
-		},
 		"webhookConfiguration_object": {
 			"description": "A webhook configuration.",
 			"properties": {
@@ -4607,132 +4670,132 @@
 			"type": "object",
 			"x-ms-visibility": "important"
 		},
-		"webhookEvent_object": {
+		"webhookEvent_string": {
 			"default": "workflow_updated",
-			"description": "An event that triggers the webhook.",
 			"enum": [
-				"workflow_updated",
-				"workflow_launched",
-				"workflow_cancelled",
-				"workflow_completed",
-				"workflow_approval_status_changed",
-				"workflow_attribute_updated",
-				"workflow_comment_reaction_added",
-				"workflow_comment_reaction_removed",
-				"workflow_comment_added",
-				"workflow_comment_removed",
-				"workflow_comment_updated",
-				"workflow_counterparty_invite_sent",
-				"workflow_counterparty_invite_revoked",
-				"workflow_documents_added",
-				"workflow_documents_removed",
-				"workflow_documents_updated",
-				"workflow_documents_renamed",
-				"workflow_document_edited",
-				"workflow_paused",
-				"workflow_resumed",
-				"workflow_signature_packet_sent",
-				"workflow_signature_packet_uploaded",
-				"workflow_signature_packet_cancelled"
+			  "workflow_updated",
+			  "workflow_launched",
+			  "workflow_cancelled",
+			  "workflow_completed",
+			  "workflow_approval_status_changed",
+			  "workflow_attribute_updated",
+			  "workflow_comment_reaction_added",
+			  "workflow_comment_reaction_removed",
+			  "workflow_comment_added",
+			  "workflow_comment_removed",
+			  "workflow_comment_updated",
+			  "workflow_counterparty_invite_sent",
+			  "workflow_counterparty_invite_revoked",
+			  "workflow_documents_added",
+			  "workflow_documents_removed",
+			  "workflow_documents_updated",
+			  "workflow_documents_renamed",
+			  "workflow_document_edited",
+			  "workflow_paused",
+			  "workflow_resumed",
+			  "workflow_signature_packet_sent",
+			  "workflow_signature_packet_uploaded",
+			  "workflow_signature_packet_cancelled"
 			],
-			"title": "Event",
+			"title": "Trigger Event",
+			"description": "The event that triggers the webhook.",
 			"type": "string",
 			"x-ms-enum-values": [
-				{
-					"displayName": "Workflow Updated",
-					"value": "workflow_updated"
-				},
-				{
-					"displayName": "Workflow Launched",
-					"value": "workflow_launched"
-				},
-				{
-					"displayName": "Workflow Cancelled",
-					"value": "workflow_cancelled"
-				},
-				{
-					"displayName": "Workflow Completed",
-					"value": "workflow_completed"
-				},
-				{
-					"displayName": "Approval Status Changed",
-					"value": "workflow_approval_status_changed"
-				},
-				{
-					"displayName": "Workflow Attributes Updated",
-					"value": "workflow_attribute_updated"
-				},
-				{
-					"displayName": "Comment Reaction Added",
-					"value": "workflow_comment_reaction_added"
-				},
-				{
-					"displayName": "Comment Reaction Removed",
-					"value": "workflow_comment_reaction_removed"
-				},
-				{
-					"displayName": "Comment Added",
-					"value": "workflow_comment_added"
-				},
-				{
-					"displayName": "Comment Removed",
-					"value": "workflow_comment_removed"
-				},
-				{
-					"displayName": "Comment Updated",
-					"value": "workflow_comment_updated"
-				},
-				{
-					"displayName": "Counterparty Invite Sent",
-					"value": "workflow_counterparty_invite_sent"
-				},
-				{
-					"displayName": "Counterparty Invite Revoked",
-					"value": "workflow_counterparty_invite_revoked"
-				},
-				{
-					"displayName": "Workflow Document Added",
-					"value": "workflow_documents_added"
-				},
-				{
-					"displayName": "Workflow Document Removed",
-					"value": "workflow_documents_removed"
-				},
-				{
-					"displayName": "Workflow Document Updated",
-					"value": "workflow_documents_updated"
-				},
-				{
-					"displayName": "Workflow Document Edited",
-					"value": "workflow_document_edited"
-				},
-				{
-					"displayName": "Workflow Paused",
-					"value": "workflow_paused"
-				},
-				{
-					"displayName": "Workflow Resumed",
-					"value": "workflow_resumed"
-				},
-				{
-					"displayName": "Signature Packet Sent",
-					"value": "workflow_signature_packet_sent"
-				},
-				{
-					"displayName": "Signature Packet Uploaded",
-					"value": "workflow_signature_packet_uploaded"
-				},
-				{
-					"displayName": "Signature Packet Cancelled",
-					"value": "workflow_signature_packet_cancelled"
-				}
+			  {
+				"displayName": "Workflow Updated",
+				"value": "workflow_updated"
+			  },
+			  {
+				"displayName": "Workflow Launched",
+				"value": "workflow_launched"
+			  },
+			  {
+				"displayName": "Workflow Cancelled",
+				"value": "workflow_cancelled"
+			  },
+			  {
+				"displayName": "Workflow Completed",
+				"value": "workflow_completed"
+			  },
+			  {
+				"displayName": "Approval Status Changed",
+				"value": "workflow_approval_status_changed"
+			  },
+			  {
+				"displayName": "Workflow Attributes Updated",
+				"value": "workflow_attribute_updated"
+			  },
+			  {
+				"displayName": "Comment Reaction Added",
+				"value": "workflow_comment_reaction_added"
+			  },
+			  {
+				"displayName": "Comment Reaction Removed",
+				"value": "workflow_comment_reaction_removed"
+			  },
+			  {
+				"displayName": "Comment Added",
+				"value": "workflow_comment_added"
+			  },
+			  {
+				"displayName": "Comment Removed",
+				"value": "workflow_comment_removed"
+			  },
+			  {
+				"displayName": "Comment Updated",
+				"value": "workflow_comment_updated"
+			  },
+			  {
+				"displayName": "Counterparty Invite Sent",
+				"value": "workflow_counterparty_invite_sent"
+			  },
+			  {
+				"displayName": "Counterparty Invite Revoked",
+				"value": "workflow_counterparty_invite_revoked"
+			  },
+			  {
+				"displayName": "Workflow Document Added",
+				"value": "workflow_documents_added"
+			  },
+			  {
+				"displayName": "Workflow Document Removed",
+				"value": "workflow_documents_removed"
+			  },
+			  {
+				"displayName": "Workflow Document Updated",
+				"value": "workflow_documents_updated"
+			  },
+			  {
+				"displayName": "Workflow Document Edited",
+				"value": "workflow_document_edited"
+			  },
+			  {
+				"displayName": "Workflow Paused",
+				"value": "workflow_paused"
+			  },
+			  {
+				"displayName": "Workflow Resumed",
+				"value": "workflow_resumed"
+			  },
+			  {
+				"displayName": "Signature Packet Sent",
+				"value": "workflow_signature_packet_sent"
+			  },
+			  {
+				"displayName": "Signature Packet Uploaded",
+				"value": "workflow_signature_packet_uploaded"
+			  },
+			  {
+				"displayName": "Signature Packet Cancelled",
+				"value": "workflow_signature_packet_cancelled"
+			  }
 			],
 			"x-ms-visibility": "important"
-		},
+		  },
 		"webhookEvents_array": {
 			"description": "The trigger events for the Worklfow.",
 			"items": {
-				"$ref": "#/definitions/webhookEvent_object"
+				"$ref": "#/definitions/webhookEvent_string"
 			},
 			"title": "Events",
 			"type": "array",
@@ -5033,7 +5096,7 @@
 				"filename": {
 					"$ref": "#/definitions/documentFileName_string"
 				},
-				"key":{
+				"key": {
 					"$ref": "#/definitions/documentKey_string"
 				}
 			},
@@ -5198,30 +5261,16 @@
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
-		"workflowEmailTransformedAttachment_object": {
-			"description": "An attachment in the email.",
-			"properties": {
-				"contentType": {
-					"$ref": "#/definitions/documentContentType_string"
-				},
-				"download": {
-					"$ref": "#/definitions/documentDownloadPath_string"
-				},
-				"filename": {
-					"$ref": "#/definitions/documentFileName_string"
-				},
-				"key": {
-					"$ref": "#/definitions/documentKey_string"
-				}
-			},
-			"title": "Attachment",
-			"type": "object",
-			"x-ms-visibility": "important"
-		},
 		"workflowEmailType_string": {
 			"description": "The type of the email.",
 			"title": "Type",
 			"type": "string",
+			"x-ms-visibility": "important"
+		},
+		"workflowFormattedSchema_object":{
+			"title": "Formatted Schema",
+			"description": "The Ironclad formatted schema of the workflow.",
+			"type": "object",
 			"x-ms-visibility": "important"
 		},
 		"workflowParticipantGet_object": {
@@ -5249,6 +5298,12 @@
 			"title": "Label",
 			"type": "string",
 			"x-ms-visibility": "advanced"
+		},
+		"workflowLaunchSchema_object":{
+			"title": "Launch Schema",
+			"description": "The OpenAPI formatted schema of the workflow.",
+			"type": "object",
+			"x-ms-visibility": "important"
 		},
 		"workflowParticipantsGet_object": {
 			"properties": {
@@ -5375,9 +5430,10 @@
 					"$ref": "#/definitions/workflowDocumentSchemaAsArrayGet_array"
 				},
 				"formattedSchema": {
-					"title": "Formatted Schema",
-					"type": "object",
-					"x-ms-visibility": "important"
+					"$ref": "#/definitions/workflowFormattedSchema_object"
+				},
+				"launchSchema": {
+					"$ref": "#/definitions/workflowLaunchSchema_object"
 				},
 				"id": {
 					"$ref": "#/definitions/templateId_string"
@@ -6079,13 +6135,14 @@
 			"x-ms-summary": "Page Size",
 			"x-ms-visibility": "important"
 		},
-		"recordsProperties_query": {
-			"description": "IDs of properties to export, comma separated. Example: counterpartyName,agreementDate",
+		"recordProperties_query": {
+			"name": "recordPorperties",
 			"in": "query",
-			"name": "properties",
+			"description": "A comma separated list of properties, clauses and attachments to include in the retrieved records.",
 			"required": false,
 			"type": "string",
-			"x-ms-summary": "Properties"
+			"x-ms-summary": "Record Properties",
+			"x-ms-visibility": "important"
 		},
 		"recordDocumentKeyFromSchema_path": {
 			"description": "The unique identifier for the attachment. This key can be located using the Retrieve a workflow endpoint. In the response, locate the file attribute (e.g., draft) and look at its download parameter. The download parameter includes the key at the end of the URL .../document/{ATTACHMENT_KEY}/download.",

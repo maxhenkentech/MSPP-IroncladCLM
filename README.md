@@ -1,21 +1,25 @@
-# Ironclad CLM Custom Connector Documentation
+# Ironclad CLM (Independent Publisher) Custom Connector
 
 ## Introduction
 
-The Ironclad CLM Custom Connector is a powerful integration tool designed to seamlessly connect PowerPlatform with IroncladCLM. This connector enables users to interact with workflows, records, users, and groups within Ironclad, providing a robust set of operations for managing contracts and related processes. The connector and it's actions are available in Power Automate, Copilot Studio and PowerApps, tough the latter two with some limitations.
+The Ironclad CLM (Independent Publisher) Custom Connector is a powerful integration tool designed to seamlessly connect PowerPlatform with IroncladCLM. This connector enables users to interact with workflows, records, users, and groups within Ironclad, providing a robust set of operations for managing contracts and related processes. The connector and it's actions are available in Power Automate, Copilot Studio and PowerApps, tough the latter two with some limitations.
 
 Key features of this connector include:
 
-- Comprehensive support for workflow management
+- Comprehensive support for workflow and repository management
 - Extensive record manipulation capabilities
 - User and group administration through SCIM protocol
 - Dynamic interaction with Ironclad's API, enhanced by a custom script for improved compatibility
 
-The custom script included in this connector plays a crucial role in transforming API traffic, making the fundamentally non-OpenAPI compatible Ironclad API work seamlessly with OpenAPI standards and therefore MS PowerPlatform. This script executes at runtime, enabling users to interact dynamically with their workflows and records, thus significantly enhancing the connector's functionality and user experience.
+The C# script included in this connector plays a crucial role in transforming API traffic, making the non-OpenAPI compatible Ironclad API work seamlessly with OpenAPI standards and therefore MS PowerPlatform. This script executes at runtime, enabling users to interact dynamically with their workflows and records, thus significantly enhancing the connector's functionality and user experience.
 
+## Pre-Requisites
+
+- An Ironclad CLM account with API add-on enabled
+- Credential (client id and secret) from a registered application for the custom connector in the Ironclad Admin panel
+- Licensed access to Microsoft Power Platform (Power Automate, Power Apps, or Copilot Studio)
 ## Table of Contents
 
-1. [Introduction](#introduction)
 2. [Supported Endpoints](#supported-endpoints)
    - [Workflow Operations](#workflow-operations)
    - [Record Operations](#record-operations)
@@ -36,8 +40,8 @@ The custom script included in this connector plays a crucial role in transformin
 
 ### Workflow Operations
 
-| Operation Name                                      | API | Object   | Method  | Path                                                                          | Description                                                                                 | Script Action                                                |
-| --------------------------------------------------- | --- | -------- | ------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Operation Name                                      | API | Object   | Method  | Path                                                            | Description                                                                                 | Script Action                                                |
+| --------------------------------------------------- | --- | -------- | ------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | List all Workflow Schemas                           | CLM | Workflow | `GET`   | `/workflow-schemas`                                             | Returns a list of workflow schemas                                                          | Transforms the response to format workflow schemas           |
 | Retrieve a Workflow Schema                          | CLM | Workflow | `GET`   | `/workflow-schemas/{Schema}`                                    | Returns the fields used in the workflow's launch form                                       | Transforms the response to format the workflow schema        |
 | List all Workflows                                  | CLM | Workflow | `GET`   | `/workflows`                                                    | List all workflows in your Ironclad account                                                 | Transforms the response to add a label property              |
@@ -192,3 +196,28 @@ The Ironclad repository data model support attaching any property to any record.
 | Monetary Amount | EUR 1,598.12                                                           | {<br>"currency": "EUR",<br>"amount": "1598.12"<br>}                |
 | Address         | 1233 Howard Street<br>San Francisco, California 94103<br>United States | 1233 Howard Street\nSan Francisco, California 94103\nUnited States |
 Refer to [this Ironclad API Reference document]([Create a Record (ironcladapp.com)](https://developer.ironcladapp.com/docs/create-a-record-1)) for more details.
+
+### List All Records
+
+The List All Records operation allows you to retrieve records from your Ironclad repository with several options for filtering and formatting the response:
+
+1. Basic listing with default parameters:
+    - Returns 25 records per page
+    - Sorted by last updated date in descending order
+    - Includes basic record metadata
+2. Filtered listing with properties:
+    - Use the Record Properties parameter to specify which properties to include in the response
+    - Properties must be provided as a comma-separated list
+    - The response will include a formatted schema specific to the requested properties
+
+Example configurations:
+
+The response includes:
+
+- record ID and metadata
+- formatted properties based on your request
+- the Counterparty Name at the root level (if available)
+- a display label combining the Ironclad ID and name
+- attachments formatted as an array for easier processing
+
+> Note: When requesting specific properties, the response includes only those properties that are available in your repository schema
