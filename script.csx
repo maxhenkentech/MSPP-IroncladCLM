@@ -38,10 +38,12 @@ public class Script : ScriptBase
             case "CreateAttachment":
                 await crtAtt_TransformToMultipartRequestForRecords().ConfigureAwait(false);
                 break;
-            case "CreateWorkflowAsync":
             case "CreateWorkflow":
                 await crtWfl_TransformToMultipartRequestForWorkflows().ConfigureAwait(false);
-            break;
+                break;
+            case "CreateWorkflowAsync":
+                await crtAsyncWfl_TransformRequestJson().ConfigureAwait(false);
+                break;
             case "CreateRecord":
             case "ReplaceRecord":
                 await crtRcd_TransformCreateRecordRequest().ConfigureAwait(false);
@@ -305,7 +307,105 @@ public class Script : ScriptBase
     }
 
     // ################################################################################
-    // Create Workflow ################################################################
+    // Create Workflow Asynchronously #################################################
+    // ################################################################################
+
+    private async Task crtAsyncWfl_TransformRequestJson()
+    {
+        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var jsonBody = JObject.Parse(content);
+
+        // Unflatten the JSON structure
+        jsonBody = crtAsyncWfl_UnflattenJson(jsonBody);
+
+        // Update the request content with transformed JSON
+        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+    }
+
+    private JObject crtAsyncWfl_UnflattenJson(JObject flatJson)
+    {
+        var result = new JObject();
+
+        foreach (var prop in flatJson.Properties())
+        {
+            if (prop.Value is JArray array)
+            {
+                var unflattened = new JArray();
+                foreach (var item in array.OfType<JObject>())
+                {
+                    var unflattenedItem = new JObject();
+                    var groupedProperties = item.Properties()
+                        .GroupBy(p => p.Name.Split('/')[0])
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    foreach (var group in groupedProperties)
+                    {
+                        if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
+                        {
+                            // Simple property
+                            unflattenedItem[group.Key] = group.Value[0].Value;
+                        }
+                        else
+                        {
+                            // Complex property
+                            var complexObj = new JObject();
+                            foreach (var complexProp in group.Value)
+                            {
+                                var parts = complexProp.Name.Split('/');
+                                if (parts.Length == 1)
+                                {
+                                    complexObj[parts[0]] = complexProp.Value;
+                                }
+                                else
+                                {
+                                    var currentObj = complexObj;
+                                    for (int i = 1; i < parts.Length - 1; i++)
+                                    {
+                                        if (!currentObj.ContainsKey(parts[i]))
+                                        {
+                                            currentObj[parts[i]] = new JObject();
+                                        }
+                                        currentObj = (JObject)currentObj[parts[i]];
+                                    }
+                                    currentObj[parts.Last()] = complexProp.Value;
+                                }
+                            }
+                            unflattenedItem[group.Key] = complexObj;
+                        }
+                    }
+                    unflattened.Add(unflattenedItem);
+                }
+                result[prop.Name] = unflattened;
+            }
+            else if (prop.Value is JObject obj)
+            {
+                result[prop.Name] = crtAsyncWfl_UnflattenJson(obj);
+            }
+            else if (prop.Name.Contains("/"))
+            {
+                var parts = prop.Name.Split('/');
+                var currentObj = result;
+                for (int i = 0; i < parts.Length - 1; i++)
+                {
+                    if (!currentObj.ContainsKey(parts[i]))
+                    {
+                        currentObj[parts[i]] = new JObject();
+                    }
+                    currentObj = (JObject)currentObj[parts[i]];
+                }
+                currentObj[parts.Last()] = prop.Value;
+            }
+            else
+            {
+                result[prop.Name] = prop.Value;
+            }
+        }
+
+        return result;
+    }
+
+    // ################################################################################
+    // Create Workflow Synchronously ##################################################
     // ################################################################################
 
    private async Task crtWfl_TransformToMultipartRequestForWorkflows()

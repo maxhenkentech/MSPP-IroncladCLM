@@ -1022,9 +1022,22 @@
 							"properties": {
 								"status": {
 									"$ref": "#/definitions/workflowAsyncLaunchStatus_string"
+								},
+								"workflow":{
+									"type": "object",
+									"title": "Workflow",
+									"description": "The workflow that was created asynchronously.",
+									"x-ms-visibility": "important",
+									"properties": {
+										"id": {
+											"$ref": "#/definitions/uniqueId_string"
+										},
+										"ironcladId": {
+											"$ref": "#/definitions/workflowIroncladId_string"
+										}
+									}
 								}
-							},
-							"type": "object"
+							}
 						}
 					}
 				},
@@ -6364,7 +6377,7 @@
 			"x-ms-visibility": "important"
 		},
 		"scimRecordFilter_query": {
-			"description": "Filters for identifying subsets of users. Filters must comply with the SCIM protocol's convention.",
+			"description": "Filters for identifying subsets of records. Filters must comply with the SCIM protocol's convention.",
 			"in": "query",
 			"name": "filter",
 			"required": false,
