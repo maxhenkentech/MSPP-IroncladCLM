@@ -331,55 +331,63 @@ public class Script : ScriptBase
             if (prop.Value is JArray array)
             {
                 var unflattened = new JArray();
-                foreach (var item in array.OfType<JObject>())
+                foreach (var item in array)
                 {
-                    var unflattenedItem = new JObject();
-                    var groupedProperties = item.Properties()
-                        .GroupBy(p => p.Name.Split('/')[0])
-                        .ToDictionary(g => g.Key, g => g.ToList());
-
-                    foreach (var group in groupedProperties)
+                    if (item is JObject objItem)
                     {
-                        if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
+                        var unflattenedItem = new JObject();
+                        var groupedProperties = objItem.Properties()
+                            .GroupBy(p => p.Name.Split('/')[0])
+                            .ToDictionary(g => g.Key, g => g.ToList());
+
+                        foreach (var group in groupedProperties)
                         {
-                            // Simple property
-                            unflattenedItem[group.Key] = group.Value[0].Value;
-                        }
-                        else
-                        {
-                            // Complex property
-                            var complexObj = new JObject();
-                            foreach (var complexProp in group.Value)
+                            if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
                             {
-                                var parts = complexProp.Name.Split('/');
-                                if (parts.Length == 1)
-                                {
-                                    complexObj[parts[0]] = complexProp.Value;
-                                }
-                                else
-                                {
-                                    var currentObj = complexObj;
-                                    for (int i = 1; i < parts.Length - 1; i++)
-                                    {
-                                        if (!currentObj.ContainsKey(parts[i]))
-                                        {
-                                            currentObj[parts[i]] = new JObject();
-                                        }
-                                        currentObj = (JObject)currentObj[parts[i]];
-                                    }
-                                    currentObj[parts.Last()] = complexProp.Value;
-                                }
+                                // Simple property
+                                unflattenedItem[group.Key] = group.Value[0].Value;
                             }
-                            unflattenedItem[group.Key] = complexObj;
+                            else
+                            {
+                                // Complex property
+                                var complexObj = new JObject();
+                                foreach (var complexProp in group.Value)
+                                {
+                                    var parts = complexProp.Name.Split('/');
+                                    if (parts.Length == 1)
+                                    {
+                                        complexObj[parts[0]] = complexProp.Value;
+                                    }
+                                    else
+                                    {
+                                        var currentObj = complexObj;
+                                        for (int i = 1; i < parts.Length - 1; i++)
+                                        {
+                                            if (!currentObj.ContainsKey(parts[i]))
+                                            {
+                                                currentObj[parts[i]] = new JObject();
+                                            }
+                                            currentObj = (JObject)currentObj[parts[i]];
+                                        }
+                                        currentObj[parts.Last()] = complexProp.Value;
+                                    }
+                                }
+                                unflattenedItem[group.Key] = complexObj;
+                            }
                         }
+                        unflattened.Add(unflattenedItem);
                     }
-                    unflattened.Add(unflattenedItem);
+                    else
+                    {
+                        // Handle primitive types (e.g., strings, numbers) by adding them directly
+                        unflattened.Add(item);
+                    }
                 }
                 result[prop.Name] = unflattened;
             }
             else if (prop.Value is JObject obj)
             {
-                result[prop.Name] = crtAsyncWfl_UnflattenJson(obj);
+                result[prop.Name] = crtWfl_UnflattenJson(obj);
             }
             else if (prop.Name.Contains("/"))
             {
@@ -408,7 +416,7 @@ public class Script : ScriptBase
     // Create Workflow Synchronously ##################################################
     // ################################################################################
 
-   private async Task crtWfl_TransformToMultipartRequestForWorkflows()
+    private async Task crtWfl_TransformToMultipartRequestForWorkflows()
     {
         var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
         var jsonBody = JObject.Parse(content);
@@ -429,7 +437,7 @@ public class Script : ScriptBase
         this.Context.Request.Content = multipartContent;
     }
 
-        private JObject crtWfl_UnflattenJson(JObject flatJson)
+    private JObject crtWfl_UnflattenJson(JObject flatJson)
     {
         var result = new JObject();
 
@@ -438,62 +446,57 @@ public class Script : ScriptBase
             if (prop.Value is JArray array)
             {
                 var unflattened = new JArray();
-                foreach (var item in array.OfType<JObject>())
+                foreach (var item in array)
                 {
-                    var unflattenedItem = new JObject();
-                    var groupedProperties = item.Properties()
-                        .GroupBy(p => p.Name.Split('/')[0])
-                        .ToDictionary(g => g.Key, g => g.ToList());
-
-                    foreach (var group in groupedProperties)
+                    if (item is JObject objItem)
                     {
-                        if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
+                        var unflattenedItem = new JObject();
+                        var groupedProperties = objItem.Properties()
+                            .GroupBy(p => p.Name.Split('/')[0])
+                            .ToDictionary(g => g.Key, g => g.ToList());
+
+                        foreach (var group in groupedProperties)
                         {
-                            // Simple property
-                            unflattenedItem[group.Key] = group.Value[0].Value;
-                        }
-                        else
-                        {
-                            // Complex property
-                            var complexObj = new JObject();
-                            foreach (var complexProp in group.Value)
+                            if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
                             {
-                                var parts = complexProp.Name.Split('/');
-                                if (parts.Length == 1)
+                                // Simple property
+                                unflattenedItem[group.Key] = group.Value[0].Value;
+                            }
+                            else
+                            {
+                                // Complex property
+                                var complexObj = new JObject();
+                                foreach (var complexProp in group.Value)
                                 {
-                                    complexObj[parts[0]] = complexProp.Value;
-                                }
-                                else
-                                {
-                                    var currentObj = complexObj;
-                                    for (int i = 1; i < parts.Length - 1; i++)
+                                    var parts = complexProp.Name.Split('/');
+                                    if (parts.Length == 1)
                                     {
-                                        if (!currentObj.ContainsKey(parts[i]))
-                                        {
-                                            currentObj[parts[i]] = new JObject();
-                                        }
-                                        currentObj = (JObject)currentObj[parts[i]];
-                                    }
-                                    
-                                    // Handle arrays specifically
-                                    if (complexProp.Value is JArray valueArray)
-                                    {
-                                        var lastPart = parts.Last();
-                                        if (!currentObj.ContainsKey(lastPart))
-                                        {
-                                            currentObj[lastPart] = valueArray;
-                                        }
+                                        complexObj[parts[0]] = complexProp.Value;
                                     }
                                     else
                                     {
+                                        var currentObj = complexObj;
+                                        for (int i = 1; i < parts.Length - 1; i++)
+                                        {
+                                            if (!currentObj.ContainsKey(parts[i]))
+                                            {
+                                                currentObj[parts[i]] = new JObject();
+                                            }
+                                            currentObj = (JObject)currentObj[parts[i]];
+                                        }
                                         currentObj[parts.Last()] = complexProp.Value;
                                     }
                                 }
+                                unflattenedItem[group.Key] = complexObj;
                             }
-                            unflattenedItem[group.Key] = complexObj;
                         }
+                        unflattened.Add(unflattenedItem);
                     }
-                    unflattened.Add(unflattenedItem);
+                    else
+                    {
+                        // Handle primitive types (e.g., strings, numbers) by adding them directly
+                        unflattened.Add(item);
+                    }
                 }
                 result[prop.Name] = unflattened;
             }
