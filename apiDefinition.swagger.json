@@ -7,7 +7,7 @@
 			"url": "https://www.amadeus.com"
 		},
 		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. Follow https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret.",
-		"title": "Ironclad CLM (Independent Publisher)",
+		"title": "Ironclad CLM",
 		"version": "1.0"
 	},
 	"x-ms-connector-metadata": [
@@ -129,7 +129,7 @@
 				"operationId": "ExportRecords",
 				"parameters": [
 					{
-						"$ref": "#/parameters/recordProperties_query"
+						"$ref": "#/parameters/recordExportProperties_query"
 					},
 					{
 						"$ref": "#/parameters/recordTypes_query"
@@ -588,7 +588,7 @@
 						}
 					}
 				},
-				"summary": "Delete an Attachment on a Record",
+				"summary": "Remove an Attachment on a Record",
 				"x-ms-visibility": "important"
 			},
 			"get": {
@@ -3938,19 +3938,6 @@
 			"description": "The identifier of the activity feed message that this message is a reply to.",
 			"title": "Replied To Activity Feed Message ID",
 			"type": "string",
-			"x-ms-dynamic-values": {
-				"operationId": "ListWorkflowComments",
-				"parameters": {
-					"page": 0,
-					"pageSize": 100,
-					"Workflow": {
-						"parameter": "Workflow"
-					}
-				},
-				"value-collection": "list",
-				"value-path": "id",
-				"value-title": "commentMessage"
-			},
 			"x-ms-visibility": "important"
 		},
 		"requestedProperties_string":{
@@ -5386,7 +5373,7 @@
 		},
 		"workflowRoleDisplayName_string": {
 			"description": "The display name of the role.",
-			"title": "Display Name",
+			"title": "Role Name",
 			"type": "string",
 			"x-ms-visibility": "important"
 		},
@@ -6014,19 +6001,6 @@
 			"name": "Email",
 			"required": true,
 			"type": "string",
-			"x-ms-dynamic-values": {
-				"operationId": "RetrieveEmailThreads",
-				"parameters": {
-					"page": 0,
-					"pageSize": 100,
-					"Workflow": {
-						"parameter": "Workflow"
-					}
-				},
-				"value-collection": "list",
-				"value-path": "id",
-				"value-title": "subject"
-			},
 			"x-ms-summary": "Email",
 			"x-ms-url-encoding": "single",
 			"x-ms-visibility": "important"
@@ -6146,6 +6120,15 @@
 			"required": true,
 			"type": "integer",
 			"x-ms-summary": "Page Size",
+			"x-ms-visibility": "important"
+		},
+		"recordExportProperties_query": {
+			"name": "properties",
+			"in": "query",
+			"description": "A comma separated list of properties, clauses and attachments to include in the retrieved records.",
+			"required": false,
+			"type": "string",
+			"x-ms-summary": "Record Properties",
 			"x-ms-visibility": "important"
 		},
 		"recordProperties_query": {
@@ -6746,7 +6729,18 @@
 			"required": false,
 			"type": "string",
 			"x-ms-summary": "Template ID",
-			"x-ms-visibility": "important"
+			"x-ms-visibility": "important",
+			"x-ms-dynamic-list": {
+			"itemsPath": "list",
+			"itemTitlePath": "name",
+			"itemValuePath": "id",
+			"operationId": "ListWorkflowSchemas",
+			"parameters": {
+				"form": {
+					"value": "launchForm"
+				}
+			}
+		}
 		},
 		"x-as-user-email_header": {
 			"description": "Denotes the actor of the request. When used, the API will take into account this user's permissions and access. This or x-as-user-id is required when the associated token was produced from the Client Credentials grant or with legacy bearer tokens on select endpoints.",

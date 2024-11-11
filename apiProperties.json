@@ -1,7 +1,4 @@
 {
-	"name": "shared_ironcladclm",
-	"id": "/providers/Microsoft.PowerApps/apis/shared_ironcladclm",
-	"type": "/providers/Microsoft.PowerApps/apis",
 	"properties": {
 		"publisher": "Amadeus IT Group, S.A. - LEG TechOps",
 		"stackOwner": "Amadeus IT Group, S.A. - LEG TechOps",
