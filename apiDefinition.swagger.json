@@ -8726,7 +8726,7 @@
                 "operationId": "ListWorkflowSchemas",
                 "parameters": {
                     "form": {
-                        "value": "launchForm"
+                        "value": "launch"
                     }
                 }
             }
