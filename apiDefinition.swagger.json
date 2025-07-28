@@ -1,40 +1,40 @@
 {
-	"swagger": "2.0",
-	"info": {
-		"contact": {
-			"email": "LEGTechOps@amadeus.com",
-			"name": "Amadeus IT Group, S.A. - LEG TechOps",
-			"url": "https://www.amadeus.com"
-		},
-		"description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. Follow https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret.",
-		"title": "Ironclad CLM",
-		"version": "1.0"
-	},
-	"x-ms-connector-metadata": [
-		{
-			"propertyName": "Website",
-			"propertyValue": "https://ironcladapp.com/"
-		},
-		{
-			"propertyName": "Privacy Policy",
-			"propertyValue": "https://legal.ironcladapp.com/privacy-policy"
-		},
-		{
-			"propertyName": "Categories",
-			"propertyValue": "Commerce"
-		}
-	],
-	"schemes": [
-		"https"
-	],
-	"host": "ironcladapp.com",
-	"basePath": "/",
-	"consumes": [
-		"application/json"
-	],
-	"produces": [
-		"application/json"
-	],
+    "swagger": "2.0",
+    "info": {
+        "contact": {
+            "email": "LEGTechOps@amadeus.com",
+            "name": "Amadeus IT Group, S.A. - LEG TechOps",
+            "url": "https://www.amadeus.com"
+        },
+        "description": "Using this connector allows admins and user to connect to their Ironclad CLM demo, preview and production instances and perform various operations such as creating, updating, deleting and retrieving records, workflows, comments, approvals, signatures, attachments, and more. Follow https://developer.ironcladapp.com/reference/register-oauth-client and register a client to get the client ID and client secret.",
+        "title": "Ironclad CLM",
+        "version": "1.0"
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://ironcladapp.com/"
+        },
+        {
+            "propertyName": "Privacy Policy",
+            "propertyValue": "https://legal.ironcladapp.com/privacy-policy"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Commerce"
+        }
+    ],
+    "schemes": [
+        "https"
+    ],
+    "host": "ironcladapp.com",
+    "basePath": "/",
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
     "paths": {
         "/public/api/v1/records": {
             "get": {
@@ -3477,18 +3477,18 @@
                                         "description": "The key of the property to be removed.",
                                         "type": "string",
                                         "x-ms-visibility": "important",
-										"x-ms-dynamic-values": {
-											"operationId": "ListEntityRelationshipTypes",
-											"value-collection": "properties",
-											"value-path": "key",
-											"value-title": "displayName"
-										},
-										"x-ms-dynamic-list": {
-											"itemsPath": "properties",
-											"itemTitlePath": "displayName",
-											"itemValuePath": "key",
-											"operationId": "ListEntityRelationshipTypes"
-										}
+                                        "x-ms-dynamic-values": {
+                                            "operationId": "ListEntityRelationshipTypes",
+                                            "value-collection": "properties",
+                                            "value-path": "key",
+                                            "value-title": "displayName"
+                                        },
+                                        "x-ms-dynamic-list": {
+                                            "itemsPath": "properties",
+                                            "itemTitlePath": "displayName",
+                                            "itemValuePath": "key",
+                                            "operationId": "ListEntityRelationshipTypes"
+                                        }
                                     }
                                 },
                                 "addProperties": {
@@ -3507,18 +3507,18 @@
                                                 "type": "string",
                                                 "description": "The key of the property.",
                                                 "x-ms-visibility": "important",
-												"x-ms-dynamic-values": {
-													"operationId": "ListEntityRelationshipTypes",
-													"value-collection": "properties",
-													"value-path": "key",
-													"value-title": "displayName"
-												},
-												"x-ms-dynamic-list": {
-													"itemsPath": "properties",
-													"itemTitlePath": "displayName",
-													"itemValuePath": "key",
-													"operationId": "ListEntityRelationshipTypes"
-												}
+                                                "x-ms-dynamic-values": {
+                                                    "operationId": "ListEntityRelationshipTypes",
+                                                    "value-collection": "properties",
+                                                    "value-path": "key",
+                                                    "value-title": "displayName"
+                                                },
+                                                "x-ms-dynamic-list": {
+                                                    "itemsPath": "properties",
+                                                    "itemTitlePath": "displayName",
+                                                    "itemValuePath": "key",
+                                                    "operationId": "ListEntityRelationshipTypes"
+                                                }
                                             },
                                             "value": {
                                                 "title": "Value",
@@ -3596,7 +3596,7 @@
                         "schema": {
                             "title": "Relationship Schema",
                             "type": "object",
-                            "description": "The Entity Reactionship Schema",
+                            "description": "The Entity Relationship Schema",
                             "x-ms-visibility": "important",
                             "properties": {
                                 "relationshipTypes": {
@@ -3608,36 +3608,7 @@
                                     "type": "array",
                                     "x-ms-visibility": "important",
                                     "items": {
-                                        "title": "Property",
-                                        "description": "A property of the relationship type.",
-                                        "type": "object",
-                                        "x-ms-visibility": "important",
-                                        "properties": {
-                                            "key": {
-                                                "title": "Key",
-                                                "type": "string",
-                                                "description": "The unique key of the property.",
-                                                "x-ms-visibility": "important"
-                                            },
-                                            "description": {
-                                                "title": "Description",
-                                                "type": "string",
-                                                "description": "A description of the property.",
-                                                "x-ms-visibility": "important"
-                                            },
-                                            "displayName": {
-                                                "title": "Display Name",
-                                                "type": "string",
-                                                "description": "The display name of the property.",
-                                                "x-ms-visibility": "important"
-                                            },
-                                            "type": {
-                                                "title": "Type",
-                                                "type": "string",
-                                                "description": "The type of the property.",
-                                                "x-ms-visibility": "important"
-                                            }
-                                        }
+                                        "$ref": "#/definitions/entityRelationshipFormattedProperty_object"
                                     }
                                 }
                             }
@@ -3668,7 +3639,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Relationship Types Retrieved",
+                        "description": "Relationship Type Retrieved",
                         "schema": {
                             "$ref": "#/definitions/entityRelationshipType_object"
                         }
@@ -4239,77 +4210,41 @@
             "x-ms-visibility": "advanced",
             "items": {
                 "title": "Entity",
-				"description": "An entity stored in Ironclad.",
-				"type": "object",
-				"properties": {
-					"id": {
-						"$ref": "#/definitions/uniqueId_string"
-					},
-					"ironcladId": {
-						"type": "string",
-						"title": "Ironclad ID",
-						"description": "The unique identifier of the entity in Ironclad.",
-						"x-ms-visibility": "important"
-					},
-					"name": {
-						"type": "string",
-						"title": "Name",
-						"description": "The name of the entity.",
-						"x-ms-visibility": "important"
-					},
-					"lastUpdated": {
-						"type": "string",
-						"format": "date-time",
-						"title": "Last Updated",
-						"description": "The date and time the entity was last updated.",
-						"x-ms-visibility": "important"
-					},
-					"status": {
-						"type": "string",
-						"title": "Status",
-						"description": "The status of the entity.",
-						"x-ms-visibility": "important"
-					},
-					"relationshipTypes": {
-						"type": "array",
-						"title": "Relationship Types",
-						"description": "The relationship types associated with the entity.",
-						"items": {
-							"title": "Relationship Type",
-							"description": "The relationship type.",
-							"type": "object",
-							"x-ms-visibility": "important",
-							"properties": {
-								"name": {
-									"type": "string",
-									"title": "System Name",
-									"description": "The system name of the relationship type.",
-									"x-ms-visibility": "important"
-								},
-								"displayName": {
-									"type": "string",
-									"title": "Display Name",
-									"description": "The display name of the relationship type.",
-									"x-ms-visibility": "important"
-								},
-								"id": {
-									"title": "ID",
-									"type": "string",
-									"description": "The unique identifier of the relationship type.",
-									"x-ms-visibility": "important"
-								},
-								"description": {
-									"type": "string",
-									"title": "Description",
-									"description": "A description of the relationship type.",
-									"x-ms-visibility": "advanced"
-								}
-							}
-						},
-						"x-ms-visibility": "important"
-					}
-				}
+                "description": "An entity stored in Ironclad.",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/definitions/uniqueId_string"
+                    },
+                    "ironcladId": {
+                        "$ref": "#/definitions/recordIroncladId_string"
+                    },
+                    "name": {
+                        "$ref": "#/definitions/recordName_string"
+                    },
+                    "label": {
+                        "$ref": "#/definitions/entityLabel_string"
+                    },
+                    "lastUpdated": {
+                        "$ref": "#/definitions/lastUpdated_string"
+                    },
+                    "status": {
+                        "$ref": "#/definitions/entityStatus_string"
+                    },
+                    "relationshipTypes": {
+                        "$ref": "#/definitions/entityRelationshipTypes_array"
+                    },
+                    "properties": {
+                        "$ref": "#/definitions/entityProperties"
+                    }
+                }
             }
+        },
+        "entityFormattedSchema": {
+            "type": "object",
+            "title": "Formatted Schema",
+            "description": "The formatted schema of the entity.",
+            "x-ms-visibility": "advanced"
         },
         "entityGet_object": {
             "title": "Entity",
@@ -4321,131 +4256,51 @@
                     "$ref": "#/definitions/uniqueId_string"
                 },
                 "name": {
-                    "type": "string",
-                    "title": "Name",
-                    "description": "The name of the entity.",
-                    "x-ms-visibility": "important"
+                    "$ref": "#/definitions/recordName_string"
                 },
                 "lastUpdated": {
-                    "type": "string",
-                    "format": "date-time",
-                    "title": "Updated",
-                    "description": "The date and time the entity was last updated.",
-                    "x-ms-visibility": "important"
+                    "$ref": "#/definitions/lastUpdated_string"
                 },
                 "properties": {
-                    "type": "object",
-                    "title": "Properties",
-                    "x-ms-visibility": "advanced",
-                    "description": "Custom properties associated with the entity."
+                    "$ref": "#/definitions/entityProperties"
                 },
-				"relationshipTypes": {
-					"type": "array",
-					"title": "Relationship Types",
-					"description": "The relationship types associated with the entity.",
-					"items": {
-						"title": "Relationship Type",
-						"description": "The relationship type.",
-						"type": "object",
-						"x-ms-visibility": "important",
-						"properties": {
-							"name": {
-								"type": "string",
-								"title": "System Name",
-								"description": "The system name of the relationship type.",
-								"x-ms-visibility": "important"
-							},
-							"displayName": {
-								"type": "string",
-								"title": "Display Name",
-								"description": "The display name of the relationship type.",
-								"x-ms-visibility": "important"
-							},
-							"id": {
-								"title": "ID",
-								"type": "string",
-								"description": "The unique identifier of the relationship type.",
-								"x-ms-visibility": "important"
-							},
-							"description": {
-								"type": "string",
-								"title": "Description",
-								"description": "A description of the relationship type.",
-								"x-ms-visibility": "advanced"
-							}
-						}
-					},
-					"x-ms-visibility": "important"
-				},
-				"status": {
-					"type": "string",
-					"title": "Status",
-					"description": "The status of the entity.",
-					"x-ms-visibility": "important"
-				},
-				"ironcladId": {
-					"type": "string",
-					"title": "Ironclad ID",
-					"description": "The unique identifier of the entity in Ironclad.",
-					"x-ms-visibility": "important"
-				},
-                "propertiesAsArray": {
+                "relationshipTypes": {
                     "type": "array",
-                    "title": "Properties as Array",
-                    "description": "The properties associated with the relationship type as an array.",
+                    "title": "Relationship Types",
+                    "description": "The relationship types associated with the entity.",
                     "items": {
+                        "title": "Relationship Type",
+                        "description": "The relationship type.",
                         "type": "object",
+                        "x-ms-visibility": "important",
                         "properties": {
-                            "key": {
-                                "type": "string",
-                                "title": "Key",
-                                "description": "The name or key of the property.",
-                                "x-ms-visibility": "important"
+                            "name": {
+                                "$ref": "#/definitions/entityRelationshipTypeName_string"
                             },
                             "displayName": {
-                                "type": "string",
-                                "title": "Display Name",
-                                "description": "The display name of the property.",
-                                "x-ms-visibility": "important"
+                                "$ref": "#/definitions/entityRelationshipTypeDisplayName_string"
+                            },
+                            "id": {
+                                "$ref": "#/definitions/entityRelationshipTypeID_string"
                             },
                             "description": {
-                                "type": "string",
-                                "title": "Description",
-                                "description": "A description of the property.",
-                                "x-ms-visibility": "advanced"
-                            },
-                            "type": {
-                                "type": "string",
-                                "title": "Type",
-                                "description": "The type of the property, e.g., string, number, date.",
-                                "x-ms-visibility": "important"
-                            },
-                            "hidden": {
-                                "type": "boolean",
-                                "title": "Hidden",
-                                "description": "If true, the property is hidden from the UI.",
-                                "x-ms-visibility": "advanced"
-                            },
-                            "required": {
-                                "type": "boolean",
-                                "title": "Required",
-                                "description": "If true, the property is required.",
-                                "x-ms-visibility": "important"
-                            },
-                            "value": {
-                                "title": "Value",
-                                "description": "The value of the property.",
-                                "x-ms-visibility": "important"
+                                "$ref": "#/definitions/entityRelationshipTypeDescription_string"
                             }
-                        },
-                        "x-ms-visibility": "advanced"
-                    }
+                        }
+                    },
+                    "x-ms-visibility": "important"
+                },
+                "status": {
+                    "$ref": "#/definitions/entityStatus_string"
+                },
+                "ironcladId": {
+                    "$ref": "#/definitions/recordIroncladId_string"
+                },
+                "propertiesAsArray": {
+                    "$ref": "#/definitions/entityPropertiesAsArray_array"
                 },
                 "formattedSchema": {
-                    "type": "object",
-                    "title": "Formatted Schema",
-                    "description": "The formatted schema of the entity.",
-                    "x-ms-visibility": "advanced"
+                    "$ref": "#/definitions/entityFormattedSchema"
                 },
                 "formattedProperties": {
                     "type": "object",
@@ -4464,6 +4319,50 @@
                 }
             }
         },
+        "entityLabel_string": {
+            "description": "The label of the entity.",
+            "title": "Label",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
+        "entityProperties": {
+            "title": "Properties",
+            "description": "Custom properties associated with the entity.",
+            "type": "object",
+            "x-ms-visibility": "advanced"
+        },
+        "entityPropertiesAsArray_array": {
+            "type": "array",
+            "title": "Properties as Array",
+            "description": "The properties associated with the relationship type as an array.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "$ref": "#/definitions/entityPropertyKey_string"
+                    },
+                    "displayName": {
+                        "$ref": "#/definitions/entityPropertyDisplayName_string"
+                    },
+                    "description": {
+                        "$ref": "#/definitions/entityPropertyDescription_string"
+                    },
+                    "type": {
+                        "$ref": "#/definitions/entityPropertyType_string"
+                    },
+                    "hidden": {
+                        "$ref": "#/definitions/entityPropertyHidden_boolean"
+                    },
+                    "required": {
+                        "$ref": "#/definitions/entityPropertyRequired_boolean"
+                    },
+                    "value": {
+                        "$ref": "#/definitions/entityPropertyValue_string"
+                    }
+                },
+                "x-ms-visibility": "advanced"
+            }
+        },
         "entityRelationshipTypes_array": {
             "title": "Relationship Types",
             "type": "array",
@@ -4473,8 +4372,32 @@
             },
             "x-ms-visibility": "important"
         },
-        "relationshipTypeKey_string": {
-            "title": "Relationship Type",
+        "entityStatus_string": {
+            "description": "The status of the entity.",
+            "title": "Status",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
+        "entityRelationshipTypeFormattedSchema_object": {
+            "type": "object",
+            "title": "Formatted Schema",
+            "description": "The formatted schema of the relationship type.",
+            "x-ms-visibility": "advanced"
+        },
+        "entityRelationshipTypeDescription_string": {
+            "type": "string",
+            "title": "Description",
+            "description": "A description of the relationship type.",
+            "x-ms-visibility": "advanced"
+        },
+        "entityRelationshipTypeDisplayName_string": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The display name of the relationship type.",
+            "x-ms-visibility": "important"
+        },
+        "entityRelationshipTypeID_string": {
+            "title": "ID",
             "type": "string",
             "description": "The unique identifier of the relationship type.",
             "x-ms-visibility": "important",
@@ -4491,93 +4414,131 @@
                 "operationId": "ListEntityRelationshipTypes"
             }
         },
+        "entityRelationshipTypeName_string": {
+            "title": "System Name",
+            "type": "string",
+            "description": "The system name of the relationship type.",
+            "x-ms-visibility": "important",
+            "x-ms-dynamic-values": {
+                "operationId": "ListEntityRelationshipTypes",
+                "value-collection": "relationshipTypes",
+                "value-path": "name",
+                "value-title": "displayName"
+            },
+            "x-ms-dynamic-list": {
+                "itemsPath": "relationshipTypes",
+                "itemTitlePath": "displayName",
+                "itemValuePath": "name",
+                "operationId": "ListEntityRelationshipTypes"
+            }
+        },
+        "entityRelationshipTypePropertiesAsArray_array": {
+            "type": "array",
+            "x-ms-visibility": "important",
+            "description": "The properties associated with the relationship type as an array.",
+            "title": "Properties as Array",
+            "items": {
+                "$ref": "#/definitions/entityRelationshipTypePropertiesAsArrayProperty_object"
+            }
+        },
+        "entityRelationshipTypePropertiesAsArrayProperty_object": {
+            "type": "object",
+            "title": "Property",
+            "description": "A property of the relationship type.",
+            "x-ms-visibility": "important",
+            "properties": {
+                "key": {
+                    "$ref": "#/definitions/entityPropertyKey_string"
+                },
+                "displayName": {
+                    "$ref": "#/definitions/entityPropertyDisplayName_string"
+                },
+                "description": {
+                    "$ref": "#/definitions/entityPropertyDescription_string"
+                },
+                "type": {
+                    "$ref": "#/definitions/entityPropertyType_string"
+                },
+                "hidden": {
+                    "$ref": "#/definitions/entityPropertyHidden_boolean"
+                },
+                "required": {
+                    "$ref": "#/definitions/entityPropertyRequired_boolean"
+                }
+            }
+        },
+        "entityRelationshipTypeCustomProperties_object": {
+            "type": "object",
+            "title": "Custom Properties",
+            "x-ms-visibility": "advanced",
+            "description": "Custom properties associated with the relationship type."
+        },
+        "entityPropertyDescription_string": {
+            "type": "string",
+            "title": "Description",
+            "description": "A description of the property.",
+            "x-ms-visibility": "advanced"
+        },
+        "entityPropertyDisplayName_string": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The display name of the property.",
+            "x-ms-visibility": "important"
+        },
+        "entityPropertyHidden_boolean": {
+            "type": "boolean",
+            "title": "Hidden",
+            "description": "If true, the property is hidden from the UI.",
+            "x-ms-visibility": "advanced"
+        },
+        "entityPropertyKey_string": {
+            "type": "string",
+            "title": "Key",
+            "description": "The name or key of the property.",
+            "x-ms-visibility": "important"
+        },
+        "entityPropertyRequired_boolean": {
+            "type": "boolean",
+            "title": "Required",
+            "description": "If true, the property is required.",
+            "x-ms-visibility": "important"
+        },
+        "entityPropertyType_string": {
+            "type": "string",
+            "title": "Type",
+            "description": "The type of the property, e.g., string, number, date.",
+            "x-ms-visibility": "important"
+        },
+        "entityPropertyValue_string": {
+            "title": "Value",
+            "description": "The value of the property.",
+            "x-ms-visibility": "important"
+        },
         "entityRelationshipType_object": {
             "title": "Relationship Type",
             "type": "object",
             "x-ms-visibility": "important",
             "properties": {
                 "id": {
-                    "type": "string",
-                    "title": "Key",
-                    "description": "The unique identifier of the relationship type.",
-                    "x-ms-visibility": "important"
+                    "$ref": "#/definitions/entityRelationshipTypeID_string"
                 },
                 "name": {
-                    "type": "string",
-                    "title": "System Name",
-                    "description": "The system name of the relationship type.",
-                    "x-ms-visibility": "important"
+                    "$ref": "#/definitions/entityRelationshipTypeName_string"
                 },
                 "displayName": {
-                    "type": "string",
-                    "title": "Display Name",
-                    "description": "The display name of the relationship type.",
-                    "x-ms-visibility": "important"
+                    "$ref": "#/definitions/entityRelationshipTypeDisplayName_string"
                 },
                 "description": {
-                    "type": "string",
-                    "title": "Description",
-                    "description": "A description of the relationship type.",
-                    "x-ms-visibility": "advanced"
+                    "$ref": "#/definitions/entityRelationshipTypeDescription_string"
                 },
                 "properties": {
-                    "type": "object",
-                    "title": "Custom Properties",
-                    "x-ms-visibility": "advanced",
-                    "description": "Custom properties associated with the relationship type."
+                    "$ref": "#/definitions/entityRelationshipTypeCustomProperties_object"
                 },
                 "propertiesAsArray": {
-                    "type": "array",
-                    "title": "Properties",
-                    "description": "The properties associated with the relationship type.",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "title": "Key",
-                                "description": "The name or key of the property.",
-                                "x-ms-visibility": "important"
-                            },
-                            "displayName": {
-                                "type": "string",
-                                "title": "Display Name",
-                                "description": "The display name of the property.",
-                                "x-ms-visibility": "important"
-                            },
-                            "description": {
-                                "type": "string",
-                                "title": "Description",
-                                "description": "A description of the property.",
-                                "x-ms-visibility": "advanced"
-                            },
-                            "type": {
-                                "type": "string",
-                                "title": "Type",
-                                "description": "The type of the property, e.g., string, number, date.",
-                                "x-ms-visibility": "important"
-                            },
-                            "hidden": {
-                                "type": "boolean",
-                                "title": "Hidden",
-                                "description": "If true, the property is hidden from the UI.",
-                                "x-ms-visibility": "advanced"
-                            },
-                            "required": {
-                                "type": "boolean",
-                                "title": "Required",
-                                "description": "If true, the property is required.",
-                                "x-ms-visibility": "important"
-                            }
-                        },
-                        "x-ms-visibility": "advanced"
-                    }
+                    "$ref": "#/definitions/entityRelationshipTypePropertiesAsArray_array"
                 },
                 "formattedSchema": {
-                    "type": "object",
-                    "title": "Formatted Schema",
-                    "description": "The formatted schema of the relationship type.",
-                    "x-ms-visibility": "advanced"
+                    "$ref": "#/definitions/entityRelationshipTypeFormattedSchema_object"
                 }
             }
         },
@@ -4667,7 +4628,7 @@
             "x-ms-visibility": "important"
         },
         "lastUpdated_string": {
-            "description": "The date and time of the last updated.",
+            "description": "The date and time of the last update.",
             "title": "Last Updated Date Time",
             "type": "string",
             "x-ms-visibility": "advanced"
@@ -4733,9 +4694,62 @@
             "type": "string",
             "x-ms-visibility": "important"
         },
+        "propertyDefault_string": {
+            "description": "The default value of the property.",
+            "title": "Default Value",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
+        "propertyDescription_string": {
+            "description": "The description of the property.",
+            "title": "Description",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
         "propertyDisplayName_string": {
             "description": "The display name of the property.",
             "title": "Display Name",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
+        "propertyKey_string": {
+            "description": "The unique key of the property.",
+            "title": "Key",
+            "type": "string",
+            "x-ms-visibility": "important"
+        },
+        "propertyOptions_object": {
+            "title": "Options",
+            "description": "The options for this property.",
+            "type": "object",
+            "x-ms-visibility": "important",
+            "properties": {
+                "values": {
+                    "$ref": "#/definitions/propertyOptionsValues_array"
+                },
+                "freeTextAllowed": {
+                    "$ref": "#/definitions/propertyOptionsFreeTextAllowed_boolean"
+                }
+            }
+        },
+        "propertyOptionsFreeTextAllowed_boolean": {
+            "title": "Free Text Allowed",
+            "description": "Indicates if free text is allowed for this property.",
+            "type": "boolean",
+            "x-ms-visibility": "important"
+        },
+        "propertyOptionsValues_array": {
+            "title": "Values",
+            "description": "The enum options for this property.",
+            "type": "array",
+            "x-ms-visibility": "important",
+            "items": {
+                "$ref": "#/definitions/propertyOptionsValuesItem_string"
+            }
+        },
+        "propertyOptionsValuesItem_string": {
+            "description": "An enum item for this property.",
+            "title": "Item",
             "type": "string",
             "x-ms-visibility": "important"
         },
@@ -4744,6 +4758,12 @@
             "title": "Read-Only",
             "type": "boolean",
             "x-ms-visibility": "advanced"
+        },
+        "propertyRequired_string": {
+            "description": "The required setting of the property.",
+            "title": "Required",
+            "type": "string",
+            "x-ms-visibility": "important"
         },
         "propertyToAddSystemName_string": {
             "description": "The system name of the property to add to the record.",
@@ -5723,6 +5743,26 @@
                 },
                 "description": {
                     "$ref": "#/definitions/recordTypeDescription_string"
+                }
+            }
+        },
+        "entityRelationshipFormattedProperty_object": {
+            "title": "Property",
+            "description": "A property of the relationship type.",
+            "type": "object",
+            "x-ms-visibility": "important",
+            "properties": {
+                "key": {
+                    "$ref": "#/definitions/propertyKey_string"
+                },
+                "description": {
+                    "$ref": "#/definitions/propertyDescription_string"
+                },
+                "displayName": {
+                    "$ref": "#/definitions/propertyDisplayName_string"
+                },
+                "type": {
+                    "$ref": "#/definitions/propertyType_string"
                 }
             }
         },
@@ -7544,6 +7584,15 @@
                 },
                 "type": {
                     "$ref": "#/definitions/propertyType_string"
+                },
+                "options": {
+                    "$ref": "#/definitions/propertyOptions_object"
+                },
+                "deafult": {
+                    "$ref": "#/definitions/propertyDefault_string"
+                },
+                "required": {
+                    "$ref": "#/definitions/propertyRequired_string"
                 }
             },
             "title": "Schema Property",
@@ -7758,7 +7807,7 @@
                 },
                 "value-collection": "list",
                 "value-path": "id",
-                "value-title": "name"
+                "value-title": "label"
             }
         },
         "entity_body": {

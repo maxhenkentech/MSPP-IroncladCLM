@@ -816,6 +816,11 @@ public class Script : ScriptBase
                 }
                 entity["relationshipTypes"] = relTypesArray;
                 entity.Remove("namedTypeIds"); // Optional
+
+                // ----------------- Label Handling -----------------
+                var name = entity["name"]?.ToString() ?? string.Empty;
+                var ironcladId = entity["ironcladId"]?.ToString() ?? string.Empty;
+                entity["label"] = $"{name} ({ironcladId})";
             }
         }
         response.Content = CreateJsonContent(obj.ToString());
@@ -1887,6 +1892,7 @@ public class Script : ScriptBase
             var formattedSchema = new JObject();
             var schemaAsArray = new JArray();
             var documentSchemaAsArray = new JArray();
+            var requiredProperties = new JArray();
 
             foreach (var property in schema.Properties())
             {
@@ -1913,29 +1919,64 @@ public class Script : ScriptBase
                         }
                     }
 
-                    var formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(
-                        effectivePropertyType,
-                        displayName,
-                        propertyName,
-                        propertyValue
-                    );
-                    launchSchema[propertyName] = formattedLaunchProperty;
 
-                    var formattedProperty = rtrWflSch_FormatProperty(
-                        effectivePropertyType,
-                        displayName,
-                        propertyName,
-                        propertyValue
-                    );
-                    formattedSchema[propertyName] = formattedProperty;
+                // Handle options, default, and required for launchSchema, formattedSchema, and schemaAsArray
+                JObject formattedLaunchProperty = rtrWflSch_FormatLaunchProperty(
+                    effectivePropertyType,
+                    displayName,
+                    propertyName,
+                    propertyValue
+                );
+                // If options are present, add enum to launchSchema property
+                if (propertyValue["options"] is JObject optionsObj && optionsObj["values"] is JArray valuesArr)
+                {
+                    formattedLaunchProperty["enum"] = valuesArr.DeepClone();
+                }
+                // If default is present, add to launchSchema property
+                if (propertyValue["default"] != null)
+                {
+                    formattedLaunchProperty["default"] = propertyValue["default"].DeepClone();
+                }
+                // If required is 'always', add propertyName to requiredProperties
+                if (propertyValue["required"] != null && propertyValue["required"].ToString() == "always")
+                {
+                    requiredProperties.Add(propertyName);
+                }
+                launchSchema[propertyName] = formattedLaunchProperty;
 
-                    var schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(
-                        propertyName,
-                        displayName,
-                        effectivePropertyType,
-                        isReadOnly
-                    );
-                    schemaAsArray.Add(schemaArrayItem);
+                // For formattedSchema, add options and default as-is if present
+                JObject formattedProperty = rtrWflSch_FormatProperty(
+                    effectivePropertyType,
+                    displayName,
+                    propertyName,
+                    propertyValue
+                );
+                if (propertyValue["options"] != null)
+                {
+                    formattedProperty["options"] = propertyValue["options"].DeepClone();
+                }
+                if (propertyValue["default"] != null)
+                {
+                    formattedProperty["default"] = propertyValue["default"].DeepClone();
+                }
+                formattedSchema[propertyName] = formattedProperty;
+
+                // For schemaAsArray, add options and default as-is if present
+                JObject schemaArrayItem = rtrWflSch_ParseSchemaArrayItem(
+                    propertyName,
+                    displayName,
+                    effectivePropertyType,
+                    isReadOnly
+                );
+                if (propertyValue["options"] != null)
+                {
+                    schemaArrayItem["options"] = propertyValue["options"].DeepClone();
+                }
+                if (propertyValue["default"] != null)
+                {
+                    schemaArrayItem["default"] = propertyValue["default"].DeepClone();
+                }
+                schemaAsArray.Add(schemaArrayItem);
 
                     if (
                         propertyType == "array"
@@ -1995,11 +2036,20 @@ public class Script : ScriptBase
                 }
             };
 
+            // Compose required array: always include counterpartyName, plus any with required: always
+            var launchRequired = new JArray { "counterpartyName" };
+            foreach (var reqProp in requiredProperties)
+            {
+                if (!launchRequired.Contains(reqProp))
+                {
+                    launchRequired.Add(reqProp);
+                }
+            }
             body["launchSchema"] = new JObject
             {
                 ["type"] = "object",
                 ["properties"] = launchSchema,
-                ["required"] = new JArray { "counterpartyName" } // Add the required property here
+                ["required"] = launchRequired
             };
             body["formattedSchema"] = new JObject
             {
