@@ -27,7 +27,7 @@ public class Script : ScriptBase
             .ConfigureAwait(false);
 
         // -------------------------------------------------------------------------
-        // Transform 400 errors for CreateWorkflow if MISSING_PARAM + approver
+        // Transform 400 errors for CreateWorkflow if MISSING_PARAM + approvers
         // -------------------------------------------------------------------------
         if (!response.IsSuccessStatusCode 
             && response.StatusCode == HttpStatusCode.BadRequest
@@ -82,6 +82,9 @@ public class Script : ScriptBase
                 break;
             case "UpdateEntity":
                 await updEnt_TransformUpdateEntityRequest().ConfigureAwait(false);
+                break;
+            case "UpdateWorkflowMetadata":
+                await updWflMd_TransformUpdateWorkflowMetadataRequest().ConfigureAwait(false);
                 break;
         }
     }
@@ -176,6 +179,9 @@ public class Script : ScriptBase
                 break;
             case "ListAllEntities":
                 await this.lstAllEnt_TransformResponse(response).ConfigureAwait(false);
+                break;
+            case "UpdateWorkflowMetadata":
+                await this.updWflMd_TransformUpdateWorkflowMetadataResponse(response).ConfigureAwait(false);
                 break;
         }
     }
@@ -1783,6 +1789,146 @@ public class Script : ScriptBase
     }
 
     // ################################################################################
+    // Update Workflow Metadata #######################################################
+    // ################################################################################
+
+    private async Task updWflMd_TransformUpdateWorkflowMetadataRequest()
+    {
+        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var jsonBody = JObject.Parse(content);
+
+        // Convert value fields to proper types based on their content
+        await ConvertValueTypes(jsonBody).ConfigureAwait(false);
+        
+        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+    }
+
+    private async Task ConvertValueTypes(JObject jsonBody)
+    {
+        try
+        {
+            // Check if we have workflow attribute updates
+            var updates = jsonBody["updates"] as JArray;
+            if (updates != null)
+            {
+                // Process each update
+                foreach (var update in updates)
+                {
+                    var valueToken = update["value"];
+                    if (valueToken != null)
+                    {
+                        // Convert the value to the appropriate type
+                        update["value"] = ConvertStringToProperType(valueToken);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail the request
+            System.Diagnostics.Debug.WriteLine($"Error converting value types: {ex.Message}");
+        }
+    }
+
+    private JToken ConvertStringToProperType(JToken valueToken)
+    {
+        // If it's not a string, return as-is
+        if (valueToken.Type != JTokenType.String)
+            return valueToken;
+
+        var stringValue = valueToken.ToString();
+        
+        // If empty or null, return as-is
+        if (string.IsNullOrEmpty(stringValue))
+            return valueToken;
+
+        // Check if it's a quoted number (should remain as string)
+        // Pattern: starts and ends with quotes and contains only digits/decimal
+        if (stringValue.StartsWith("\"") && stringValue.EndsWith("\""))
+        {
+            var innerValue = stringValue.Substring(1, stringValue.Length - 2);
+            if (IsNumeric(innerValue))
+            {
+                // This is a quoted number, keep as string but remove the extra quotes
+                return JToken.FromObject(innerValue);
+            }
+        }
+
+        // Try to parse as JSON array
+        if (stringValue.StartsWith("[") && stringValue.EndsWith("]"))
+        {
+            try
+            {
+                return JArray.Parse(stringValue);
+            }
+            catch
+            {
+                // If parsing fails, keep as string
+                return valueToken;
+            }
+        }
+
+        // Try to parse as JSON object
+        if (stringValue.StartsWith("{") && stringValue.EndsWith("}"))
+        {
+            try
+            {
+                return JObject.Parse(stringValue);
+            }
+            catch
+            {
+                // If parsing fails, keep as string
+                return valueToken;
+            }
+        }
+
+        // Try to parse as number (integer)
+        if (int.TryParse(stringValue, out int intValue))
+        {
+            return JToken.FromObject(intValue);
+        }
+
+        // Try to parse as decimal/float
+        if (decimal.TryParse(stringValue, out decimal decimalValue))
+        {
+            return JToken.FromObject(decimalValue);
+        }
+
+        // Try to parse as boolean
+        if (bool.TryParse(stringValue, out bool boolValue))
+        {
+            return JToken.FromObject(boolValue);
+        }
+
+        // Keep as string for everything else
+        return valueToken;
+    }
+
+    private bool IsNumeric(string value)
+    {
+        return decimal.TryParse(value, out _);
+    }
+
+    private async Task updWflMd_TransformUpdateWorkflowMetadataResponse(HttpResponseMessage response)
+    {
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        
+        if (!String.IsNullOrWhiteSpace(content))
+        {
+            var body = JObject.Parse(content);
+            
+            // Transform the response body if needed
+            // This might include:
+            // - Formatting workflow attributes for better display
+            // - Adding computed fields
+            // - Restructuring the response for easier consumption
+            
+            // For now, we'll pass through the response as-is
+            response.Content = CreateJsonContent(body.ToString());
+        }
+    }
+
+    // ################################################################################
     // List Users #####################################################################
     // ################################################################################
 
@@ -1930,7 +2076,17 @@ public class Script : ScriptBase
                 // If options are present, add enum to launchSchema property
                 if (propertyValue["options"] is JObject optionsObj && optionsObj["values"] is JArray valuesArr)
                 {
-                    formattedLaunchProperty["enum"] = valuesArr.DeepClone();
+                    // For multi-select (array type), enum must go on items, not the array itself.
+                    // Putting enum on an array-typed property causes Power Automate to reject multiple values.
+                    if (formattedLaunchProperty["type"]?.ToString() == "array"
+                        && formattedLaunchProperty["items"] is JObject itemsObj)
+                    {
+                        itemsObj["enum"] = valuesArr.DeepClone();
+                    }
+                    else
+                    {
+                        formattedLaunchProperty["enum"] = valuesArr.DeepClone();
+                    }
                 }
                 // If default is present, add to launchSchema property
                 if (propertyValue["default"] != null)

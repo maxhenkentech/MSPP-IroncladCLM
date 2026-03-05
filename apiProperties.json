@@ -51,6 +51,7 @@
 						"public.workflows.updateSigners",
 						"public.workflows.remindSigners",
 						"public.export.createReports",
+						"public.export.readReports",
 						"scim.groups.createGroups",
 						"scim.groups.readGroups",
 						"scim.groups.updateGroups",
@@ -71,7 +72,9 @@
 						"public.entities.readEntities",
 						"public.entities.updateEntities",
 						"public.entities.deleteEntities",
-						"public.entities.createEntities"
+						"public.entities.createEntities",
+						"public.workflows.createSignatureRecipientUrls",
+						"public.workflows.createEmbeddableSignerUrls"
 					],
 					"redirectMode": "GlobalPerConnector",
 					"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -201,6 +204,7 @@
 									"public.workflows.updateSigners",
 									"public.workflows.remindSigners",
 									"public.export.createReports",
+						"public.export.readReports",
 									"scim.groups.createGroups",
 									"scim.groups.readGroups",
 									"scim.groups.updateGroups",
@@ -221,7 +225,9 @@
 									"public.entities.readEntities",
 									"public.entities.updateEntities",
 									"public.entities.deleteEntities",
-									"public.entities.createEntities"
+									"public.entities.createEntities",
+									"public.workflows.createSignatureRecipientUrls",
+									"public.workflows.createEmbeddableSignerUrls"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -349,6 +355,7 @@
 									"public.workflows.updateSigners",
 									"public.workflows.remindSigners",
 									"public.export.createReports",
+						"public.export.readReports",
 									"scim.groups.createGroups",
 									"scim.groups.readGroups",
 									"scim.groups.updateGroups",
@@ -369,7 +376,9 @@
 									"public.entities.readEntities",
 									"public.entities.updateEntities",
 									"public.entities.deleteEntities",
-									"public.entities.createEntities"
+									"public.entities.createEntities",
+									"public.workflows.createSignatureRecipientUrls",
+									"public.workflows.createEmbeddableSignerUrls"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -497,6 +506,7 @@
 									"public.workflows.updateSigners",
 									"public.workflows.remindSigners",
 									"public.export.createReports",
+						"public.export.readReports",
 									"scim.groups.createGroups",
 									"scim.groups.readGroups",
 									"scim.groups.updateGroups",
@@ -517,7 +527,9 @@
 									"public.entities.readEntities",
 									"public.entities.updateEntities",
 									"public.entities.deleteEntities",
-									"public.entities.createEntities"
+									"public.entities.createEntities",
+									"public.workflows.createSignatureRecipientUrls",
+									"public.workflows.createEmbeddableSignerUrls"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -645,6 +657,7 @@
 									"public.workflows.updateSigners",
 									"public.workflows.remindSigners",
 									"public.export.createReports",
+						"public.export.readReports",
 									"scim.groups.createGroups",
 									"scim.groups.readGroups",
 									"scim.groups.updateGroups",
@@ -665,7 +678,9 @@
 									"public.entities.readEntities",
 									"public.entities.updateEntities",
 									"public.entities.deleteEntities",
-									"public.entities.createEntities"
+									"public.entities.createEntities",
+									"public.workflows.createSignatureRecipientUrls",
+									"public.workflows.createEmbeddableSignerUrls"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -793,6 +808,7 @@
 									"public.workflows.updateSigners",
 									"public.workflows.remindSigners",
 									"public.export.createReports",
+						"public.export.readReports",
 									"scim.groups.createGroups",
 									"scim.groups.readGroups",
 									"scim.groups.updateGroups",
@@ -813,7 +829,9 @@
 									"public.entities.readEntities",
 									"public.entities.updateEntities",
 									"public.entities.deleteEntities",
-									"public.entities.createEntities"
+									"public.entities.createEntities",
+									"public.workflows.createSignatureRecipientUrls",
+									"public.workflows.createEmbeddableSignerUrls"
 								],
 								"redirectMode": "Global",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect",
@@ -825,7 +843,7 @@
 										"value": "https://{customHost}/oauth/authorize"
 									},
 									"refreshBodyTemplate": {
-										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords public.records.readSmartImportRecords public.records.deleteRecords public.records.createRecords public.records.updateRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.createSmartImportRecords public.records.deleteAttachments public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.updateSigners public.workflows.remindSigners public.export.createReports scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.users.createUsers scim.groups.deleteGroups scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas"
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords public.records.readSmartImportRecords public.records.deleteRecords public.records.createRecords public.records.updateRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.createSmartImportRecords public.records.deleteAttachments public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.updateSigners public.workflows.remindSigners public.export.createReports public.export.readReports scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.users.createUsers scim.groups.deleteGroups scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas"
 									},
 									"refreshUrlTemplate": {
 										"value": "https://{customHost}/oauth/token"
@@ -834,7 +852,7 @@
 										"value": " "
 									},
 									"tokenBodyTemplate": {
-										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords public.records.readSmartImportRecords public.records.deleteRecords public.records.createRecords public.records.updateRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.createSmartImportRecords public.records.deleteAttachments public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.updateSigners public.workflows.remindSigners public.export.createReports scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.users.createUsers scim.groups.deleteGroups scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas"
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.readRecords public.records.readSmartImportRecords public.records.deleteRecords public.records.createRecords public.records.updateRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.createSmartImportRecords public.records.deleteAttachments public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.updateSigners public.workflows.remindSigners public.export.createReports public.export.readReports scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.users.createUsers scim.groups.deleteGroups scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas"
 									},
 									"tokenUrlTemplate": {
 										"value": "https://{customHost}/oauth/token"
@@ -922,6 +940,15 @@
 					"x-ms-apimTemplateParameter.value": "application/json",
 					"x-ms-apimTemplateParameter.existsAction": "override",
 					"x-ms-apimTemplate-policySection": "Request"
+				}
+			},
+			{
+				"templateId": "routerequesttoendpoint",
+				"title": "Reroute CreateWorkflowRaw to POST /workflows",
+				"parameters": {
+					"x-ms-apimTemplateParameter.newPath": "/public/api/v1/workflows",
+					"x-ms-apimTemplateParameter.httpMethod": "POST",
+					"x-ms-apimTemplate-operationName": ["CreateWorkflowRaw"]
 				}
 			}
 		]

@@ -1186,6 +1186,141 @@
                 "x-ms-visibility": "advanced"
             }
         },
+        "/public/api/v1/exports": {
+            "post": {
+                "description": "Submit a request to generate a new data export. This feature is part of the paid Security & Data Pro add-on.",
+                "operationId": "CreateDataExport",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/dataExportPost_body"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data Export Job Created",
+                        "schema": {
+                            "$ref": "#/definitions/dataExportJob_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Create a Data Export Job",
+                "x-ms-visibility": "advanced"
+            }
+        },
+        "/public/api/v1/exports/{ExportJob}": {
+            "get": {
+                "description": "Check the status of a data export job. This feature is part of the paid Security & Data Pro add-on.",
+                "operationId": "RetrieveDataExportStatus",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/exportJobId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data Export Job Status Retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/dataExportJobStatus_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Retrieve Data Export Job Status",
+                "x-ms-visibility": "advanced"
+            }
+        },
+        "/public/api/v1/exports/{ExportJob}/download": {
+            "get": {
+                "description": "Download the completed data export file. This feature is part of the paid Security & Data Pro add-on.",
+                "operationId": "DownloadDataExport",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/exportJobId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data Export File Downloaded",
+                        "schema": {
+                            "description": "The data export file.",
+                            "title": "Export File",
+                            "type": "file",
+                            "x-ms-visibility": "important"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Download Data Export File",
+                "x-ms-visibility": "advanced"
+            }
+        },
         "/public/api/v1/workflow-schemas": {
             "get": {
                 "description": "Returns a list of workflow schemas. Each schema specifies the fields used in the workflow's launch form.",
@@ -1403,6 +1538,60 @@
                 },
                 "summary": "Create a Workflow Synchronously",
                 "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/raw": {
+            "post": {
+                "description": "Launch a new workflow synchronously by passing the raw Ironclad API body directly, without any schema transformation. Use this when you need full control over the request payload.",
+                "operationId": "CreateWorkflowRaw",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowForm_query"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "Raw workflow launch payload as accepted by the Ironclad API.",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Workflow Created",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Create a Workflow (Raw Body)",
+                "x-ms-visibility": "advanced"
             }
         },
         "/public/api/v1/workflows/async": {
@@ -2532,6 +2721,370 @@
                     }
                 },
                 "summary": "List All Workflow Signers",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/signatures/recipient-urls": {
+            "post": {
+                "description": "Create a recipient URL for a signer or viewer to access the signature request. This feature is exclusive to Ironclad Signature.",
+                "operationId": "CreateSignatureRecipientUrl",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/recipientUrlPost_body"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Recipient URL Created",
+                        "schema": {
+                            "$ref": "#/definitions/recipientUrl_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Create a Recipient URL for a Signer",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/signatures/recipient-urls/embedded": {
+            "post": {
+                "description": "Create an embeddable recipient URL for a signer or viewer to access the signature request within an iframe. This feature is exclusive to Ironclad Signature.",
+                "operationId": "CreateEmbeddedRecipientUrl",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/embeddedRecipientUrlPost_body"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Embedded Recipient URL Created",
+                        "schema": {
+                            "$ref": "#/definitions/embeddedRecipientUrl_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Create an Embeddable Recipient URL for a Signer",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/sign-status": {
+            "get": {
+                "description": "Returns information about a workflow in the sign step. The workflow must be in the sign step to access this route.",
+                "operationId": "RetrieveSignStatus",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sign Status Retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/signStatus_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Retrieve Sign Status of a Workflow",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/sign-status/cancel-signature-request": {
+            "post": {
+                "description": "Cancel a signature request that was out for signature.",
+                "operationId": "CancelSignatureRequest",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signature Request Cancelled"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Cancel a Signature Request",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/sign-status/send-signature-request": {
+            "post": {
+                "description": "Send a signature packet out for signature. All signers must have an associated signature or initials tag before sending.",
+                "operationId": "SendSignatureRequest",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signature Request Sent"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Send a Signature Request",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/sign-status/signers/{SignerRole}": {
+            "delete": {
+                "description": "Remove a signer from a signature packet. Warning: Removing a signer will cancel the current packet that is out collecting signatures.",
+                "operationId": "DeleteWorkflowSigner",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/signerRoleName_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signer Deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Delete a Signer from a Workflow",
+                "x-ms-visibility": "important"
+            },
+            "patch": {
+                "description": "Update a signer's details. Editing a signer will not cancel a signature request unless your configured signature provider is Adobe Sign. Cannot update signers who have already signed.",
+                "operationId": "UpdateWorkflowSigner",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/signerRoleName_path"
+                    },
+                    {
+                        "$ref": "#/parameters/updateSignerPost_body"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signer Updated",
+                        "schema": {
+                            "$ref": "#/definitions/workflowSigner_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Update a Signer on a Workflow",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/workflows/{Workflow}/sign-status/signers/{SignerRole}/remind": {
+            "post": {
+                "description": "Send a reminder to a signer. You can only send a reminder after the signature packet has been sent out for signature. With Adobe Sign, reminding a signer reminds all unsigned signers.",
+                "operationId": "RemindWorkflowSigner",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/workflowId_path"
+                    },
+                    {
+                        "$ref": "#/parameters/signerRoleName_path"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reminder Sent"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Remind a Signer on a Workflow",
                 "x-ms-visibility": "important"
             }
         },
@@ -4895,6 +5448,144 @@
             "type": "array",
             "x-ms-visibility": "advanced"
         },
+        "recipientUrl_object": {
+            "description": "The recipient URL object.",
+            "properties": {
+                "url": {
+                    "description": "The shareable URL for the signer or viewer to access the signature request.",
+                    "title": "URL",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                }
+            },
+            "title": "Recipient URL",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
+        "embeddedRecipientUrl_object": {
+            "description": "The embedded recipient URL object.",
+            "properties": {
+                "recipientUrl": {
+                    "description": "The shareable URL for the signer or viewer.",
+                    "title": "Recipient URL",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "embeddedUrl": {
+                    "description": "The embeddable URL for iframe integration.",
+                    "title": "Embedded URL",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                }
+            },
+            "title": "Embedded Recipient URL",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
+        "signStatus_object": {
+            "description": "The sign status of a workflow.",
+            "properties": {
+                "workflowId": {
+                    "description": "The unique identifier of the workflow.",
+                    "title": "Workflow ID",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "status": {
+                    "description": "The current signature status.",
+                    "title": "Status",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "signers": {
+                    "$ref": "#/definitions/workflowSigners_array"
+                },
+                "sentAt": {
+                    "description": "When the signature request was sent.",
+                    "title": "Sent At",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "completedAt": {
+                    "description": "When all signatures were collected.",
+                    "title": "Completed At",
+                    "type": "string",
+                    "x-ms-visibility": "advanced"
+                }
+            },
+            "title": "Sign Status",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
+        "dataExportJob_object": {
+            "description": "The data export job object.",
+            "properties": {
+                "jobId": {
+                    "description": "The unique identifier of the export job.",
+                    "title": "Job ID",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "status": {
+                    "description": "The current status of the export job.",
+                    "title": "Status",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "createdAt": {
+                    "description": "When the export job was created.",
+                    "title": "Created At",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                }
+            },
+            "title": "Data Export Job",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
+        "dataExportJobStatus_object": {
+            "description": "The data export job status object.",
+            "properties": {
+                "jobId": {
+                    "description": "The unique identifier of the export job.",
+                    "title": "Job ID",
+                    "type": "string",
+                    "x-ms-visibility": "important"
+                },
+                "status": {
+                    "description": "The current status of the export job (success, failed, in_progress).",
+                    "title": "Status",
+                    "type": "string",
+                    "enum": [
+                        "success",
+                        "failed",
+                        "in_progress"
+                    ],
+                    "x-ms-visibility": "important"
+                },
+                "requestPayload": {
+                    "description": "The original export request payload.",
+                    "title": "Request Payload",
+                    "type": "object",
+                    "x-ms-visibility": "advanced"
+                },
+                "error": {
+                    "description": "Error details if the job failed.",
+                    "title": "Error",
+                    "type": "object",
+                    "x-ms-visibility": "advanced"
+                },
+                "data": {
+                    "description": "Result data when the job succeeds.",
+                    "title": "Data",
+                    "type": "object",
+                    "x-ms-visibility": "advanced"
+                }
+            },
+            "title": "Data Export Job Status",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
         "recordAddChildren_array": {
             "description": "List of objects containing the Record IDs or Ironclad IDs of the records to be set as child records of the current record.",
             "items": {
@@ -6729,7 +7420,8 @@
             },
             "required": [
                 "action",
-                "path"
+                "path",
+                "value"
             ],
             "title": "Update",
             "type": "object",
@@ -6779,8 +7471,8 @@
             "x-ms-visibility": "important"
         },
         "workflowAttributePath_string": {
-            "description": "The workflow attribute id that you'd like to make a change to.",
-            "title": "Path",
+            "description": "The workflow attribute that you'd like to make a change to.",
+            "title": "Attribute",
             "type": "string",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveWorkflowSchema",
@@ -6795,6 +7487,24 @@
                 "value-title": "displayName"
             },
             "x-ms-visibility": "important"
+        },
+        "workflowAttributeType_string": {
+            "description": "The workflow attribute type that you'd like to make a change to.",
+            "title": "Type",
+            "type": "string",
+            "x-ms-dynamic-values": {
+                "operationId": "RetrieveWorkflowSchema",
+                "parameters": {
+                    "Schema": {
+                        "parameter": "configuration"
+                    },
+                    "form": "launch"
+                },
+                "value-collection": "schemaAsArray",
+                "value-path": "type",
+                "value-title": "displayName"
+            },
+            "x-ms-visibility": "internal"
         },
         "workflowAttributesAsArrayGet_array": {
             "description": "A list of workflow attributes as an array.",
@@ -8058,6 +8768,49 @@
             "x-ms-summary": "Filter",
             "x-ms-visibility": "important"
         },
+        "recipientUrlPost_body": {
+            "description": "The recipient URL request object.",
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "roleName"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "title": "Recipient Type",
+                        "description": "The type of recipient accessing the signature request.",
+                        "enum": [
+                            "signer",
+                            "viewer"
+                        ],
+                        "x-ms-visibility": "important"
+                    },
+                    "roleName": {
+                        "type": "string",
+                        "title": "Role Name",
+                        "description": "The name of the signer or viewer role.",
+                        "x-ms-visibility": "important",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkflowSignatures",
+                            "parameters": {
+                                "Workflow": {
+                                    "parameter": "Workflow"
+                                }
+                            },
+                            "value-collection": "signers",
+                            "value-path": "roleName",
+                            "value-title": "roleName"
+                        }
+                    }
+                }
+            },
+            "x-ms-visibility": "important"
+        },
         "workflowForm_query": {
             "default": "launch",
             "description": "The launch form is the only form supported at this time.",
@@ -8351,6 +9104,145 @@
             },
             "x-ms-summary": "Role",
             "x-ms-url-encoding": "single",
+            "x-ms-visibility": "important"
+        },
+        "signerRoleName_path": {
+            "description": "The role name of the signer.",
+            "in": "path",
+            "name": "SignerRole",
+            "required": true,
+            "type": "string",
+            "x-ms-dynamic-values": {
+                "operationId": "ListWorkflowSignatures",
+                "parameters": {
+                    "Workflow": {
+                        "parameter": "Workflow"
+                    }
+                },
+                "value-collection": "signers",
+                "value-path": "roleName",
+                "value-title": "roleName"
+            },
+            "x-ms-summary": "Signer Role",
+            "x-ms-url-encoding": "single",
+            "x-ms-visibility": "important"
+        },
+        "updateSignerPost_body": {
+            "description": "The signer update object.",
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "title": "Email",
+                        "description": "The new email address for the signer.",
+                        "x-ms-visibility": "important"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The new display name for the signer.",
+                        "x-ms-visibility": "important"
+                    }
+                }
+            },
+            "x-ms-visibility": "important"
+        },
+        "embeddedRecipientUrlPost_body": {
+            "description": "The embedded recipient URL request object.",
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "roleName"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "title": "Recipient Type",
+                        "description": "The type of recipient accessing the signature request.",
+                        "enum": [
+                            "signer",
+                            "viewer"
+                        ],
+                        "x-ms-visibility": "important"
+                    },
+                    "roleName": {
+                        "type": "string",
+                        "title": "Role Name",
+                        "description": "The name of the signer or viewer role.",
+                        "x-ms-visibility": "important",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkflowSignatures",
+                            "parameters": {
+                                "Workflow": {
+                                    "parameter": "Workflow"
+                                }
+                            },
+                            "value-collection": "signers",
+                            "value-path": "roleName",
+                            "value-title": "roleName"
+                        }
+                    }
+                }
+            },
+            "x-ms-visibility": "important"
+        },
+        "exportJobId_path": {
+            "description": "The identifier of the data export job.",
+            "in": "path",
+            "name": "ExportJob",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Export Job ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-visibility": "important"
+        },
+        "dataExportPost_body": {
+            "description": "The data export request object.",
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "title": "Export Type",
+                        "description": "The type of data to export.",
+                        "enum": [
+                            "workflows",
+                            "records"
+                        ],
+                        "x-ms-visibility": "important"
+                    },
+                    "format": {
+                        "type": "string",
+                        "title": "Format",
+                        "description": "The format of the export file.",
+                        "enum": [
+                            "csv",
+                            "xlsx"
+                        ],
+                        "x-ms-visibility": "important"
+                    },
+                    "filters": {
+                        "type": "object",
+                        "title": "Filters",
+                        "description": "Optional filters to apply to the export.",
+                        "x-ms-visibility": "advanced"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
             "x-ms-visibility": "important"
         },
         "workflowSchemaID_path": {
