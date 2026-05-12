@@ -9,6 +9,7 @@ import itertools
 import json
 import os
 import queue
+import re
 import shutil
 import subprocess
 import sys
@@ -1018,7 +1019,7 @@ def resolve_connector_id_for_update(
     return ResolvedConnector(selected_connector.connector_id, settings_file_path, selected_connector)
 
 
-def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_secret: str) -> None:
+def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_secret: str) -> Optional[str]:
     verb = "create" if mode == "Install" else "update"
     write_step(f"Running paconn {verb}.")
 
@@ -1029,6 +1030,12 @@ def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_secr
     output = run_python_module(arguments)
     for line in output:
         print(f"    {line}")
+
+    for line in output:
+        match = re.search(r"(shared_\S+)\s+(?:created|updated)\s+successfully", line, re.IGNORECASE)
+        if match:
+            return match.group(1).rstrip(".")
+    return None
 
 
 def get_connector_redirect_urls(connector_id: str) -> list[str]:
@@ -1154,13 +1161,17 @@ def main() -> int:
                     settings_file_path = resolved_connector.settings_file
                     connector_id = resolved_connector.connector_id
 
-                invoke_paconn_deployment(mode, settings_file_path, args.connector_secret)
+                paconn_connector_id = invoke_paconn_deployment(mode, settings_file_path, args.connector_secret)
 
-                saved_settings = json.loads(settings_file_path.read_text(encoding="utf-8"))
-                saved_connector_id = saved_settings.get("connectorId")
-                if not isinstance(saved_connector_id, str) or not saved_connector_id.strip():
-                    raise RuntimeError(f"paconn completed but the connector ID was not written to '{settings_file_path}'.")
-                connector_id = saved_connector_id
+                if paconn_connector_id:
+                    connector_id = paconn_connector_id
+                    write_settings_file(settings_file_path, environment_id, bundle, connector_id)
+                else:
+                    saved_settings = json.loads(settings_file_path.read_text(encoding="utf-8"))
+                    saved_connector_id = saved_settings.get("connectorId")
+                    if not isinstance(saved_connector_id, str) or not saved_connector_id.strip():
+                        raise RuntimeError(f"paconn completed but the connector ID was not written to '{settings_file_path}'.")
+                    connector_id = saved_connector_id
 
                 redirect_urls: list[str] = []
                 try:
