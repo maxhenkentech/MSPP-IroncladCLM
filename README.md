@@ -165,33 +165,101 @@ Almost all Ironclad API operations are available. For complete API documentation
 
 ### Prerequisites
 
-- [Microsoft Power Platform CLI (paconn)](https://learn.microsoft.com/en-us/connectors/custom-connectors/paconn-cli) installed
+- Python 3
+- Internet access to GitHub and Microsoft Power Platform
 - Access to a Power Platform environment with custom connector permissions
 - An Ironclad account with API access enabled
 
-### Step 1️⃣: Deploy the Custom Connector
+### Recommended: Use the installer script
 
-Open a terminal and navigate to the connector directory:
+The repository now includes an interactive installer at `scripts/manage-ironclad-connector.py`.
+
+It is designed to run on **Windows and macOS** with **Python 3**. A separate macOS-specific installer is not required.
+
+When you run it, the script:
+
+1. Explains what it is about to do.
+2. Checks whether `paconn` is available and installs it with Python `pip` if it is missing.
+3. Installs the Python terminal UI package it uses for the interactive pickers if it is missing.
+4. Runs `paconn login`.
+5. Retrieves the Power Platform environments you can access and shows them in a **multi-select picker**.
+6. Asks whether you want to **install** a new connector or **update** an existing one.
+7. Downloads the latest connector payload from GitHub for every run.
+8. Runs `paconn create` or `paconn update` for each selected environment.
+9. Saves the resulting settings file as `~/.ironcladclm/deployments/<environment-guid>_settings.json`.
+10. Reads the connector ID written by `paconn` and derives the generated redirect URL from it.
+
+> 💡 The installer uses the same `dummy` OAuth secret placeholder currently used in the manual `paconn create` flow. The real client ID and client secret are entered later when users create a connection.
+
+### Run directly from GitHub
+
+This is the easiest option for end users who just need to launch the installer without cloning the repository.
+
+**macOS / Linux**
 
 ```bash
-cd "Custom Connectors/Ironclad CLM"
+python3 -c 'import pathlib, runpy, tempfile, urllib.request; p = pathlib.Path(tempfile.gettempdir()) / "manage-ironclad-connector.py"; urllib.request.urlretrieve("https://raw.githubusercontent.com/maxhenkentech/MSPP-IroncladCLM/main/scripts/manage-ironclad-connector.py", p); runpy.run_path(str(p), run_name="__main__")'
+```
+
+**Windows**
+
+```powershell
+py -c "import pathlib, runpy, tempfile, urllib.request; p = pathlib.Path(tempfile.gettempdir()) / 'manage-ironclad-connector.py'; urllib.request.urlretrieve('https://raw.githubusercontent.com/maxhenkentech/MSPP-IroncladCLM/main/scripts/manage-ironclad-connector.py', p); runpy.run_path(str(p), run_name='__main__')"
+```
+
+### Download and run locally
+
+If you already have the repository locally, run:
+
+```bash
+python3 ./scripts/manage-ironclad-connector.py
+```
+
+On Windows, you can also run:
+
+```powershell
+py .\scripts\manage-ironclad-connector.py
+```
+
+### What happens for updates
+
+- If `~/.ironcladclm/deployments/<environment-guid>_settings.json` already exists, the script uses it automatically.
+- If no saved settings file exists, the script queries the selected environment for matching Ironclad CLM connectors and asks you which one to update when more than one match is found.
+
+### What happens for redirect URLs
+
+Power Platform generates the final OAuth redirect URL after the connector exists. The installer derives that URL from the connector ID written into the environment-specific settings file by `paconn`.
+
+- The script prints the redirect URL in the deployment summary after each successful install or update.
+- The derived format is `https://global.consent.azure-apim.net/redirect/<connector-id-without-shared_>`.
+
+### Manual fallback
+
+If you prefer not to use the installer, you can still deploy the connector manually with `paconn`.
+
+### Step 1️⃣: Deploy the Custom Connector manually
+
+Open a terminal in the repository root and navigate to the connector directory:
+
+```powershell
+cd connector
 ```
 
 Log in to Power Platform:
 
-```bash
+```powershell
 paconn login
 ```
 
 Deploy the custom connector:
 
-```bash
+```powershell
 paconn create --api-def apiDefinition.swagger.json --api-prop apiProperties.json --script script.csx --icon icon.png --secret dummy
 ```
 
 > 💡 The `--secret dummy` parameter is a placeholder. The actual client secret will be configured when creating a connection.
 
-### Step 2️⃣: Retrieve the Callback URL
+### Step 2️⃣: Retrieve the Callback URL manually
 
 After deploying, retrieve the OAuth callback URL to configure in Ironclad:
 
@@ -205,7 +273,7 @@ After deploying, retrieve the OAuth callback URL to configure in Ironclad:
 
 ![Copy Redirect URL from Power Platform](screenshots/Copy%20Redirect%20URL.png)
 
-> ⚠️ **CRITICAL:** Leave this page **WITHOUT SAVING**. Do not click "Update connector". Simply close the tab after copying the URL.
+> ⚠️ **CRITICAL:** Leave this page **WITHOUT SAVING**. Do not click "Update connector". Simply close the tab after copying the URL if you are only checking the generated redirect URI.
 
 ### Step 3️⃣: Configure the Ironclad Application
 
@@ -369,6 +437,7 @@ The synchronous workflow creation has limitations:
 - Approver lists require explicit workflow specification
 - Dynamic workflow IDs prevent schema fetching at runtime
 - Affects operations like `Update Approval on a Workflow`
+- Power Platform enforces an approximate 8 MB limit on the full response used for dynamic schema resolution, so record schema consumers use an internal schema-only endpoint instead of the larger `Retrieve Record Schemas` payload
 
 ### ✍️ Signature Operations
 
@@ -386,6 +455,12 @@ The synchronous workflow creation has limitations:
 
 - 💰 Requires paid **Security & Data Pro** add-on
 - ⏳ Asynchronous process - poll status before downloading
+
+---
+
+## Change Log
+
+- Corrected the Swagger `RetrievePredictions` operation ID spelling and fixed the records export success description text from `Reecords Exported` to `Records Exported`.
 
 ---
 

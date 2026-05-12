@@ -10,10 +10,37 @@ using System.Text;
 using System.IO;
 using System.Web;
 
+/// <summary>
+/// Compatibility-first Power Platform custom connector script for Ironclad.
+///
+/// This file intentionally preserves the current connector contract exactly as it is today:
+/// - the same operation IDs are routed the same way
+/// - the same request and response payload shapes are produced
+/// - the same connector-specific quirks are kept when callers may already depend on them
+///
+/// The script lifecycle is:
+/// 1. Optionally prepare extra context before the main API call.
+/// 2. Rewrite the outgoing request for operations that need Power Platform friendly inputs.
+/// 3. Send the request to Ironclad.
+/// 4. Rewrite the successful response back into the shape expected by the connector.
+/// </summary>
 public class Script : ScriptBase
 {
+    // Keep this typo as-is because it is part of the current connector contract and is
+    // already used by the existing custom connector definition and captured baselines.
+    private const string RecordPropertiesQueryParameter = "recordPorperties";
+
+    // SCIM patch operations require this exact schema marker in the request body.
+    private const string ScimPatchOperationSchema =
+        "urn:ietf:params:scim:api:messages:2.0:PatchOp";
+
     private JObject recordSchemaInfo;
 
+    /// <summary>
+    /// Main Power Platform script entry point.
+    /// It preserves the current sequence of request preparation, downstream execution,
+    /// and response post-processing for every operation.
+    /// </summary>
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
         if ("RetrieveRecord".Equals(this.Context.OperationId, StringComparison.OrdinalIgnoreCase))
@@ -44,6 +71,10 @@ public class Script : ScriptBase
         return response;
     }
 
+    /// <summary>
+    /// Applies request-side rewrites for operations whose Power Platform input shape
+    /// differs from the raw Ironclad API shape.
+    /// </summary>
     private async Task UpdateRequest()
     {
         switch (this.Context.OperationId)
@@ -77,6 +108,9 @@ public class Script : ScriptBase
             case "GetEntityRelationshipType":
                 await this.getEntRltTyp_TransformRequest().ConfigureAwait(false);
                 break;
+            case "RetrieveFormattedRecordSchema":
+                await this.rtrRcdFmtSch_TransformRequest().ConfigureAwait(false);
+                break;
             case "CreateEntity":
                 await crtEnt_TransformCreateEntityRequest().ConfigureAwait(false);
                 break;
@@ -89,12 +123,23 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Applies response-side rewrites for operations that expose a connector-specific
+    /// response shape instead of the raw Ironclad payload.
+    /// </summary>
     private async Task UpdateResponse(HttpResponseMessage response)
     {
         switch (this.Context.OperationId)
         {
             case "ListUsers":
                 await this.TransformResponseJsonBody(this.lstUsr_TransformUsersList, response)
+                    .ConfigureAwait(false);
+                break;
+            case "ListWorkflowSchemas":
+                await this.TransformResponseJsonBody(
+                        this.lstWflSch_TransformListWorkflowSchemas,
+                        response
+                    )
                     .ConfigureAwait(false);
                 break;
             case "RetrieveWorkflowSchema":
@@ -132,11 +177,7 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "ListAllRecords":
-                // Get query parameter for properties
-                var listAllRecordsQuery =
-                    HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query)[
-                        "recordPorperties"
-                    ] ?? string.Empty;
+                var listAllRecordsQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
                 await this.TransformResponseJsonBody(
                         body =>
                             lstAllRcd_TransformListAllRecordsResponse(body, listAllRecordsQuery),
@@ -145,20 +186,22 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "RetrieveRecordSchemas":
-                // Get query parameter for properties
-                var retrieveRecordSchemasQuery =
-                    HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query)[
-                        "recordPorperties"
-                    ] ?? string.Empty;
+                var retrieveRecordSchemasQuery = GetRequestQueryValue(
+                    RecordPropertiesQueryParameter
+                );
                 await this.TransformResponseJsonBody(
                         body =>
                             rtrRcdSch_TransformRetrieveRecordSchemas(
                                 body,
-                                retrieveRecordSchemasQuery
+                                retrieveRecordSchemasQuery,
+                                false
                             ),
                         response
                     )
                     .ConfigureAwait(false);
+                break;
+            case "RetrieveFormattedRecordSchema":
+                await this.rtrRcdFmtSch_TransformResponse(response).ConfigureAwait(false);
                 break;
             case "ListAllWorkflows":
                 await this.TransformResponseJsonBody(
@@ -168,8 +211,8 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "ListEntityRelationshipTypes":
-                await this.lstEntRltTyp_TransformListEntityRelationshipTypes(response).ConfigureAwait(false);
-                break;
+                await this.lstEntRltTyp_TransformListEntityRelationshipTypes(response)
+                    .ConfigureAwait(false);
                 break;
             case "GetEntityRelationshipType":
                 await this.getEntRltTyp_TransformResponse(response).ConfigureAwait(false);
@@ -186,6 +229,10 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Reads a JSON response body, runs the supplied transformer, and writes the new JSON back.
+    /// The helper only runs when the response body is non-empty to preserve current behavior.
+    /// </summary>
     private async Task TransformResponseJsonBody(
         Func<JObject, JObject> transformationFunction,
         HttpResponseMessage response
@@ -201,15 +248,69 @@ public class Script : ScriptBase
         }
     }
 
-    // ################################################################################
-    // Create Attachment / Create Signed Copy Attachment operations ###################
-    // ################################################################################
-
-    private async Task crtAtt_TransformToMultipartRequestForRecords()
+    /// <summary>
+    /// Reads the current request body as JSON.
+    /// The existing connector only calls this for operations that already expect JSON input.
+    /// </summary>
+    private async Task<JObject> ReadRequestBodyAsObjectAsync()
     {
         var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        return JObject.Parse(content);
+    }
 
+    /// <summary>
+    /// Replaces the current request content with a JSON body created from the provided object.
+    /// </summary>
+    private void ReplaceRequestJsonBody(JObject jsonBody)
+    {
+        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+    }
+
+    /// <summary>
+    /// Copies the current request headers to a follow-up internal request so downstream
+    /// authentication and caller context remain unchanged.
+    /// </summary>
+    private void CopyCurrentRequestHeaders(HttpRequestMessage request)
+    {
+        foreach (var header in this.Context.Request.Headers)
+        {
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+    }
+
+    /// <summary>
+    /// Fetches a JSON payload from the same Ironclad host used by the current request.
+    /// This is used for metadata lookups that enrich connector-friendly request/response shapes.
+    /// </summary>
+    private async Task<JObject> FetchJsonFromConnectorApiAsync(
+        string relativePath,
+        string failureMessage
+    )
+    {
+        var baseUrl = this.Context.Request.RequestUri.GetLeftPart(UriPartial.Authority);
+        var requestUri = new Uri(new Uri(baseUrl), relativePath);
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+
+        CopyCurrentRequestHeaders(request);
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken)
+            .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception($"{failureMessage} Status code: {response.StatusCode}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        return JObject.Parse(content);
+    }
+
+    /// <summary>
+    /// Builds the multipart payload used by record and workflow-document attachment uploads.
+    /// The payload format stays unchanged so the connector contract remains stable.
+    /// </summary>
+    private MultipartFormDataContent CreateAttachmentMultipartContent(JObject jsonBody)
+    {
         var multipartContent = new MultipartFormDataContent();
 
         string filename = "document.pdf";
@@ -232,15 +333,544 @@ public class Script : ScriptBase
         if (metadataToken != null)
         {
             var metadataJson = metadataToken.ToString();
-            var metadataContent = new StringContent(
-                metadataJson,
-                Encoding.UTF8,
-                "application/json"
-            );
+            var metadataContent = new StringContent(metadataJson, Encoding.UTF8, "application/json");
             multipartContent.Add(metadataContent, "metadata");
         }
 
-        this.Context.Request.Content = multipartContent;
+        return multipartContent;
+    }
+
+    /// <summary>
+    /// Reads a query string value from the current request without changing any existing parameter names.
+    /// </summary>
+    private string GetRequestQueryValue(string parameterName)
+    {
+        return HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query)[parameterName]
+            ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Parses an ISO-8601 duration into the connector's current expanded object shape.
+    /// A delegate is used for the nested descriptions because different routes expose
+    /// slightly different wording while keeping the same field structure.
+    /// </summary>
+    private JObject CreateExpandedDurationObject(string isoDuration)
+    {
+        var result = new JObject { ["isoDuration"] = isoDuration };
+
+        var regex = new Regex(@"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?");
+        var match = regex.Match(isoDuration);
+
+        if (match.Success)
+        {
+            result["years"] = string.IsNullOrEmpty(match.Groups[1].Value)
+                ? 0
+                : int.Parse(match.Groups[1].Value);
+            result["months"] = string.IsNullOrEmpty(match.Groups[2].Value)
+                ? 0
+                : int.Parse(match.Groups[2].Value);
+            result["weeks"] = string.IsNullOrEmpty(match.Groups[3].Value)
+                ? 0
+                : int.Parse(match.Groups[3].Value);
+            result["days"] = string.IsNullOrEmpty(match.Groups[4].Value)
+                ? 0
+                : int.Parse(match.Groups[4].Value);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Shared dispatcher for record property schemas. Callers provide the specialized
+    /// builders for monetary amounts and durations because those nested descriptions vary
+    /// slightly between routes, while the primitive fallback remains shared.
+    /// </summary>
+    private JObject FormatRecordPropertySchemaCore(
+        string propertyType,
+        string displayName,
+        string description,
+        Func<string, string, JObject> monetaryFormatter,
+        Func<string, string, JObject> durationFormatter
+    )
+    {
+        switch (propertyType)
+        {
+            case "monetary_amount":
+                return monetaryFormatter(displayName, description);
+            case "duration":
+                return durationFormatter(displayName, description);
+            default:
+                return rtrRcd_FormatBasicPropertySchema(propertyType, displayName, description);
+        }
+    }
+
+    /// <summary>
+    /// Ensures SCIM patch requests always contain the required schema marker expected by Ironclad.
+    /// </summary>
+    private void EnsureScimPatchSchema(JObject jsonBody)
+    {
+        if (!jsonBody.ContainsKey("schemas") || !(jsonBody["schemas"] is JArray))
+        {
+            jsonBody["schemas"] = new JArray();
+        }
+
+        var schemas = (JArray)jsonBody["schemas"];
+        if (
+            !schemas.Any(
+                s => s.Type == JTokenType.String && s.Value<string>() == ScimPatchOperationSchema
+            )
+        )
+        {
+            schemas.Clear();
+            schemas.Add(ScimPatchOperationSchema);
+        }
+    }
+
+    /// <summary>
+    /// Normalizes entity type names so equivalent Ironclad variants map to the connector's
+    /// current canonical names.
+    /// </summary>
+    private string NormalizeEntityTypeName(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            return "string";
+        }
+
+        var normalizedType = typeName.ToLowerInvariant();
+        if (normalizedType == "monetaryamount" || normalizedType == "monetary_amount")
+        {
+            return "monetary_amount";
+        }
+
+        return normalizedType;
+    }
+
+    /// <summary>
+    /// Resolves the effective entity type name from either a relationship-type definition
+    /// or an already-populated property object.
+    /// </summary>
+    private string GetEntityTypeName(JObject propertyDefinition, JObject propertyObject = null)
+    {
+        var rawType =
+            propertyDefinition?.Value<string>("fullTypeName")
+            ?? propertyDefinition?.SelectToken("type.typeName")?.ToString()
+            ?? propertyDefinition?.Value<string>("type")
+            ?? propertyObject?.Value<string>("fullTypeName")
+            ?? propertyObject?.Value<string>("type")
+            ?? "string";
+
+        return NormalizeEntityTypeName(rawType);
+    }
+
+    /// <summary>
+    /// Copies entity property definition metadata onto a property value object so downstream
+    /// formatters can work from a consistent shape.
+    /// </summary>
+    private void ApplyEntityPropertyDefinition(
+        JObject propertyObject,
+        string propertyName,
+        JObject propertyDefinition
+    )
+    {
+        propertyObject["systemName"] = propertyName;
+        propertyObject["displayName"] =
+            propertyDefinition?.Value<string>("displayName") ?? propertyName;
+        propertyObject["description"] =
+            propertyDefinition?.Value<string>("description") ?? $"The {propertyName}.";
+        propertyObject["type"] =
+            propertyDefinition?.Value<string>("fullTypeName")
+            ?? propertyDefinition?.SelectToken("type.typeName")?.ToString()
+            ?? propertyObject.Value<string>("type")
+            ?? "string";
+        propertyObject["hidden"] = propertyDefinition?.Value<bool?>("hidden") ?? false;
+        propertyObject["required"] = propertyDefinition?.Value<bool?>("required") ?? false;
+    }
+
+    /// <summary>
+    /// Creates the compact relationship type object exposed by the connector for entities.
+    /// </summary>
+    private JObject CreateEntityRelationshipTypeSummary(JObject relationshipType)
+    {
+        return new JObject
+        {
+            ["id"] = relationshipType.Value<string>("id"),
+            ["name"] = relationshipType.Value<string>("name"),
+            ["displayName"] = relationshipType.Value<string>("displayName"),
+            ["description"] = relationshipType.Value<string>("description") ?? ""
+        };
+    }
+
+    /// <summary>
+    /// Resolves relationship type IDs into the compact connector-specific objects used in
+    /// entity responses.
+    /// </summary>
+    private JArray BuildEntityRelationshipTypesArray(
+        JArray relationshipTypeIds,
+        Dictionary<string, JObject> relationshipTypesById
+    )
+    {
+        var relationshipTypes = new JArray();
+
+        if (relationshipTypeIds == null)
+        {
+            return relationshipTypes;
+        }
+
+        foreach (var relationshipTypeIdToken in relationshipTypeIds)
+        {
+            var relationshipTypeId = relationshipTypeIdToken?.ToString()?.Trim().ToLowerInvariant();
+            if (
+                !string.IsNullOrEmpty(relationshipTypeId)
+                && relationshipTypesById.TryGetValue(relationshipTypeId, out var relationshipType)
+            )
+            {
+                relationshipTypes.Add(CreateEntityRelationshipTypeSummary(relationshipType));
+            }
+        }
+
+        return relationshipTypes;
+    }
+
+    /// <summary>
+    /// Ensures entity request payloads always send relationshipTypeKey as an array when the
+    /// connector input supplied a single string value.
+    /// </summary>
+    private void EnsureEntityRelationshipTypeKeyArray(JObject jsonBody)
+    {
+        if (
+            jsonBody.TryGetValue("relationshipTypeKey", out var relationshipTypeKeyToken)
+            && relationshipTypeKeyToken.Type == JTokenType.String
+        )
+        {
+            jsonBody["relationshipTypeKey"] = new JArray(relationshipTypeKeyToken.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Converts the connector's expanded duration object back into the ISO-8601 string form
+    /// expected by Ironclad for entity writes.
+    /// </summary>
+    private string ConvertExpandedDurationToIsoString(JObject durationObject)
+    {
+        var years = durationObject.Value<int?>("years") ?? 0;
+        var months = durationObject.Value<int?>("months") ?? 0;
+        var weeks = durationObject.Value<int?>("weeks") ?? 0;
+        var days = durationObject.Value<int?>("days") ?? 0;
+
+        if (years > 0 || months > 0 || weeks > 0 || days > 0)
+        {
+            var builder = new StringBuilder("P");
+            if (years > 0)
+            {
+                builder.Append($"{years}Y");
+            }
+
+            if (months > 0)
+            {
+                builder.Append($"{months}M");
+            }
+
+            if (weeks > 0)
+            {
+                builder.Append($"{weeks}W");
+            }
+
+            if (days > 0)
+            {
+                builder.Append($"{days}D");
+            }
+
+            return builder.ToString();
+        }
+
+        return "P0D";
+    }
+
+    /// <summary>
+    /// Normalizes entity request values before they are sent to Ironclad.
+    /// </summary>
+    private JToken NormalizeEntityRequestValue(string typeName, JToken valueToken)
+    {
+        if (
+            NormalizeEntityTypeName(typeName) == "duration"
+            && valueToken is JObject durationObject
+        )
+        {
+            return ConvertExpandedDurationToIsoString(durationObject);
+        }
+
+        return valueToken;
+    }
+
+    /// <summary>
+    /// Clones the current entity property objects into the array form exposed by the connector.
+    /// </summary>
+    private JArray CreateEntityPropertiesAsArray(JObject properties)
+    {
+        var propertiesArray = new JArray();
+
+        if (properties == null)
+        {
+            return propertiesArray;
+        }
+
+        foreach (var property in properties.Properties())
+        {
+            if (property.Value is JObject propertyObject)
+            {
+                propertiesArray.Add(new JObject(propertyObject));
+            }
+        }
+
+        return propertiesArray;
+    }
+
+    /// <summary>
+    /// Builds the value schema used by GetEntityRelationshipType for a single entity property.
+    /// This route exposes a connector-specific schema shape that differs from the entity
+    /// response formatters, so the helper is kept route-specific.
+    /// </summary>
+    private JObject CreateEntityRelationshipTypeValueSchema(
+        string type,
+        string displayName,
+        string description
+    )
+    {
+        switch (type)
+        {
+            case "monetary_amount":
+                return new JObject
+                {
+                    ["type"] = "object",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important",
+                    ["properties"] = new JObject
+                    {
+                        ["amount"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["title"] = "Amount",
+                            ["description"] = $"The amount of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["currency"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["title"] = "Currency",
+                            ["description"] = $"The currency of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        }
+                    },
+                    ["required"] = new JArray { "amount", "currency" }
+                };
+            case "duration":
+                return new JObject
+                {
+                    ["type"] = "object",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important",
+                    ["properties"] = new JObject
+                    {
+                        ["years"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["title"] = "Years",
+                            ["description"] = $"The years of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["months"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["title"] = "Months",
+                            ["description"] = $"The months of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["weeks"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["title"] = "Weeks",
+                            ["description"] = $"The weeks of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["days"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["title"] = "Days",
+                            ["description"] = $"The days of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        }
+                    }
+                };
+            case "address":
+                return new JObject
+                {
+                    ["type"] = "object",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important",
+                    ["properties"] = new JObject
+                    {
+                        ["lines"] = new JObject
+                        {
+                            ["type"] = "array",
+                            ["title"] = "Address Lines",
+                            ["description"] = $"The lines of the {displayName}.",
+                            ["items"] = new JObject
+                            {
+                                ["type"] = "string",
+                                ["title"] = $"{displayName} Line",
+                                ["description"] = $"An individual line of the {displayName}.",
+                                ["x-ms-visibility"] = "important"
+                            },
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["locality"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["title"] = "Locality",
+                            ["description"] = $"The locality of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["region"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["title"] = "Region",
+                            ["description"] = $"The region of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["postcode"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["title"] = "Postcode",
+                            ["description"] = $"The postcode of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        },
+                        ["country"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["title"] = "Country",
+                            ["description"] = $"The country of the {displayName}.",
+                            ["x-ms-visibility"] = "important"
+                        }
+                    }
+                };
+            case "boolean":
+                return new JObject
+                {
+                    ["type"] = "boolean",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important"
+                };
+            case "number":
+                return new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important"
+                };
+            case "email":
+                return new JObject
+                {
+                    ["type"] = "string",
+                    ["format"] = "email",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important"
+                };
+            case "date":
+                return new JObject
+                {
+                    ["type"] = "string",
+                    ["format"] = "date-time",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important"
+                };
+            default:
+                return new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Value",
+                    ["description"] = description,
+                    ["x-ms-visibility"] = "important"
+                };
+        }
+    }
+
+    /// <summary>
+    /// Wraps an entity relationship-type value schema in the outer property schema expected
+    /// by GetEntityRelationshipType.
+    /// </summary>
+    private JObject CreateEntityRelationshipTypePropertySchema(
+        string displayName,
+        string description,
+        bool hidden,
+        string type,
+        JObject valueSchema
+    )
+    {
+        return new JObject
+        {
+            ["type"] = "object",
+            ["title"] = displayName,
+            ["description"] = description,
+            ["x-ms-visibility"] = hidden ? "advanced" : "important",
+            ["properties"] = new JObject
+            {
+                ["value"] = valueSchema,
+                ["type"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Type",
+                    ["description"] = "The Ironclad data type.",
+                    ["x-ms-visibility"] = "internal",
+                    ["default"] = type
+                }
+            },
+            ["required"] = new JArray { "value", "type" }
+        };
+    }
+
+    /// <summary>
+    /// Builds the metadata-array item exposed by GetEntityRelationshipType.
+    /// </summary>
+    private JObject CreateEntityRelationshipTypePropertyArrayItem(
+        string propertyName,
+        string displayName,
+        string description,
+        bool hidden,
+        bool required,
+        string type
+    )
+    {
+        return new JObject
+        {
+            ["key"] = propertyName,
+            ["displayName"] = displayName,
+            ["description"] = description,
+            ["hidden"] = hidden,
+            ["required"] = required,
+            ["type"] = type
+        };
+    }
+
+    // ################################################################################
+    // Create Attachment / Create Signed Copy Attachment operations ###################
+    // ################################################################################
+
+    /// <summary>
+    /// Converts the connector's JSON attachment payload into the multipart form expected
+    /// by the Ironclad record attachment endpoint.
+    /// </summary>
+    private async Task crtAtt_TransformToMultipartRequestForRecords()
+    {
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+        this.Context.Request.Content = CreateAttachmentMultipartContent(jsonBody);
     }
 
     // ################################################################################
@@ -248,39 +878,26 @@ public class Script : ScriptBase
     // Replace Record #################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Retrieves record metadata from Ironclad so array-style connector inputs can be
+    /// converted into the typed object structure expected by the API.
+    /// </summary>
     private async Task<JObject> crtRcd_FetchRecordMetadata()
     {
-        var baseUrl = this.Context.Request.RequestUri.GetLeftPart(UriPartial.Authority);
-        var metadataUrl = new Uri(new Uri(baseUrl), "/public/api/v1/records/metadata");
-
-        var request = new HttpRequestMessage(HttpMethod.Get, metadataUrl);
-
-        foreach (var header in this.Context.Request.Headers)
-        {
-            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
-
-        var response = await this.Context
-            .SendAsync(request, this.CancellationToken)
+        return await FetchJsonFromConnectorApiAsync(
+                "/public/api/v1/records/metadata",
+                "Failed to retrieve record metadata."
+            )
             .ConfigureAwait(false);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return JObject.Parse(content);
-        }
-        else
-        {
-            throw new Exception(
-                $"Failed to retrieve record metadata. Status code: {response.StatusCode}"
-            );
-        }
     }
 
+    /// <summary>
+    /// Converts the connector's array-based record properties into Ironclad's keyed
+    /// properties object while preserving the exact request contract already in use.
+    /// </summary>
     private async Task crtRcd_TransformCreateRecordRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
         if (jsonBody.TryGetValue("propertiesAsArray", out var propertiesAsArray))
         {
@@ -309,11 +926,14 @@ public class Script : ScriptBase
             jsonBody["properties"] = properties;
             jsonBody.Remove("propertiesAsArray");
 
-            this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+            ReplaceRequestJsonBody(jsonBody);
         }
     }
 
-    // Add counterpartyName property to the response
+    /// <summary>
+    /// Adds the root-level counterpartyName field expected by the connector after a
+    /// record create or replace response.
+    /// </summary>
     private JObject crtRcd_TransformCreateRecordResponse(JObject body)
     {
         if (body.ContainsKey("properties") && body["properties"] is JObject properties)
@@ -339,6 +959,10 @@ public class Script : ScriptBase
     // Retrieve Entity ################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Enriches a retrieved entity with formatted property metadata, relationship type
+    /// details, and connector-specific helper outputs.
+    /// </summary>
     private async Task rtvEnt_TransformResponse(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -353,22 +977,7 @@ public class Script : ScriptBase
         // ----------------- Relationship Types -----------------
         if (obj.TryGetValue("namedTypeIds", out var namedTypeIdsToken) && namedTypeIdsToken is JArray idArray)
         {
-            var relTypesArray = new JArray();
-
-            foreach (var relTypeIdToken in idArray)
-            {
-                var relTypeId = relTypeIdToken?.ToString()?.Trim().ToLowerInvariant();
-                if (!string.IsNullOrEmpty(relTypeId) && relTypeById.TryGetValue(relTypeId, out var relTypeObj))
-                {
-                    relTypesArray.Add(new JObject
-                    {
-                        ["id"] = relTypeObj.Value<string>("id"),
-                        ["name"] = relTypeObj.Value<string>("name"),
-                        ["displayName"] = relTypeObj.Value<string>("displayName"),
-                        ["description"] = relTypeObj.Value<string>("description") ?? ""
-                    });
-                }
-            }
+            var relTypesArray = BuildEntityRelationshipTypesArray(idArray, relTypeById);
             obj["relationshipTypes"] = relTypesArray;
             obj.Remove("namedTypeIds");
         }
@@ -385,25 +994,15 @@ public class Script : ScriptBase
                 var propertyObj = prop.Value as JObject;
                 if (propertyObj == null) continue;
 
-                // --- Meta info from propDict ---
                 JObject propDef = null;
-                if (propDict.TryGetValue(propName, out var dictValue)) propDef = dictValue;
+                if (propDict.TryGetValue(propName, out var dictValue))
+                {
+                    propDef = dictValue;
+                }
 
-                propertyObj["systemName"] = propName;
-                propertyObj["displayName"] = propDef?.Value<string>("displayName") ?? propName;
-                propertyObj["description"] = propDef?.Value<string>("description") ?? $"The {propName}.";
-                propertyObj["type"] = propDef?.Value<string>("fullTypeName")
-                                            ?? propDef?.SelectToken("type.typeName")?.ToString()
-                                            ?? propertyObj.Value<string>("type") ?? "string";
-                propertyObj["hidden"] = propDef?.Value<bool?>("hidden") ?? false;
-                propertyObj["required"] = propDef?.Value<bool?>("required") ?? false;
+                ApplyEntityPropertyDefinition(propertyObj, propName, propDef);
 
-                // --- Normalize type for further handling ---
-                var type = propertyObj.Value<string>("fullTypeName")
-                            ?? propertyObj.Value<string>("type")
-                            ?? "string";
-                type = type.ToLowerInvariant();
-                if (type == "monetaryamount" || type == "monetary_amount") type = "monetary_amount";
+                var type = GetEntityTypeName(propDef, propertyObj);
 
                 JObject propertySchema = null;
                 JToken formattedValue = propertyObj["value"];
@@ -490,20 +1089,7 @@ public class Script : ScriptBase
                             }
                         };
                         var iso = propertyObj.Value<string>("value") ?? "";
-                        var regex = new System.Text.RegularExpressions.Regex(@"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?");
-                        var match = regex.Match(iso);
-                        var years = match.Success && !string.IsNullOrEmpty(match.Groups[1].Value) ? int.Parse(match.Groups[1].Value) : 0;
-                        var months = match.Success && !string.IsNullOrEmpty(match.Groups[2].Value) ? int.Parse(match.Groups[2].Value) : 0;
-                        var weeks = match.Success && !string.IsNullOrEmpty(match.Groups[3].Value) ? int.Parse(match.Groups[3].Value) : 0;
-                        var days = match.Success && !string.IsNullOrEmpty(match.Groups[4].Value) ? int.Parse(match.Groups[4].Value) : 0;
-                        formattedValue = new JObject
-                        {
-                            ["isoDuration"] = iso,
-                            ["years"] = years,
-                            ["months"] = months,
-                            ["weeks"] = weeks,
-                            ["days"] = days
-                        };
+                        formattedValue = CreateExpandedDurationObject(iso);
                         break;
 
                     case "address":
@@ -631,10 +1217,13 @@ public class Script : ScriptBase
     // Create Entity ##################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Rewrites connector-style entity create properties into the typed Ironclad request
+    /// shape before the downstream API call is sent.
+    /// </summary>
     private async Task crtEnt_TransformCreateEntityRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
         if (jsonBody.TryGetValue("properties", out var propertiesToken) && propertiesToken is JObject properties)
         {
@@ -648,30 +1237,7 @@ public class Script : ScriptBase
                     continue;
 
                 var type = propObj.Value<string>("type") ?? "";
-                var valueToken = propObj["value"];
-
-                // Special handling for durations
-                if (type.Equals("duration", StringComparison.OrdinalIgnoreCase) && valueToken is JObject durationObj)
-                {
-                    var years = durationObj.Value<int?>("years") ?? 0;
-                    var months = durationObj.Value<int?>("months") ?? 0;
-                    var weeks = durationObj.Value<int?>("weeks") ?? 0;
-                    var days = durationObj.Value<int?>("days") ?? 0;
-
-                    if (years > 0 || months > 0 || weeks > 0 || days > 0)
-                    {
-                        var sb = new StringBuilder("P");
-                        if (years > 0) sb.Append($"{years}Y");
-                        if (months > 0) sb.Append($"{months}M");
-                        if (weeks > 0) sb.Append($"{weeks}W");
-                        if (days > 0) sb.Append($"{days}D");
-                        valueToken = sb.ToString();
-                    }
-                    else
-                    {
-                        valueToken = "P0D";
-                    }
-                }
+                var valueToken = NormalizeEntityRequestValue(type, propObj["value"]);
 
                 // Add to new properties object in Ironclad structure
                 reformatted[propName] = new JObject
@@ -685,32 +1251,24 @@ public class Script : ScriptBase
             jsonBody["properties"] = reformatted;
         }
 
-        // Transform relationshipTypeKey to array if string
-        if (jsonBody.TryGetValue("relationshipTypeKey", out var relTypeKeyToken) &&
-            relTypeKeyToken.Type == JTokenType.String)
-        {
-            jsonBody["relationshipTypeKey"] = new JArray(relTypeKeyToken.ToString());
-        }
+        EnsureEntityRelationshipTypeKeyArray(jsonBody);
 
-        // Write the transformed content back
-        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+        ReplaceRequestJsonBody(jsonBody);
     }
 
     // ################################################################################
     // Update Entity ##################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Rewrites connector-style entity update fields into the typed Ironclad payload
+    /// expected for addProperties and relationship type updates.
+    /// </summary>
     private async Task updEnt_TransformUpdateEntityRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
-        // Transform relationshipTypeKey to array if string
-        if (jsonBody.TryGetValue("relationshipTypeKey", out var relTypeKeyToken) &&
-            relTypeKeyToken.Type == JTokenType.String)
-        {
-            jsonBody["relationshipTypeKey"] = new JArray(relTypeKeyToken.ToString());
-        }
+        EnsureEntityRelationshipTypeKeyArray(jsonBody);
 
         // Transform addProperties array to object keyed by property name with type/value
         if (jsonBody.TryGetValue("addProperties", out var addPropsToken) && addPropsToken is JArray addPropsArray)
@@ -726,15 +1284,9 @@ public class Script : ScriptBase
                     continue;
 
                 // Get and normalize type
-                var type = propDict.TryGetValue(key, out var def) ?
-                    (def.Value<string>("fullTypeName")
-                    ?? def.SelectToken("type.typeName")?.ToString()
-                    ?? def.Value<string>("type") ?? "string")
+                var type = propDict.TryGetValue(key, out var def)
+                    ? GetEntityTypeName(def)
                     : "string";
-
-                type = type.ToLowerInvariant();
-                if (type == "monetaryamount" || type == "monetary_amount")
-                    type = "monetary_amount";
 
                 addPropsObj[key] = new JObject
                 {
@@ -747,14 +1299,17 @@ public class Script : ScriptBase
             jsonBody["addProperties"] = addPropsObj;
         }
 
-        // Write the transformed content back
-        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+        ReplaceRequestJsonBody(jsonBody);
     }
 
     // ################################################################################
     // List All Entities ##############################################################
     // ################################################################################
 
+    /// <summary>
+    /// Enriches each listed entity with property metadata, relationship type summaries,
+    /// and connector-friendly labels.
+    /// </summary>
     private async Task lstAllEnt_TransformResponse(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -789,38 +1344,14 @@ public class Script : ScriptBase
                     }
 
                     // Create enriched propertiesAsArray
-                    var propsArray = new JArray();
-                    foreach (var prop in props.Properties())
-                    {
-                        if (prop.Value is JObject propertyObj)
-                        {
-                            var arrObj = new JObject(propertyObj);
-                            propsArray.Add(arrObj);
-                        }
-                    }
-                    entity["propertiesAsArray"] = propsArray;
+                    entity["propertiesAsArray"] = CreateEntityPropertiesAsArray(props);
                 }
 
                 // ----------------- RelationshipTypes Handling -----------------
-                var relTypesArray = new JArray();
-                if (entity["namedTypeIds"] is JArray idArray)
-                {
-                    foreach (var relTypeIdToken in idArray)
-                    {
-                        var relTypeId = relTypeIdToken?.ToString()?.Trim().ToLowerInvariant();
-                        if (!string.IsNullOrEmpty(relTypeId) && relTypeById.TryGetValue(relTypeId, out var relTypeObj))
-                        {
-                            relTypesArray.Add(new JObject
-                            {
-                                ["id"] = relTypeObj.Value<string>("id"),
-                                ["name"] = relTypeObj.Value<string>("name"),
-                                ["displayName"] = relTypeObj.Value<string>("displayName"),
-                                ["description"] = relTypeObj.Value<string>("description") ?? ""
-                            });
-                        }
-                    }
-                }
-                entity["relationshipTypes"] = relTypesArray;
+                entity["relationshipTypes"] = BuildEntityRelationshipTypesArray(
+                    entity["namedTypeIds"] as JArray,
+                    relTypeById
+                );
                 entity.Remove("namedTypeIds"); // Optional
 
                 // ----------------- Label Handling -----------------
@@ -880,6 +1411,10 @@ public class Script : ScriptBase
     // Relationship Types #############################################################
     // ################################################################################
 
+    /// <summary>
+    /// Expands the relationship type list response with merged property metadata and the
+    /// connector's relationship type summary objects.
+    /// </summary>
     private async Task lstEntRltTyp_TransformListEntityRelationshipTypes(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -908,15 +1443,7 @@ public class Script : ScriptBase
 
                 string description = propObj.Value<string>("description") ?? "";
                 string displayName = propObj.Value<string>("displayName") ?? key;
-                string fullTypeName = 
-                    propObj.Value<string>("fullTypeName") 
-                    ?? propObj.SelectToken("type.typeName")?.ToString() 
-                    ?? propObj.Value<string>("type") ?? "string";
-                fullTypeName = fullTypeName.ToLowerInvariant();
-
-                // Normalize monetary types
-                if (fullTypeName == "monetaryamount" || fullTypeName == "monetary_amount")
-                    fullTypeName = "monetary_amount";
+                string fullTypeName = GetEntityTypeName(propObj);
 
                 var propertyObj = new JObject
                 {
@@ -943,8 +1470,10 @@ public class Script : ScriptBase
     // Get Entity Relationship Type ###################################################
     // ################################################################################
 
-    // Request Trandformer
-
+    /// <summary>
+    /// Rewrites the single relationship-type request into a list request and stores the
+    /// requested system name so the response can be filtered afterward.
+    /// </summary>
     private Task getEntRltTyp_TransformRequest()
     {
         // Example incoming path:
@@ -965,6 +1494,10 @@ public class Script : ScriptBase
         return Task.CompletedTask;
     }
     
+    /// <summary>
+    /// Filters the relationship-type list response down to the requested item and adds
+    /// the formatted schema outputs exposed by the connector.
+    /// </summary>
     private async Task getEntRltTyp_TransformResponse(HttpResponseMessage response)
     {
         if (!this.Context.Request.Headers.TryGetValues("X-RelType-SystemName", out var vals))
@@ -978,320 +1511,134 @@ public class Script : ScriptBase
         if (string.IsNullOrWhiteSpace(bodyText))
             return;
 
-        // Just parse as JArray
-        var arr = JArray.Parse(bodyText);
+        var singleItem = JArray
+            .Parse(bodyText)
+            .OfType<JObject>()
+            .FirstOrDefault(
+                relTypeObj =>
+                    (
+                        relTypeObj["name"]?
+                            .ToString()
+                            .Equals(systemName, StringComparison.OrdinalIgnoreCase)
+                    ).GetValueOrDefault()
+            );
 
-        JObject singleItem = null;
-
-        foreach (var relTypeObj in arr.OfType<JObject>())
+        if (singleItem != null)
         {
-            if ((relTypeObj["name"]?.ToString().Equals(systemName, StringComparison.OrdinalIgnoreCase)).GetValueOrDefault())
-            {
-                if (relTypeObj["properties"] is JObject props)
-                {
-                    var formattedSchemaProps = new JObject();
-                    var propertiesAsArray = new JArray();
-                    var requiredFields = new List<string>();
-
-                    foreach (var prop in props.Properties())
-                    {
-                        var propName = prop.Name;
-                        var propObj = prop.Value as JObject;
-                        if (propObj == null) continue;
-
-                        string type = propObj.Value<string>("fullTypeName")
-                                ?? propObj.SelectToken("type.typeName")?.ToString()
-                                ?? propObj.Value<string>("type") ?? "string";
-                        type = type.ToLowerInvariant();
-
-                        // Normalize monetaryamount/monetary_amount to "monetary_amount"
-                        if (type == "monetaryamount" || type == "monetary_amount")
-                            type = "monetary_amount";
-
-                        string displayName = propObj.Value<string>("displayName") ?? propName;
-                        string description = propObj.Value<string>("description");
-                        if (string.IsNullOrWhiteSpace(description))
-                            description = $"The {displayName}.";
-
-                        bool hidden = propObj.Value<bool?>("hidden") ?? false;
-                        bool required = propObj.Value<bool?>("required") ?? false;
-                        if (required)
-                            requiredFields.Add(propName);
-
-                        JObject valueSchema;
-                        switch (type)
-                        {
-                            case "monetary_amount":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "object",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important",
-                                    ["properties"] = new JObject
-                                    {
-                                        ["amount"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Amount",
-                                            ["description"] = $"The amount of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["currency"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = "Currency",
-                                            ["description"] = $"The currency of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        }
-                                    },
-                                    ["required"] = new JArray { "amount", "currency" }
-                                };
-                                break;
-
-                            case "duration":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "object",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important",
-                                    ["properties"] = new JObject
-                                    {
-                                        ["years"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Years",
-                                            ["description"] = $"The years of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["months"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Months",
-                                            ["description"] = $"The months of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["weeks"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Weeks",
-                                            ["description"] = $"The weeks of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["days"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Days",
-                                            ["description"] = $"The days of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        }
-                                    }
-                                };
-                                break;
-
-                            case "address":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "object",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important",
-                                    ["properties"] = new JObject
-                                    {
-                                        ["lines"] = new JObject
-                                        {
-                                            ["type"] = "array",
-                                            ["title"] = $"Address Lines",
-                                            ["description"] = $"The lines of the {displayName}.",
-                                            ["items"] = new JObject
-                                            {
-                                                ["type"] = "string",
-                                                ["title"] = $"{displayName} Line",
-                                                ["description"] = $"An individual line of the {displayName}.",
-                                                ["x-ms-visibility"] = "important"
-                                            },
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["locality"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = "Locality",
-                                            ["description"] = $"The locality of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["region"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = "Region",
-                                            ["description"] = $"The region of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["postcode"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = $"Postcode",
-                                            ["description"] = $"The postcode of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        },
-                                        ["country"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = $"Country",
-                                            ["description"] = $"The country of the {displayName}.",
-                                            ["x-ms-visibility"] = "important"
-                                        }
-                                    }
-                                };
-                                break;
-
-                            case "boolean":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "boolean",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important"
-                                };
-                                break;
-
-                            case "number":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "number",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important"
-                                };
-                                break;
-
-                            case "email":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "string",
-                                    ["format"] = "email",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important"
-                                };
-                                break;
-
-                            case "date":
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "string",
-                                    ["format"] = "date-time",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important"
-                                };
-                                break;
-
-                            default:
-                                valueSchema = new JObject
-                                {
-                                    ["type"] = "string",
-                                    ["title"] = "Value",
-                                    ["description"] = description,
-                                    ["x-ms-visibility"] = "important"
-                                };
-                                break;
-                        }
-
-                        var propSchema = new JObject
-                        {
-                            ["type"] = "object",
-                            ["title"] = displayName,
-                            ["description"] = description,
-                            ["x-ms-visibility"] = hidden ? "advanced" : "important",
-                            ["properties"] = new JObject
-                            {
-                                ["value"] = valueSchema,
-                                ["type"] = new JObject
-                                {
-                                    ["type"] = "string",
-                                    ["title"] = "Type",
-                                    ["description"] = "The Ironclad data type.",
-                                    ["x-ms-visibility"] = "internal",
-                                    ["default"] = type
-                                }
-                            },
-                            ["required"] = new JArray { "value", "type" }
-                        };
-
-                        formattedSchemaProps[propName] = propSchema;
-
-                        propertiesAsArray.Add(new JObject
-                        {
-                            ["key"]   = propName,
-                            ["displayName"]  = displayName,
-                            ["description"]  = description,
-                            ["hidden"]       = hidden,
-                            ["required"]     = required,
-                            ["type"]         = type
-                        });
-                    }
-
-                    var formattedSchema = new JObject
-                    {
-                        ["type"] = "object",
-                        ["properties"] = formattedSchemaProps
-                    };
-
-                    if (requiredFields.Count > 0)
-                        formattedSchema["required"] = new JArray(requiredFields);
-
-                    relTypeObj["propertiesAsArray"] = propertiesAsArray;
-                    relTypeObj["formattedSchema"] = formattedSchema;
-                }
-                singleItem = relTypeObj;
-                break;
-            }
+            getEntRltTyp_AddFormattedPropertyOutputs(singleItem);
         }
 
         response.Content = CreateJsonContent((singleItem ?? new JObject()).ToString());
+    }
+
+    /// <summary>
+    /// Builds the connector-specific formattedSchema and propertiesAsArray values for a
+    /// single entity relationship type while preserving the legacy field names and
+    /// wording already exposed by the connector.
+    /// </summary>
+    private void getEntRltTyp_AddFormattedPropertyOutputs(JObject relTypeObj)
+    {
+        if (!(relTypeObj["properties"] is JObject props))
+        {
+            return;
+        }
+
+        var formattedSchemaProps = new JObject();
+        var propertiesAsArray = new JArray();
+        var requiredFields = new List<string>();
+
+        foreach (var prop in props.Properties())
+        {
+            var propName = prop.Name;
+            var propObj = prop.Value as JObject;
+            if (propObj == null)
+            {
+                continue;
+            }
+
+            var type = GetEntityTypeName(propObj);
+            var displayName = propObj.Value<string>("displayName") ?? propName;
+            var description = propObj.Value<string>("description");
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = $"The {displayName}.";
+            }
+
+            var hidden = propObj.Value<bool?>("hidden") ?? false;
+            var required = propObj.Value<bool?>("required") ?? false;
+            if (required)
+            {
+                requiredFields.Add(propName);
+            }
+
+            var valueSchema = CreateEntityRelationshipTypeValueSchema(
+                type,
+                displayName,
+                description
+            );
+
+            formattedSchemaProps[propName] = CreateEntityRelationshipTypePropertySchema(
+                displayName,
+                description,
+                hidden,
+                type,
+                valueSchema
+            );
+
+            propertiesAsArray.Add(
+                CreateEntityRelationshipTypePropertyArrayItem(
+                    propName,
+                    displayName,
+                    description,
+                    hidden,
+                    required,
+                    type
+                )
+            );
+        }
+
+        var formattedSchema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = formattedSchemaProps
+        };
+
+        if (requiredFields.Count > 0)
+        {
+            formattedSchema["required"] = new JArray(requiredFields);
+        }
+
+        relTypeObj["propertiesAsArray"] = propertiesAsArray;
+        relTypeObj["formattedSchema"] = formattedSchema;
     }
 
     // ################################################################################
     // Update Record Metadata #########################################################
     // ################################################################################
 
+    /// <summary>
+    /// Retrieves record metadata for update operations so array-style property updates can
+    /// be converted back into the typed API payload that Ironclad expects.
+    /// </summary>
     private async Task<JObject> updRcd_FetchRecordMetadata()
     {
-        var baseUrl = this.Context.Request.RequestUri.GetLeftPart(UriPartial.Authority);
-        var metadataUrl = new Uri(new Uri(baseUrl), "/public/api/v1/records/metadata");
-
-        var metadataRequest = new HttpRequestMessage(HttpMethod.Get, metadataUrl);
-
-        foreach (var header in this.Context.Request.Headers)
-        {
-            metadataRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
-
-        var metadataResponse = await this.Context
-            .SendAsync(metadataRequest, this.CancellationToken)
+        return await FetchJsonFromConnectorApiAsync(
+                "/public/api/v1/records/metadata",
+                "Failed to retrieve record metadata."
+            )
             .ConfigureAwait(false);
-
-        if (!metadataResponse.IsSuccessStatusCode)
-        {
-            throw new Exception(
-                $"Failed to retrieve record metadata. Status code: {metadataResponse.StatusCode}"
-            );
-        }
-
-        var metadataContent = await metadataResponse.Content
-            .ReadAsStringAsync()
-            .ConfigureAwait(false);
-        return JObject.Parse(metadataContent);
     }
 
+    /// <summary>
+    /// Converts array-based record metadata updates into the typed object form required by
+    /// the Ironclad update endpoint.
+    /// </summary>
     private async Task updRcd_TransformUpdateRecordMetadataRequest()
     {
         var metadata = await updRcd_FetchRecordMetadata();
         var metadataProperties = metadata["properties"] as JObject;
 
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
         if (
             jsonBody.TryGetValue("addProperties", out var addPropertiesToken)
@@ -1329,7 +1676,7 @@ public class Script : ScriptBase
             }
 
             jsonBody["addProperties"] = transformedProperties;
-            this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+            ReplaceRequestJsonBody(jsonBody);
         }
     }
 
@@ -1337,6 +1684,10 @@ public class Script : ScriptBase
     // Create Workflow Asynchronously #################################################
     // ################################################################################
 
+    /// <summary>
+    /// Reshapes the async workflow create request from flattened connector inputs into
+    /// the nested JSON structure expected by Ironclad.
+    /// </summary>
     private async Task crtAsyncWfl_TransformRequestJson()
     {
         var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1352,7 +1703,11 @@ public class Script : ScriptBase
         this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
     }
 
-        private JObject crtAsyncWfl_ProcessLaunchApprovals(JObject json)
+    /// <summary>
+    /// Converts launchApprovals array entries into direct attribute assignments for the
+    /// async workflow create payload.
+    /// </summary>
+    private JObject crtAsyncWfl_ProcessLaunchApprovals(JObject json)
     {
         // Check if we have "attributes" at the root
         if (json.TryGetValue("attributes", out var attributesToken) && attributesToken is JObject attributes)
@@ -1388,6 +1743,10 @@ public class Script : ScriptBase
         return json;
     }
 
+    /// <summary>
+    /// Rebuilds nested objects and array items from the flattened field paths emitted by
+    /// the connector designer for async workflow creation.
+    /// </summary>
     private JObject crtAsyncWfl_UnflattenJson(JObject flatJson)
     {
         var result = new JObject();
@@ -1484,6 +1843,10 @@ public class Script : ScriptBase
     // ################################################################################
 
     // Transform error message on missing param
+    /// <summary>
+    /// Rewrites the specific CreateWorkflow approver validation error into the connector's
+    /// more actionable response shape while leaving other errors unchanged.
+    /// </summary>
     private async Task<HttpResponseMessage> TransformCreateWorkflowErrorResponseAsync(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1531,7 +1894,10 @@ public class Script : ScriptBase
         }
         return response;
     }
-    // Transform Request
+    /// <summary>
+    /// Converts the workflow create payload into multipart form data, including nested
+    /// attribute reshaping and embedded file extraction.
+    /// </summary>
     private async Task crtWfl_TransformToMultipartRequestForWorkflows()
     {
         var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1558,6 +1924,10 @@ public class Script : ScriptBase
         this.Context.Request.Content = multipartContent;
     }
 
+    /// <summary>
+    /// Converts launchApprovals array entries into direct workflow attribute assignments
+    /// for the synchronous workflow create request.
+    /// </summary>
     private JObject crtWfl_ProcessLaunchApprovals(JObject json)
     {
         // Check if we have "attributes" at the root
@@ -1593,6 +1963,10 @@ public class Script : ScriptBase
 
         return json;
     }
+    /// <summary>
+    /// Rebuilds nested workflow JSON objects and array items from slash-delimited field
+    /// paths before the multipart request is assembled.
+    /// </summary>
     private JObject crtWfl_UnflattenJson(JObject flatJson)
     {
         var result = new JObject();
@@ -1606,48 +1980,7 @@ public class Script : ScriptBase
                 {
                     if (item is JObject objItem)
                     {
-                        var unflattenedItem = new JObject();
-                        var groupedProperties = objItem
-                            .Properties()
-                            .GroupBy(p => p.Name.Split('/')[0])
-                            .ToDictionary(g => g.Key, g => g.ToList());
-
-                        foreach (var group in groupedProperties)
-                        {
-                            if (group.Value.Count == 1 && !group.Value[0].Name.Contains("/"))
-                            {
-                                // Simple property
-                                unflattenedItem[group.Key] = group.Value[0].Value;
-                            }
-                            else
-                            {
-                                // Complex property
-                                var complexObj = new JObject();
-                                foreach (var complexProp in group.Value)
-                                {
-                                    var parts = complexProp.Name.Split('/');
-                                    if (parts.Length == 1)
-                                    {
-                                        complexObj[parts[0]] = complexProp.Value;
-                                    }
-                                    else
-                                    {
-                                        var currentObj = complexObj;
-                                        for (int i = 1; i < parts.Length - 1; i++)
-                                        {
-                                            if (!currentObj.ContainsKey(parts[i]))
-                                            {
-                                                currentObj[parts[i]] = new JObject();
-                                            }
-                                            currentObj = (JObject)currentObj[parts[i]];
-                                        }
-                                        currentObj[parts.Last()] = complexProp.Value;
-                                    }
-                                }
-                                unflattenedItem[group.Key] = complexObj;
-                            }
-                        }
-                        unflattened.Add(unflattenedItem);
+                        unflattened.Add(crtWfl_UnflattenArrayItemObject(objItem));
                     }
                     else
                     {
@@ -1663,17 +1996,7 @@ public class Script : ScriptBase
             }
             else if (prop.Name.Contains("/"))
             {
-                var parts = prop.Name.Split('/');
-                var currentObj = result;
-                for (int i = 0; i < parts.Length - 1; i++)
-                {
-                    if (!currentObj.ContainsKey(parts[i]))
-                    {
-                        currentObj[parts[i]] = new JObject();
-                    }
-                    currentObj = (JObject)currentObj[parts[i]];
-                }
-                currentObj[parts.Last()] = prop.Value;
+                crtWfl_AddNestedProperty(result, prop.Name, prop.Value, 0);
             }
             else
             {
@@ -1684,6 +2007,98 @@ public class Script : ScriptBase
         return result;
     }
 
+    /// <summary>
+    /// Array items can arrive in a flat slash-delimited form as well. This helper keeps
+    /// the current grouping semantics but avoids the previous LINQ-heavy grouping and
+    /// dictionary materialization on every array element.
+    /// </summary>
+    private JObject crtWfl_UnflattenArrayItemObject(JObject objItem)
+    {
+        var groupedProperties = new Dictionary<string, List<JProperty>>();
+
+        foreach (var property in objItem.Properties())
+        {
+            var slashIndex = property.Name.IndexOf('/');
+            var groupKey =
+                slashIndex >= 0 ? property.Name.Substring(0, slashIndex) : property.Name;
+
+            if (!groupedProperties.TryGetValue(groupKey, out var properties))
+            {
+                properties = new List<JProperty>();
+                groupedProperties[groupKey] = properties;
+            }
+
+            properties.Add(property);
+        }
+
+        var unflattenedItem = new JObject();
+
+        foreach (var group in groupedProperties)
+        {
+            if (group.Value.Count == 1 && group.Value[0].Name.IndexOf('/') < 0)
+            {
+                unflattenedItem[group.Key] = group.Value[0].Value;
+                continue;
+            }
+
+            var complexObj = new JObject();
+            foreach (var complexProp in group.Value)
+            {
+                var slashIndex = complexProp.Name.IndexOf('/');
+                if (slashIndex < 0)
+                {
+                    complexObj[complexProp.Name] = complexProp.Value;
+                    continue;
+                }
+
+                crtWfl_AddNestedProperty(
+                    complexObj,
+                    complexProp.Name,
+                    complexProp.Value,
+                    slashIndex + 1
+                );
+            }
+
+            unflattenedItem[group.Key] = complexObj;
+        }
+
+        return unflattenedItem;
+    }
+
+    /// <summary>
+    /// Inserts a slash-delimited property path into the target JSON object starting at
+    /// the requested index. The workflow request shaper uses this for both top-level
+    /// properties and array items so the existing connector output stays identical while
+    /// we avoid repeated split/group allocations.
+    /// </summary>
+    private void crtWfl_AddNestedProperty(
+        JObject target,
+        string propertyPath,
+        JToken value,
+        int startIndex
+    )
+    {
+        var parts = propertyPath.Split('/');
+        var currentObj = target;
+
+        for (int i = startIndex; i < parts.Length - 1; i++)
+        {
+            if (!(currentObj[parts[i]] is JObject childObject))
+            {
+                childObject = new JObject();
+                currentObj[parts[i]] = childObject;
+            }
+
+            currentObj = childObject;
+        }
+
+        currentObj[parts[parts.Length - 1]] = value;
+    }
+
+    /// <summary>
+    /// Scans workflow attributes for file arrays and moves their binary content into the
+    /// multipart payload while updating the JSON body to reference the generated keys.
+    /// </summary>
     private void crtWfl_ProcessWorkflowAttributes(
         JObject attributes,
         MultipartFormDataContent multipartContent,
@@ -1707,6 +2122,10 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Extracts one workflow file-array attribute into multipart file parts and replaces
+    /// each item with the file token reference expected by Ironclad.
+    /// </summary>
     private void crtWfl_ProcessFileArrayAttribute(
         string attributeName,
         JArray arrayValue,
@@ -1750,59 +2169,38 @@ public class Script : ScriptBase
     // Create Workflow Document operations ############################################
     // ################################################################################
 
+    /// <summary>
+    /// Converts the connector's JSON attachment payload into the multipart form expected
+    /// by the Ironclad workflow-document upload endpoint.
+    /// </summary>
     private async Task crtWflDoc_TransformToMultipartRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
-
-        var multipartContent = new MultipartFormDataContent();
-
-        string filename = "document.pdf"; // Default filename as fallback
-        if (
-            jsonBody.TryGetValue("metadata", out var metadataToken)
-            && metadataToken is JObject metadata
-        )
-        {
-            filename = metadata["filename"]?.ToString() ?? filename;
-        }
-
-        if (jsonBody.TryGetValue("attachment", out var attachmentToken))
-        {
-            var attachmentBytes = Convert.FromBase64String(attachmentToken.ToString());
-            var fileContent = new ByteArrayContent(attachmentBytes);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            multipartContent.Add(fileContent, "attachment", filename);
-        }
-
-        if (metadataToken != null)
-        {
-            var metadataJson = metadataToken.ToString();
-            var metadataContent = new StringContent(
-                metadataJson,
-                Encoding.UTF8,
-                "application/json"
-            );
-            multipartContent.Add(metadataContent, "metadata");
-        }
-
-        this.Context.Request.Content = multipartContent;
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+        this.Context.Request.Content = CreateAttachmentMultipartContent(jsonBody);
     }
 
     // ################################################################################
     // Update Workflow Metadata #######################################################
     // ################################################################################
 
+    /// <summary>
+    /// Converts the connector's flattened workflow metadata update values back into JSON
+    /// primitives, arrays, or objects when the payload clearly represents them.
+    /// </summary>
     private async Task updWflMd_TransformUpdateWorkflowMetadataRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
         // Convert value fields to proper types based on their content
         await ConvertValueTypes(jsonBody).ConfigureAwait(false);
         
-        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+        ReplaceRequestJsonBody(jsonBody);
     }
 
+    /// <summary>
+    /// Converts the free-form "updates[*].value" strings used by the connector designer
+    /// into richer JSON token types when the text clearly represents them.
+    /// </summary>
     private async Task ConvertValueTypes(JObject jsonBody)
     {
         try
@@ -1830,6 +2228,10 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Applies the connector's current string-to-token conversion rules while keeping
+    /// ambiguous values as strings.
+    /// </summary>
     private JToken ConvertStringToProperType(JToken valueToken)
     {
         // If it's not a string, return as-is
@@ -1904,11 +2306,19 @@ public class Script : ScriptBase
         return valueToken;
     }
 
+    /// <summary>
+    /// Checks whether a string can be parsed as a numeric value for workflow metadata
+    /// request normalization.
+    /// </summary>
     private bool IsNumeric(string value)
     {
         return decimal.TryParse(value, out _);
     }
 
+    /// <summary>
+    /// Normalizes the workflow metadata update response back into JSON content without
+    /// changing the current payload shape.
+    /// </summary>
     private async Task updWflMd_TransformUpdateWorkflowMetadataResponse(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1916,14 +2326,6 @@ public class Script : ScriptBase
         if (!String.IsNullOrWhiteSpace(content))
         {
             var body = JObject.Parse(content);
-            
-            // Transform the response body if needed
-            // This might include:
-            // - Formatting workflow attributes for better display
-            // - Adding computed fields
-            // - Restructuring the response for easier consumption
-            
-            // For now, we'll pass through the response as-is
             response.Content = CreateJsonContent(body.ToString());
         }
     }
@@ -1932,6 +2334,9 @@ public class Script : ScriptBase
     // List Users #####################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Trims the SCIM user list down to the fields the connector uses for dynamic values.
+    /// </summary>
     private JObject lstUsr_TransformUsersList(JObject body)
     {
         var resources = body["Resources"] as JArray;
@@ -1965,70 +2370,65 @@ public class Script : ScriptBase
     // Update Group ###################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Ensures group patch requests always contain the SCIM patch schema required by Ironclad.
+    /// </summary>
     private async Task updGrp_TransformUpdateGroupRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
-
-        // Ensure the "schemas" property exists and has the correct value
-        if (!jsonBody.ContainsKey("schemas") || !(jsonBody["schemas"] is JArray))
-        {
-            jsonBody["schemas"] = new JArray();
-        }
-
-        var schemas = (JArray)jsonBody["schemas"];
-        if (
-            !schemas.Any(
-                s =>
-                    s.Type == JTokenType.String
-                    && s.Value<string>() == "urn:ietf:params:scim:api:messages:2.0:PatchOp"
-            )
-        )
-        {
-            schemas.Clear(); // Remove any existing values
-            schemas.Add("urn:ietf:params:scim:api:messages:2.0:PatchOp");
-        }
-
-        // Update the request content with the modified body
-        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+        EnsureScimPatchSchema(jsonBody);
+        ReplaceRequestJsonBody(jsonBody);
     }
 
     // ################################################################################
     // Update User ####################################################################
     // ################################################################################
 
+    /// <summary>
+    /// Ensures user patch requests always contain the SCIM patch schema required by Ironclad.
+    /// </summary>
     private async Task updUsr_TransformUpdateUserRequest()
     {
-        var content = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonBody = JObject.Parse(content);
-
-        // Ensure the "schemas" property exists and has the correct value
-        if (!jsonBody.ContainsKey("schemas") || !(jsonBody["schemas"] is JArray))
-        {
-            jsonBody["schemas"] = new JArray();
-        }
-
-        var schemas = (JArray)jsonBody["schemas"];
-        if (
-            !schemas.Any(
-                s =>
-                    s.Type == JTokenType.String
-                    && s.Value<string>() == "urn:ietf:params:scim:api:messages:2.0:PatchOp"
-            )
-        )
-        {
-            schemas.Clear(); // Remove any existing values
-            schemas.Add("urn:ietf:params:scim:api:messages:2.0:PatchOp");
-        }
-
-        // Update the request content with the modified body
-        this.Context.Request.Content = CreateJsonContent(jsonBody.ToString());
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+        EnsureScimPatchSchema(jsonBody);
+        ReplaceRequestJsonBody(jsonBody);
     }
 
     // ################################################################################
     // Retrieve Workflow Schema #######################################################
     // ################################################################################
 
+    /// <summary>
+    /// Simplifies the workflow schema list response to the compact list shape used by the
+    /// connector.
+    /// </summary>
+    private JObject lstWflSch_TransformListWorkflowSchemas(JObject body)
+    {
+        if (body["list"] is JArray list)
+        {
+            var trimmedList = new JArray();
+
+            foreach (var item in list.OfType<JObject>())
+            {
+                trimmedList.Add(
+                    new JObject
+                    {
+                        ["id"] = item["id"],
+                        ["name"] = item["name"]
+                    }
+                );
+            }
+
+            body["list"] = trimmedList;
+        }
+
+        return body;
+    }
+
+    /// <summary>
+    /// Builds the connector-specific launch schema, formatted schema, and schema arrays
+    /// from the raw workflow schema response.
+    /// </summary>
     private JObject rtrWflSch_TransformRetrieveWorkflowSchema(JObject body)
     {
         var schema = body["schema"] as JObject;
@@ -2219,36 +2619,250 @@ public class Script : ScriptBase
         return body;
     }
 
-    private JObject rtrWflSch_FormatLaunchProperty(
+    /// <summary>
+    /// Creates the schema-array item shape used by both workflow-schema and workflow
+    /// response helpers when exposing field metadata as arrays.
+    /// </summary>
+    private JObject CreateWorkflowSchemaArrayItem(
+        string systemName,
+        string displayName,
+        string type,
+        bool isReadOnly
+    )
+    {
+        return new JObject
+        {
+            ["systemName"] = systemName,
+            ["displayName"] = displayName,
+            ["type"] = type,
+            ["readOnly"] = isReadOnly
+        };
+    }
+
+    /// <summary>
+    /// Creates the document-array metadata item shape shared by workflow schema helpers.
+    /// </summary>
+    private JObject CreateWorkflowDocumentSchemaItem(
+        string systemName,
+        string displayName,
+        bool isReadOnly
+    )
+    {
+        return new JObject
+        {
+            ["systemName"] = systemName,
+            ["displayName"] = displayName,
+            ["readOnly"] = isReadOnly
+        };
+    }
+
+    /// <summary>
+    /// Builds the common OpenAPI schema used for workflow address properties.
+    /// Both workflow schema discovery and workflow response shaping use this exact structure.
+    /// </summary>
+    private JObject FormatWorkflowAddressPropertySchema(string displayName)
+    {
+        return new JObject
+        {
+            ["type"] = "object",
+            ["title"] = displayName,
+            ["description"] = $"The {displayName}.",
+            ["x-ms-visibility"] = "important",
+            ["properties"] = new JObject
+            {
+                ["lines"] = new JObject
+                {
+                    ["type"] = "array",
+                    ["items"] = new JObject
+                    {
+                        ["type"] = "string",
+                        ["title"] = $"{displayName} Line",
+                        ["x-ms-visibility"] = "important",
+                        ["description"] = $"An address line of {displayName}."
+                    }
+                },
+                ["locality"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Locality",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The locality of {displayName}."
+                },
+                ["region"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Region",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The region of {displayName}."
+                },
+                ["postcode"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Postcode",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The postcode of {displayName}."
+                },
+                ["country"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Country",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The country of {displayName}."
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Builds the common OpenAPI schema used for workflow monetary amount properties.
+    /// </summary>
+    private JObject FormatWorkflowMonetaryAmountPropertySchema(string displayName)
+    {
+        return new JObject
+        {
+            ["type"] = "object",
+            ["title"] = displayName,
+            ["description"] = $"The {displayName}.",
+            ["x-ms-visibility"] = "important",
+            ["properties"] = new JObject
+            {
+                ["amount"] = new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Amount",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The amount of {displayName}."
+                },
+                ["currency"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["title"] = "Currency",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The currency of {displayName}."
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Builds the common OpenAPI schema used for workflow duration properties.
+    /// </summary>
+    private JObject FormatWorkflowDurationPropertySchema(string displayName)
+    {
+        return new JObject
+        {
+            ["type"] = "object",
+            ["title"] = displayName,
+            ["description"] = $"The {displayName}.",
+            ["x-ms-visibility"] = "important",
+            ["properties"] = new JObject
+            {
+                ["years"] = new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Years",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The years of {displayName}."
+                },
+                ["months"] = new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Months",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The months of {displayName}."
+                },
+                ["weeks"] = new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Weeks",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The weeks of {displayName}."
+                },
+                ["days"] = new JObject
+                {
+                    ["type"] = "number",
+                    ["title"] = "Days",
+                    ["x-ms-visibility"] = "important",
+                    ["description"] = $"The days of {displayName}."
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Builds the common primitive OpenAPI schema used for workflow string/number/date/etc. fields.
+    /// </summary>
+    private JObject FormatWorkflowBasicPropertySchema(string propertyType, string displayName)
+    {
+        var formattedProperty = new JObject
+        {
+            ["title"] = displayName,
+            ["description"] = $"The {displayName}.",
+            ["x-ms-visibility"] = "important"
+        };
+
+        switch (propertyType)
+        {
+            case "string":
+                formattedProperty["type"] = "string";
+                break;
+            case "number":
+            case "integer":
+                formattedProperty["type"] = "number";
+                break;
+            case "boolean":
+                formattedProperty["type"] = "boolean";
+                break;
+            case "date":
+                formattedProperty["type"] = "string";
+                formattedProperty["format"] = "date-time";
+                break;
+            default:
+                formattedProperty["type"] = "string";
+                break;
+        }
+
+        return formattedProperty;
+    }
+
+    /// <summary>
+    /// Shared dispatcher for workflow-style property schemas. The caller supplies the
+    /// array formatter because launch-schema, workflow-schema, and workflow-response
+    /// document arrays are intentionally not identical.
+    /// </summary>
+    private JObject FormatWorkflowPropertySchemaCore(
         string propertyType,
         string displayName,
         string propertyName,
-        JObject propertyValue
+        JObject propertyValue,
+        Func<string, string, JObject, JObject> arrayFormatter
     )
     {
         switch (propertyType)
         {
             case "array":
-                return rtrWflSch_FormatArrayLaunchProperty(
-                    displayName,
-                    propertyName,
-                    propertyValue
-                );
+                return arrayFormatter(displayName, propertyName, propertyValue);
             case "address":
-                return rtrWflSch_FormatAddressProperty(displayName, propertyName);
+                return FormatWorkflowAddressPropertySchema(displayName);
             case "monetaryamount":
-                return rtrWflSch_FormatMonetaryAmountProperty(displayName, propertyName);
+                return FormatWorkflowMonetaryAmountPropertySchema(displayName);
             case "duration":
-                return rtrWflSch_FormatDurationProperty(displayName, propertyName);
+                return FormatWorkflowDurationPropertySchema(displayName);
             default:
-                return rtrWflSch_FormatBasicProperty(propertyType, displayName, propertyName);
+                return FormatWorkflowBasicPropertySchema(propertyType, displayName);
         }
     }
 
-    private JObject rtrWflSch_FormatArrayLaunchProperty(
+    /// <summary>
+    /// Shared array-property formatter for workflow-style schemas. The caller supplies the
+    /// document-array and table formatters because those differ by route family.
+    /// </summary>
+    private JObject FormatWorkflowArrayPropertySchemaCore(
         string displayName,
         string propertyName,
-        JObject propertyValue
+        JObject propertyValue,
+        Func<string, string, JObject> documentArrayFormatter,
+        Func<string, string, JObject, JObject> tableFormatter
     )
     {
         var elementType = propertyValue["elementType"] as JObject;
@@ -2257,11 +2871,11 @@ public class Script : ScriptBase
             string elementTypeString = elementType["type"].ToString().ToLower();
             if (elementTypeString == "document")
             {
-                return rtrWflSch_FormatDocumentArrayLaunchProperty(displayName, propertyName);
+                return documentArrayFormatter(displayName, propertyName);
             }
             else if (elementTypeString == "object")
             {
-                return rtrWflSch_FormatTableProperty(displayName, propertyName, propertyValue);
+                return tableFormatter(displayName, propertyName, propertyValue);
             }
             else
             {
@@ -2271,17 +2885,58 @@ public class Script : ScriptBase
                     ["title"] = displayName,
                     ["description"] = $"The {displayName}.",
                     ["x-ms-visibility"] = "important",
-                    ["items"] = rtrWflSch_FormatBasicProperty(
+                    ["items"] = FormatWorkflowBasicPropertySchema(
                         elementTypeString,
-                        $"{displayName} Item",
-                        $"{propertyName} Item"
+                        $"{displayName} Item"
                     )
                 };
             }
         }
+
         return new JObject();
     }
 
+    /// <summary>
+    /// Formats one workflow schema property for the launchSchema output used when
+    /// creating workflows through the connector.
+    /// </summary>
+    private JObject rtrWflSch_FormatLaunchProperty(
+        string propertyType,
+        string displayName,
+        string propertyName,
+        JObject propertyValue
+    )
+    {
+        return FormatWorkflowPropertySchemaCore(
+            propertyType,
+            displayName,
+            propertyName,
+            propertyValue,
+            rtrWflSch_FormatArrayLaunchProperty
+        );
+    }
+
+    /// <summary>
+    /// Formats an array-typed workflow schema property for launchSchema output.
+    /// </summary>
+    private JObject rtrWflSch_FormatArrayLaunchProperty(
+        string displayName,
+        string propertyName,
+        JObject propertyValue
+    )
+    {
+        return FormatWorkflowArrayPropertySchemaCore(
+            displayName,
+            propertyName,
+            propertyValue,
+            rtrWflSch_FormatDocumentArrayLaunchProperty,
+            rtrWflSch_FormatTableProperty
+        );
+    }
+
+    /// <summary>
+    /// Creates the launchSchema shape for document upload arrays on workflow schemas.
+    /// </summary>
     private JObject rtrWflSch_FormatDocumentArrayLaunchProperty(
         string displayName,
         string propertyName
@@ -2319,6 +2974,10 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// Creates the workflow schema table-array shape for launchSchema and formattedSchema
+    /// outputs.
+    /// </summary>
     private JObject rtrWflSch_FormatTableProperty(
         string displayName,
         string propertyName,
@@ -2380,166 +3039,45 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// Formats a workflow schema address property using the shared workflow address shape.
+    /// </summary>
     private JObject rtrWflSch_FormatAddressProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["lines"] = new JObject
-                {
-                    ["type"] = "array",
-                    ["items"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = $"{displayName} Line",
-                        ["x-ms-visibility"] = "important",
-                        ["description"] = $"An address line of {displayName}."
-                    }
-                },
-                ["locality"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Locality",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The locality of {displayName}."
-                },
-                ["region"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Region",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The region of {displayName}."
-                },
-                ["postcode"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Postcode",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The postcode of {displayName}."
-                },
-                ["country"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Country",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The country of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowAddressPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a workflow schema monetary amount property using the shared schema shape.
+    /// </summary>
     private JObject rtrWflSch_FormatMonetaryAmountProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["amount"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Amount",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The amount of {displayName}."
-                },
-                ["currency"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Currency",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The currency of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowMonetaryAmountPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a workflow schema duration property using the shared expanded duration shape.
+    /// </summary>
     private JObject rtrWflSch_FormatDurationProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["years"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Years",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The years of {displayName}."
-                },
-                ["months"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Months",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The months of {displayName}."
-                },
-                ["weeks"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Weeks",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The weeks of {displayName}."
-                },
-                ["days"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Days",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The days of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowDurationPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a primitive workflow schema property using the shared basic property rules.
+    /// </summary>
     private JObject rtrWflSch_FormatBasicProperty(
         string propertyType,
         string displayName,
         string propertyName
     )
     {
-        var formattedLaunchProperty = new JObject
-        {
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-        };
-
-        switch (propertyType)
-        {
-            case "string":
-                formattedLaunchProperty["type"] = "string";
-                break;
-            case "number":
-            case "integer":
-                formattedLaunchProperty["type"] = "number";
-                break;
-            case "boolean":
-                formattedLaunchProperty["type"] = "boolean";
-                break;
-            case "date":
-                formattedLaunchProperty["type"] = "string";
-                formattedLaunchProperty["format"] = "date-time";
-                break;
-            default:
-                formattedLaunchProperty["type"] = "string";
-                break;
-        }
-
-        return formattedLaunchProperty;
+        return FormatWorkflowBasicPropertySchema(propertyType, displayName);
     }
 
+    /// <summary>
+    /// Creates one schemaAsArray item for a workflow schema property.
+    /// </summary>
     private JObject rtrWflSch_ParseSchemaArrayItem(
         string systemName,
         string displayName,
@@ -2547,29 +3085,24 @@ public class Script : ScriptBase
         bool isReadOnly
     )
     {
-        return new JObject
-        {
-            ["systemName"] = systemName,
-            ["displayName"] = displayName,
-            ["type"] = type,
-            ["readOnly"] = isReadOnly
-        };
+        return CreateWorkflowSchemaArrayItem(systemName, displayName, type, isReadOnly);
     }
 
+    /// <summary>
+    /// Creates one documentSchemaAsArray item for a workflow document field.
+    /// </summary>
     private JObject rtrWflSch_ParseDocumentSchemaItem(
         string systemName,
         string displayName,
         bool isReadOnly
     )
     {
-        return new JObject
-        {
-            ["systemName"] = systemName,
-            ["displayName"] = displayName,
-            ["readOnly"] = isReadOnly
-        };
+        return CreateWorkflowDocumentSchemaItem(systemName, displayName, isReadOnly);
     }
 
+    /// <summary>
+    /// Formats one workflow schema property for the formattedSchema output.
+    /// </summary>
     private JObject rtrWflSch_FormatProperty(
         string propertyType,
         string displayName,
@@ -2577,58 +3110,37 @@ public class Script : ScriptBase
         JObject propertyValue
     )
     {
-        switch (propertyType)
-        {
-            case "array":
-                return rtrWflSch_FormatArrayProperty(displayName, propertyName, propertyValue);
-            case "address":
-                return rtrWflSch_FormatAddressProperty(displayName, propertyName);
-            case "monetaryamount":
-                return rtrWflSch_FormatMonetaryAmountProperty(displayName, propertyName);
-            case "duration":
-                return rtrWflSch_FormatDurationProperty(displayName, propertyName);
-            default:
-                return rtrWflSch_FormatBasicProperty(propertyType, displayName, propertyName);
-        }
+        return FormatWorkflowPropertySchemaCore(
+            propertyType,
+            displayName,
+            propertyName,
+            propertyValue,
+            rtrWflSch_FormatArrayProperty
+        );
     }
 
+    /// <summary>
+    /// Formats an array-typed workflow schema property for the formattedSchema output.
+    /// </summary>
     private JObject rtrWflSch_FormatArrayProperty(
         string displayName,
         string propertyName,
         JObject propertyValue
     )
     {
-        var elementType = propertyValue["elementType"] as JObject;
-        if (elementType != null)
-        {
-            string elementTypeString = elementType["type"].ToString().ToLower();
-            if (elementTypeString == "document")
-            {
-                return rtrWflSch_FormatDocumentArrayProperty(displayName, propertyName);
-            }
-            else if (elementTypeString == "object")
-            {
-                return rtrWflSch_FormatTableProperty(displayName, propertyName, propertyValue);
-            }
-            else
-            {
-                return new JObject
-                {
-                    ["type"] = "array",
-                    ["title"] = displayName,
-                    ["description"] = $"The {displayName}.",
-                    ["x-ms-visibility"] = "important",
-                    ["items"] = rtrWflSch_FormatBasicProperty(
-                        elementTypeString,
-                        $"{displayName} Item",
-                        $"{propertyName} Item"
-                    )
-                };
-            }
-        }
-        return new JObject();
+        return FormatWorkflowArrayPropertySchemaCore(
+            displayName,
+            propertyName,
+            propertyValue,
+            rtrWflSch_FormatDocumentArrayProperty,
+            rtrWflSch_FormatTableProperty
+        );
     }
 
+    /// <summary>
+    /// Creates the formattedSchema shape for document arrays returned by workflow schema
+    /// discovery.
+    /// </summary>
     private JObject rtrWflSch_FormatDocumentArrayProperty(string displayName, string propertyName)
     {
         return new JObject
@@ -2672,6 +3184,9 @@ public class Script : ScriptBase
     // List All Workflow ##############################################################
     // ################################################################################
 
+    /// <summary>
+    /// Adds the connector's label field to each workflow in the list response.
+    /// </summary>
     private JObject lstAllWfl_TransformListAllWorkflowsResponse(JObject body)
     {
         if (body.ContainsKey("list") && body["list"] is JArray list)
@@ -2693,6 +3208,10 @@ public class Script : ScriptBase
     // ################################################################################
     // Retrieve Workflow ##############################################################
     // ################################################################################
+    /// <summary>
+    /// Expands a retrieved workflow into the connector's formatted schema, attribute, and
+    /// document helper outputs.
+    /// </summary>
     private JObject rtrWfl_TransformRetrieveWorkflow(JObject body)
     {
         var schema = body["schema"] as JObject;
@@ -2777,6 +3296,10 @@ public class Script : ScriptBase
         return body;
     }
 
+    /// <summary>
+    /// Adds one workflow schema property to the formatted schema and schemaAsArray
+    /// outputs for RetrieveWorkflow.
+    /// </summary>
     private void rtrWfl_ProcessSchemaProperty(
         JProperty property,
         JObject formattedSchema,
@@ -2816,6 +3339,9 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Dispatches RetrieveWorkflow property formatting based on the Ironclad field type.
+    /// </summary>
     private JObject rtrWfl_FormatPropertyByType(
         string propertyType,
         string displayName,
@@ -2823,58 +3349,37 @@ public class Script : ScriptBase
         JObject propertySchema
     )
     {
-        switch (propertyType)
-        {
-            case "array":
-                return rtrWfl_FormatArrayProperty(displayName, propertyName, propertySchema);
-            case "address":
-                return rtrWfl_FormatAddressProperty(displayName, propertyName);
-            case "monetaryamount":
-                return rtrWfl_FormatMonetaryAmountProperty(displayName, propertyName);
-            case "duration":
-                return rtrWfl_FormatDurationProperty(displayName, propertyName);
-            default:
-                return rtrWfl_FormatBasicProperty(propertyType, displayName, propertyName);
-        }
+        return FormatWorkflowPropertySchemaCore(
+            propertyType,
+            displayName,
+            propertyName,
+            propertySchema,
+            rtrWfl_FormatArrayProperty
+        );
     }
 
+    /// <summary>
+    /// Formats an array-typed RetrieveWorkflow schema property.
+    /// </summary>
     private JObject rtrWfl_FormatArrayProperty(
         string displayName,
         string propertyName,
         JObject propertySchema
     )
     {
-        var elementType = propertySchema["elementType"] as JObject;
-        if (elementType != null)
-        {
-            string elementTypeString = elementType["type"].ToString().ToLower();
-            if (elementTypeString == "document")
-            {
-                return rtrWfl_FormatDocumentArrayProperty(displayName, propertyName);
-            }
-            else if (elementTypeString == "object")
-            {
-                return rtrWfl_FormatTableProperty(displayName, propertyName, propertySchema);
-            }
-            else
-            {
-                return new JObject
-                {
-                    ["type"] = "array",
-                    ["title"] = displayName,
-                    ["description"] = $"The {displayName}.",
-                    ["x-ms-visibility"] = "important",
-                    ["items"] = rtrWfl_FormatBasicProperty(
-                        elementTypeString,
-                        $"{displayName} Item",
-                        $"{propertyName} Item"
-                    )
-                };
-            }
-        }
-        return new JObject();
+        return FormatWorkflowArrayPropertySchemaCore(
+            displayName,
+            propertyName,
+            propertySchema,
+            rtrWfl_FormatDocumentArrayProperty,
+            rtrWfl_FormatTableProperty
+        );
     }
 
+    /// <summary>
+    /// Creates the RetrieveWorkflow schema shape for document arrays and document version
+    /// metadata.
+    /// </summary>
     private JObject rtrWfl_FormatDocumentArrayProperty(string displayName, string propertyName)
     {
         return new JObject
@@ -2992,6 +3497,9 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// Creates the RetrieveWorkflow schema shape for table-style array properties.
+    /// </summary>
     private JObject rtrWfl_FormatTableProperty(
         string displayName,
         string propertyName,
@@ -3028,166 +3536,45 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// Formats a RetrieveWorkflow address property using the shared workflow address schema.
+    /// </summary>
     private JObject rtrWfl_FormatAddressProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["lines"] = new JObject
-                {
-                    ["type"] = "array",
-                    ["items"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = $"{displayName} Line",
-                        ["x-ms-visibility"] = "important",
-                        ["description"] = $"An address line of {displayName}."
-                    }
-                },
-                ["locality"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Locality",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The locality of {displayName}."
-                },
-                ["region"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Region",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The region of {displayName}."
-                },
-                ["postcode"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Postcode",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The postcode of {displayName}."
-                },
-                ["country"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Country",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The country of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowAddressPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a RetrieveWorkflow monetary amount property using the shared schema shape.
+    /// </summary>
     private JObject rtrWfl_FormatMonetaryAmountProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["amount"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Amount",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The amount of {displayName}."
-                },
-                ["currency"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Currency",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The currency of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowMonetaryAmountPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a RetrieveWorkflow duration property using the shared expanded duration schema.
+    /// </summary>
     private JObject rtrWfl_FormatDurationProperty(string displayName, string propertyName)
     {
-        return new JObject
-        {
-            ["type"] = "object",
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["years"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Years",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The years of {displayName}."
-                },
-                ["months"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Months",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The months of {displayName}."
-                },
-                ["weeks"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Weeks",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The weeks of {displayName}."
-                },
-                ["days"] = new JObject
-                {
-                    ["type"] = "number",
-                    ["title"] = "Days",
-                    ["x-ms-visibility"] = "important",
-                    ["description"] = $"The days of {displayName}."
-                }
-            }
-        };
+        return FormatWorkflowDurationPropertySchema(displayName);
     }
 
+    /// <summary>
+    /// Formats a primitive RetrieveWorkflow property using the shared workflow schema rules.
+    /// </summary>
     private JObject rtrWfl_FormatBasicProperty(
         string propertyType,
         string displayName,
         string propertyName
     )
     {
-        var formattedProperty = new JObject
-        {
-            ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
-            ["x-ms-visibility"] = "important"
-        };
-
-        switch (propertyType)
-        {
-            case "string":
-                formattedProperty["type"] = "string";
-                break;
-            case "number":
-            case "integer":
-                formattedProperty["type"] = "number";
-                break;
-            case "boolean":
-                formattedProperty["type"] = "boolean";
-                break;
-            case "date":
-                formattedProperty["type"] = "string";
-                formattedProperty["format"] = "date-time";
-                break;
-            default:
-                formattedProperty["type"] = "string";
-                break;
-        }
-
-        return formattedProperty;
+        return FormatWorkflowBasicPropertySchema(propertyType, displayName);
     }
 
+    /// <summary>
+    /// Creates one schemaAsArray item for the RetrieveWorkflow response.
+    /// </summary>
     private JObject rtrWfl_CreateSchemaArrayItem(
         string systemName,
         string displayName,
@@ -3195,29 +3582,25 @@ public class Script : ScriptBase
         bool isReadOnly
     )
     {
-        return new JObject
-        {
-            ["systemName"] = systemName,
-            ["displayName"] = displayName,
-            ["type"] = type,
-            ["readOnly"] = isReadOnly
-        };
+        return CreateWorkflowSchemaArrayItem(systemName, displayName, type, isReadOnly);
     }
 
+    /// <summary>
+    /// Creates one document metadata array item for the RetrieveWorkflow response.
+    /// </summary>
     private JObject rtrWfl_CreateDocumentSchemaItem(
         string systemName,
         string displayName,
         bool isReadOnly
     )
     {
-        return new JObject
-        {
-            ["systemName"] = systemName,
-            ["displayName"] = displayName,
-            ["readOnly"] = isReadOnly
-        };
+        return CreateWorkflowDocumentSchemaItem(systemName, displayName, isReadOnly);
     }
 
+    /// <summary>
+    /// Formats workflow attribute values using the already-built formatted schema so the
+    /// response values match the connector's helper outputs.
+    /// </summary>
     private JObject rtrWfl_FormatWorkflowAttributes(JObject attributes, JObject formattedSchema)
     {
         if (attributes == null || formattedSchema == null)
@@ -3243,6 +3626,9 @@ public class Script : ScriptBase
         return formattedAttributes;
     }
 
+    /// <summary>
+    /// Formats a workflow attribute value based on the corresponding formatted schema node.
+    /// </summary>
     private JToken rtrWfl_FormatAttributeValue(JToken value, JObject schema)
     {
         string propertyType = schema["type"]?.ToString().ToLower();
@@ -3258,6 +3644,10 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Formats an array-valued workflow attribute, including nested object items when
+    /// the schema declares them.
+    /// </summary>
     private JArray rtrWfl_FormatArrayAttributeValue(JToken value, JObject schema)
     {
         var formattedArray = new JArray();
@@ -3284,6 +3674,10 @@ public class Script : ScriptBase
         return formattedArray;
     }
 
+    /// <summary>
+    /// Formats an object-valued workflow attribute using the formatted child property
+    /// definitions from the schema.
+    /// </summary>
     private JObject rtrWfl_FormatObjectAttributeValue(JToken value, JObject schema)
     {
         var formattedObject = new JObject();
@@ -3310,20 +3704,52 @@ public class Script : ScriptBase
     // Retrieve Record Schema #########################################################
     // ################################################################################
 
+    /// <summary>
+    /// Repoints the formatted-record-schema route to the raw record metadata endpoint.
+    /// The response is reformatted afterward so callers still receive the existing schema shape.
+    /// </summary>
+    private Task rtrRcdFmtSch_TransformRequest()
+    {
+        var uri = this.Context.Request.RequestUri;
+        var metadataUri = new Uri(
+            uri.GetLeftPart(UriPartial.Authority) + "/public/api/v1/records/metadata" + uri.Query
+        );
+        this.Context.Request.RequestUri = metadataUri;
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Builds the formatted record schema response from raw record metadata while preserving
+    /// the connector's current "recordPorperties" query behavior.
+    /// </summary>
+    private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
+    {
+        var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var metadata = JObject.Parse(content);
+        var transformedData = rtrRcdSch_TransformRetrieveRecordSchemas(
+            metadata,
+            propertiesQuery,
+            true
+        );
+        var formattedSchema =
+            transformedData["formattedSchema"] as JObject ?? rtrRcdSch_CreateEmptyFormattedSchema();
+
+        response.Content = CreateJsonContent(formattedSchema.ToString());
+    }
+
+    /// <summary>
+    /// Handles RetrieveRecordSchemas by validating requested property names and returning
+    /// the connector's enriched schema representation.
+    /// </summary>
     private async Task<HttpResponseMessage> rtrRcdSch_HandleRequest()
     {
         try
         {
-            // Get the query parameter
-            var uri = this.Context.Request.RequestUri;
-            var queryParams = HttpUtility.ParseQueryString(uri.Query);
-            var propertiesQuery = queryParams["recordPorperties"] ?? string.Empty;
+            var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
 
-            // Get the content
-            var content = await this.Context.Request.Content
-                .ReadAsStringAsync()
-                .ConfigureAwait(false);
-            var metadata = JObject.Parse(content);
+            var metadata = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
             // If we have a query, validate all properties exist
             if (!string.IsNullOrWhiteSpace(propertiesQuery))
@@ -3397,16 +3823,37 @@ public class Script : ScriptBase
             };
         }
     }
-    private JObject rtrRcdSch_TransformRetrieveRecordSchemas(JObject body, string propertiesQuery)
+    /// <summary>
+    /// Returns the empty formattedSchema object used when record schema filters are not
+    /// provided or no formatted record fields are emitted.
+    /// </summary>
+    private JObject rtrRcdSch_CreateEmptyFormattedSchema()
+    {
+        return new JObject
+        {
+            ["type"] = "object",
+            ["description"] =
+                "The record schema formatted for compatibility with the OpenAPI standard.",
+            ["x-ms-visibility"] = "important",
+            ["properties"] = new JObject()
+        };
+    }
+
+    /// <summary>
+    /// Rewrites the record metadata response into the connector's formatted property,
+    /// clause, attachment, and optional formattedSchema outputs.
+    /// </summary>
+    private JObject rtrRcdSch_TransformRetrieveRecordSchemas(
+        JObject body,
+        string propertiesQuery,
+        bool includeFormattedSchema = false
+    )
     {
         var properties = body["properties"] as JObject;
         if (properties != null)
         {
             var formattedProperties = new JArray();
             var formattedClauses = new JArray();
-
-            // Add the requested properties to the response
-            body["requestedProperties"] = propertiesQuery;
 
             // Get requested items if filtering is needed
             var requestedItems = !string.IsNullOrWhiteSpace(propertiesQuery)
@@ -3521,175 +3968,145 @@ public class Script : ScriptBase
             body["formattedProperties"] = formattedProperties;
             body["formattedClauses"] = formattedClauses;
             body["formattedAttachments"] = formattedAttachments;
+            body.Remove("properties");
+            body.Remove("recordTypes");
+            body.Remove("attachments");
+            body.Remove("requestedProperties");
 
-            // If properties were requested, create the formatted schema
-            if (!string.IsNullOrWhiteSpace(propertiesQuery))
+            if (includeFormattedSchema)
             {
-                var propertiesSchema = new JObject();
-
-                foreach (var prop in formattedProperties)
+                if (!string.IsNullOrWhiteSpace(propertiesQuery))
                 {
-                    var propertyObj = prop as JObject;
-                    var propertyName = propertyObj["systemName"].ToString();
-                    var propertyType = propertyObj["type"].ToString().ToLower();
-                    var displayName = propertyObj["displayName"].ToString();
-                    var description =
-                        propertyObj["description"]?.ToString() ?? $"The {displayName}.";
+                    var propertiesSchema = new JObject();
 
-                    JObject schemaProperty;
-
-                    switch (propertyType)
+                    foreach (var prop in formattedProperties)
                     {
-                        case "monetary_amount":
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "object",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important",
-                                ["properties"] = new JObject
+                        var propertyObj = prop as JObject;
+                        var propertyName = propertyObj["systemName"].ToString();
+                        var propertyType = propertyObj["type"].ToString().ToLower();
+                        var displayName = propertyObj["displayName"].ToString();
+                        var description =
+                            propertyObj["description"]?.ToString() ?? $"The {displayName}.";
+
+                        JObject schemaProperty = FormatRecordPropertySchemaCore(
+                            propertyType,
+                            displayName,
+                            description,
+                            (recordDisplayName, recordDescription) =>
+                                new JObject
                                 {
-                                    ["amount"] = new JObject
+                                    ["type"] = "object",
+                                    ["title"] = recordDisplayName,
+                                    ["description"] = recordDescription,
+                                    ["x-ms-visibility"] = "important",
+                                    ["properties"] = new JObject
                                     {
-                                        ["type"] = "number",
-                                        ["title"] = "Amount",
-                                        ["description"] =
-                                            $"The monetary amount value for {displayName}."
-                                    },
-                                    ["currency"] = new JObject
+                                        ["amount"] = new JObject
+                                        {
+                                            ["type"] = "number",
+                                            ["title"] = "Amount",
+                                            ["description"] =
+                                                $"The monetary amount value for {recordDisplayName}."
+                                        },
+                                        ["currency"] = new JObject
+                                        {
+                                            ["type"] = "string",
+                                            ["title"] = "Currency",
+                                            ["description"] =
+                                                $"The currency code for {recordDisplayName}."
+                                        }
+                                    }
+                                },
+                            (recordDisplayName, recordDescription) =>
+                                new JObject
+                                {
+                                    ["type"] = "object",
+                                    ["title"] = recordDisplayName,
+                                    ["description"] = recordDescription,
+                                    ["x-ms-visibility"] = "important",
+                                    ["properties"] = new JObject
                                     {
-                                        ["type"] = "string",
-                                        ["title"] = "Currency",
-                                        ["description"] = $"The currency code for {displayName}."
+                                        ["isoDuration"] = new JObject
+                                        {
+                                            ["type"] = "string",
+                                            ["title"] = "ISO Duration",
+                                            ["description"] =
+                                                $"The ISO 8601 duration representation for {recordDisplayName}."
+                                        },
+                                        ["years"] = new JObject
+                                        {
+                                            ["type"] = "number",
+                                            ["title"] = "Years",
+                                            ["description"] =
+                                                $"The number of years in {recordDisplayName}."
+                                        },
+                                        ["months"] = new JObject
+                                        {
+                                            ["type"] = "number",
+                                            ["title"] = "Months",
+                                            ["description"] =
+                                                $"The number of months in {recordDisplayName}."
+                                        },
+                                        ["weeks"] = new JObject
+                                        {
+                                            ["type"] = "number",
+                                            ["title"] = "Weeks",
+                                            ["description"] =
+                                                $"The number of weeks in {recordDisplayName}."
+                                        },
+                                        ["days"] = new JObject
+                                        {
+                                            ["type"] = "number",
+                                            ["title"] = "Days",
+                                            ["description"] =
+                                                $"The number of days in {recordDisplayName}."
+                                        }
                                     }
                                 }
-                            };
-                            break;
-                        case "duration":
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "object",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important",
-                                ["properties"] = new JObject
-                                {
-                                    ["isoDuration"] = new JObject
-                                    {
-                                        ["type"] = "string",
-                                        ["title"] = "ISO Duration",
-                                        ["description"] =
-                                            $"The ISO 8601 duration representation for {displayName}."
-                                    },
-                                    ["years"] = new JObject
-                                    {
-                                        ["type"] = "number",
-                                        ["title"] = "Years",
-                                        ["description"] = $"The number of years in {displayName}."
-                                    },
-                                    ["months"] = new JObject
-                                    {
-                                        ["type"] = "number",
-                                        ["title"] = "Months",
-                                        ["description"] = $"The number of months in {displayName}."
-                                    },
-                                    ["weeks"] = new JObject
-                                    {
-                                        ["type"] = "number",
-                                        ["title"] = "Weeks",
-                                        ["description"] = $"The number of weeks in {displayName}."
-                                    },
-                                    ["days"] = new JObject
-                                    {
-                                        ["type"] = "number",
-                                        ["title"] = "Days",
-                                        ["description"] = $"The number of days in {displayName}."
-                                    }
-                                }
-                            };
-                            break;
-                        case "boolean":
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "boolean",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important"
-                            };
-                            break;
-                        case "number":
-                        case "integer":
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "number",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important"
-                            };
-                            break;
-                        case "date":
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "string",
-                                ["format"] = "date-time",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important"
-                            };
-                            break;
-                        default:
-                            schemaProperty = new JObject
-                            {
-                                ["type"] = "string",
-                                ["title"] = displayName,
-                                ["description"] = description,
-                                ["x-ms-visibility"] = "important"
-                            };
-                            break;
+                        );
+
+                        propertiesSchema[propertyName] = schemaProperty;
                     }
 
-                    propertiesSchema[propertyName] = schemaProperty;
-                }
-
-                body["formattedSchema"] = new JObject
-                {
-                    ["type"] = "object",
-                    ["description"] =
-                        "The record schema formatted for compatibility with the OpenAPI standard.",
-                    ["x-ms-visibility"] = "important",
-                    ["properties"] = new JObject
+                    body["formattedSchema"] = new JObject
                     {
-                        ["recordProperties"] = new JObject
+                        ["type"] = "object",
+                        ["description"] =
+                            "The record schema formatted for compatibility with the OpenAPI standard.",
+                        ["x-ms-visibility"] = "important",
+                        ["properties"] = new JObject
                         {
-                            ["type"] = "object",
-                            ["title"] = "Properties",
-                            ["description"] = "The properties of the record.",
-                            ["x-ms-visibility"] = "important",
-                            ["properties"] = propertiesSchema
-                        },
-                        ["recordClauses"] = rtrRcdSch_FormatRecordClausesSchema(formattedClauses),
-                        ["recordAttachments"] = rtrRcdSch_CreateAttachmentSchema(
-                            formattedAttachments
-                        )
-                    }
-                };
-            }
-            else
-            {
-                body["formattedSchema"] = new JObject
+                            ["recordProperties"] = new JObject
+                            {
+                                ["type"] = "object",
+                                ["title"] = "Properties",
+                                ["description"] = "The properties of the record.",
+                                ["x-ms-visibility"] = "important",
+                                ["properties"] = propertiesSchema
+                            },
+                            ["recordClauses"] = rtrRcdSch_FormatRecordClausesSchema(
+                                formattedClauses
+                            ),
+                            ["recordAttachments"] = rtrRcdSch_CreateAttachmentSchema(
+                                formattedAttachments
+                            )
+                        }
+                    };
+                }
+                else
                 {
-                    ["type"] = "object",
-                    ["description"] =
-                        "The record schema formatted for compatibility with the OpenAPI standard.",
-                    ["x-ms-visibility"] = "important",
-                    ["properties"] = new JObject()
-                };
+                    body["formattedSchema"] = rtrRcdSch_CreateEmptyFormattedSchema();
+                }
             }
         }
 
         return body;
     }
 
+    /// <summary>
+    /// Builds the formattedSchema recordClauses object from the formatted clause metadata
+    /// returned by RetrieveRecordSchemas.
+    /// </summary>
     private JObject rtrRcdSch_FormatRecordClausesSchema(JArray clauses)
     {
         var clausesSchema = new JObject();
@@ -3705,53 +4122,16 @@ public class Script : ScriptBase
                 ["title"] = displayName,
                 ["description"] = $"The {displayName} clause.",
                 ["x-ms-visibility"] = "important",
-                ["properties"] = new JObject
-                {
-                    ["displayName"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Display Name",
-                        ["description"] = $"The display name of the {displayName} clause."
-                    },
-                    ["description"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Description",
-                        ["description"] = $"The description of the {displayName} clause."
-                    },
-                    ["clauseText"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Clause Text",
-                        ["description"] = $"The text content of the {displayName} clause."
-                    },
-                    ["source"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Source",
-                        ["description"] = $"The source of the {displayName} clause."
-                    },
-                    ["clauseType"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Clause Type",
-                        ["description"] = $"The type of the {displayName} clause."
-                    },
-                    ["languagePosition"] = new JObject
-                    {
-                        ["type"] = "object",
-                        ["properties"] = new JObject
-                        {
-                            ["type"] = new JObject
-                            {
-                                ["type"] = "string",
-                                ["title"] = "Type",
-                                ["description"] =
-                                    $"The language position type of the {displayName} clause."
-                            }
-                        }
-                    }
-                }
+                ["properties"] = CreateClauseSchemaProperties(
+                    $"The display name of the {displayName} clause.",
+                    $"The description of the {displayName} clause.",
+                    $"The text content of the {displayName} clause.",
+                    $"The source of the {displayName} clause.",
+                    $"The type of the {displayName} clause.",
+                    null,
+                    null,
+                    $"The language position type of the {displayName} clause."
+                )
             };
         }
 
@@ -3765,6 +4145,10 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// Builds the formattedSchema recordAttachments object from the formatted attachment
+    /// metadata returned by RetrieveRecordSchemas.
+    /// </summary>
     private JObject rtrRcdSch_CreateAttachmentSchema(JArray attachments)
     {
         var attachmentsSchema = new JObject();
@@ -3774,41 +4158,12 @@ public class Script : ScriptBase
             var attachmentName = attachmentObj["systemName"].ToString();
             var displayName = attachmentObj["displayName"].ToString();
 
-            attachmentsSchema[attachmentName] = new JObject
-            {
-                ["type"] = "object",
-                ["title"] = displayName,
-                ["description"] = $"The {displayName} attachment.",
-                ["x-ms-visibility"] = "important",
-                ["properties"] = new JObject
-                {
-                    ["filename"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Filename",
-                        ["description"] = $"The filename of the {displayName} attachment."
-                    },
-                    ["contentType"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Content Type",
-                        ["description"] = $"The content type of the {displayName} attachment."
-                    },
-                    ["href"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Download URL",
-                        ["description"] = $"The download URL for the {displayName} attachment."
-                    },
-                    ["key"] = new JObject
-                    {
-                        ["type"] = "string",
-                        ["title"] = "Key",
-                        ["description"] =
-                            $"The unique key identifier for the {displayName} attachment."
-                    }
-                }
-            };
+            attachmentsSchema[attachmentName] = CreateRecordAttachmentSchemaObject(
+                displayName,
+                $"The {displayName} attachment.",
+                false,
+                $"The unique key identifier for the {displayName} attachment."
+            );
         }
 
         return new JObject
@@ -3825,20 +4180,17 @@ public class Script : ScriptBase
     // Retrieve All Records ###########################################################
     // ################################################################################
 
+    /// <summary>
+    /// Handles ListAllRecords metadata-driven shaping, including validation of the current
+    /// "recordPorperties" query parameter before the connector builds its formatted response.
+    /// </summary>
     private async Task<HttpResponseMessage> lstAllRcd_HandleRequest()
     {
         try
         {
-            // Get the query parameter
-            var uri = this.Context.Request.RequestUri;
-            var queryParams = HttpUtility.ParseQueryString(uri.Query);
-            var propertiesQuery = queryParams["recordPorperties"] ?? string.Empty;
+            var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
 
-            // Get the content
-            var content = await this.Context.Request.Content
-                .ReadAsStringAsync()
-                .ConfigureAwait(false);
-            var metadata = JObject.Parse(content);
+            var metadata = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
             // If we have a query, validate all properties exist
             if (!string.IsNullOrWhiteSpace(propertiesQuery))
@@ -3911,6 +4263,10 @@ public class Script : ScriptBase
             };
         }
     }
+    /// <summary>
+    /// Adds connector-specific labels, formatted attachments, and optional formatted
+    /// property outputs to each record in the list response.
+    /// </summary>
     private JObject lstAllRcd_TransformListAllRecordsResponse(JObject body, string propertiesQuery)
     {
         // Add the properties query to the response
@@ -4033,6 +4389,10 @@ public class Script : ScriptBase
         return body;
     }
 
+    /// <summary>
+    /// Formats one listed record property value, expanding duration objects while leaving
+    /// other values in their current connector shape.
+    /// </summary>
     private JToken lstAllRcd_FormatPropertyValue(JObject property)
     {
         if (property == null || !property.ContainsKey("type") || !property.ContainsKey("value"))
@@ -4053,29 +4413,20 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Expands an ISO 8601 duration string for ListAllRecords helper outputs.
+    /// </summary>
     private JObject lstAllRcd_FormatDurationValue(string isoDuration)
     {
-        var result = new JObject { ["isoDuration"] = isoDuration };
-
-        var regex = new Regex(@"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?");
-        var match = regex.Match(isoDuration);
-
-        if (match.Success)
-        {
-            result["years"] = lstAllRcd_ParseDurationComponent(match.Groups[1].Value);
-            result["months"] = lstAllRcd_ParseDurationComponent(match.Groups[2].Value);
-            result["weeks"] = lstAllRcd_ParseDurationComponent(match.Groups[3].Value);
-            result["days"] = lstAllRcd_ParseDurationComponent(match.Groups[4].Value);
-        }
-
-        return result;
+        return CreateExpandedDurationObject(
+            isoDuration
+        );
     }
 
-    private int lstAllRcd_ParseDurationComponent(string value)
-    {
-        return string.IsNullOrEmpty(value) ? 0 : int.Parse(value);
-    }
-
+    /// <summary>
+    /// Formats one clause property in the ListAllRecords response into the connector's
+    /// clause helper object.
+    /// </summary>
     private JObject lstAllRcd_FormatClauseProperty(string propertyName, JObject clause)
     {
         var clauseValue = clause["value"] as JObject;
@@ -4103,11 +4454,10 @@ public class Script : ScriptBase
     // Retrieve Record ################################################################
     // ################################################################################
 
-    // Main transformation function that transforms the API response body.
-    // It formats the record schema and properties, formats attachments if available,
-    // and then creates two additional root-level properties:
-    // 1. propertiesByTitle – an object mapping each property’s display title to its value.
-    // 2. propertiesAsArray – an array of property objects with details (title, property name, description, type, and value).
+    /// <summary>
+    /// Expands a retrieved record into the connector's formatted schema, formatted values,
+    /// attachment helpers, propertiesByTitle, and propertiesAsArray outputs.
+    /// </summary>
     private JObject rtrRcd_TransformRetrieveRecord(JObject body)
     {
         var properties = body["properties"] as JObject;
@@ -4150,8 +4500,10 @@ public class Script : ScriptBase
         return body;
     }
 
-    // Creates an object (JObject) where each key is the display title of a property
-    // (retrieved via the record schema) and the value is the transformed property value.
+    /// <summary>
+    /// Builds the propertiesByTitle helper object by mapping each record property display
+    /// name to its formatted value.
+    /// </summary>
     private JObject rtrRcd_CreatePropertiesByTitle(JObject recordProperties)
     {
         var propertiesByTitle = new JObject();
@@ -4168,8 +4520,10 @@ public class Script : ScriptBase
         return propertiesByTitle;
     }
 
-    // Creates an array (JArray) where each element is an object containing details for a property:
-    // title, property name, description, type (from the formatted schema), and its value.
+    /// <summary>
+    /// Builds the propertiesAsArray helper output with title, property name, description,
+    /// type, and formatted value for each record property.
+    /// </summary>
     private JArray rtrRcd_CreatePropertiesAsArray(JObject recordProperties, JObject recordSchemaProperties)
     {
         var propertiesAsArray = new JArray();
@@ -4201,7 +4555,9 @@ public class Script : ScriptBase
         return propertiesAsArray;
     }
 
-    // Formats the record properties schema by iterating over each property that is not a clause.
+    /// <summary>
+    /// Builds the formattedSchema recordProperties object for non-clause record fields.
+    /// </summary>
     private JObject rtrRcd_FormatRecordPropertiesSchema(JObject properties)
     {
         var recordPropertiesSchema = new JObject();
@@ -4224,7 +4580,9 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the record clauses schema by iterating over each property that is a clause.
+    /// <summary>
+    /// Builds the formattedSchema recordClauses object for clause record fields.
+    /// </summary>
     private JObject rtrRcd_FormatRecordClausesSchema(JObject properties)
     {
         var recordClausesSchema = new JObject();
@@ -4251,7 +4609,9 @@ public class Script : ScriptBase
         };
     }
 
-    // Transforms the record properties by formatting each property value that is not a clause.
+    /// <summary>
+    /// Formats the non-clause record property values for the formattedProperties output.
+    /// </summary>
     private JObject rtrRcd_FormatRecordProperties(JObject properties)
     {
         var transformedProperties = new JObject();
@@ -4271,7 +4631,9 @@ public class Script : ScriptBase
         return transformedProperties;
     }
 
-    // Transforms the record clauses by formatting each clause property.
+    /// <summary>
+    /// Formats the clause record property values for the formattedProperties output.
+    /// </summary>
     private JObject rtrRcd_FormatRecordClauses(JObject properties)
     {
         var transformedClauses = new JObject();
@@ -4287,14 +4649,19 @@ public class Script : ScriptBase
         return transformedClauses;
     }
 
-    // Determines if a property is a clause property based on its "type" field.
+    /// <summary>
+    /// Identifies whether a record property should be treated as a clause field.
+    /// </summary>
     private bool rtrRcd_IsClauseProperty(JProperty property)
     {
         var propertyValue = property.Value as JObject;
         return propertyValue != null && propertyValue["type"]?.ToString().ToLower() == "clause";
     }
 
-    // Parses a record schema property and adds it to the formatted schema.
+    /// <summary>
+    /// Adds one non-clause record property to the formatted schema using the current
+    /// record metadata definitions.
+    /// </summary>
     private void rtrRcd_ParseRecordSchemaProperty(JProperty property, JObject formattedSchema)
     {
         var propertyValue = property.Value as JObject;
@@ -4317,22 +4684,23 @@ public class Script : ScriptBase
         }
     }
 
-    // Determines which formatting function to use based on the property type.
+    /// <summary>
+    /// Dispatches record property schema formatting based on the Ironclad property type.
+    /// </summary>
     private JObject rtrRcd_ParseRecordPropertySchemaByType(string propertyType, string displayName, string propertyName, string description)
     {
-        switch (propertyType)
-        {
-            case "monetary_amount":
-                return rtrRcd_FormatMonetaryAmountPropertySchema(displayName, propertyName);
-            case "duration":
-                return rtrRcd_FormatDurationPropertySchema(displayName, propertyName, description);
-            // Address and all other types are treated as basic properties.
-            default:
-                return rtrRcd_FormatBasicPropertySchema(propertyType, displayName, propertyName);
-        }
+        return FormatRecordPropertySchemaCore(
+            propertyType,
+            displayName,
+            description,
+            rtrRcd_FormatMonetaryAmountPropertySchema,
+            rtrRcd_FormatDurationPropertySchema
+        );
     }
 
-    // Formats the schema for an address property.
+    /// <summary>
+    /// Builds the formatted schema used for record address properties.
+    /// </summary>
     private JObject rtrRcd_FormatAddressPropertySchema(string displayName, string propertyName)
     {
         return new JObject
@@ -4358,14 +4726,16 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the schema for a monetary amount property.
-    private JObject rtrRcd_FormatMonetaryAmountPropertySchema(string displayName, string propertyName)
+    /// <summary>
+    /// Builds the formatted schema used for record monetary amount properties.
+    /// </summary>
+    private JObject rtrRcd_FormatMonetaryAmountPropertySchema(string displayName, string description)
     {
         return new JObject
         {
             ["type"] = "object",
             ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
+            ["description"] = description,
             ["x-ms-visibility"] = "important",
             ["properties"] = new JObject
             {
@@ -4385,14 +4755,16 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the schema for a duration property.
-    private JObject rtrRcd_FormatDurationPropertySchema(string displayName, string propertyName, string description)
+    /// <summary>
+    /// Builds the formatted schema used for record duration properties.
+    /// </summary>
+    private JObject rtrRcd_FormatDurationPropertySchema(string displayName, string description)
     {
         return new JObject
         {
             ["type"] = "object",
             ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
+            ["description"] = description,
             ["x-ms-visibility"] = "important",
             ["properties"] = new JObject
             {
@@ -4430,13 +4802,19 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the schema for basic property types.
-    private JObject rtrRcd_FormatBasicPropertySchema(string propertyType, string displayName, string propertyName)
+    /// <summary>
+    /// Builds the formatted schema used for primitive record property types.
+    /// </summary>
+    private JObject rtrRcd_FormatBasicPropertySchema(
+        string propertyType,
+        string displayName,
+        string description
+    )
     {
         var formattedProperty = new JObject
         {
             ["title"] = displayName,
-            ["description"] = $"The {displayName}.",
+            ["description"] = description,
             ["x-ms-visibility"] = "important"
         };
 
@@ -4465,7 +4843,10 @@ public class Script : ScriptBase
         return formattedProperty;
     }
 
-    // Retrieves the record schema property information from the global recordSchemaInfo.
+    /// <summary>
+    /// Looks up record property metadata captured earlier so later helpers can reuse the
+    /// display name and description consistently.
+    /// </summary>
     private JObject rtrRcd_GetRecordSchemaProperty(string propertyName)
     {
         if (recordSchemaInfo == null || !recordSchemaInfo.ContainsKey("properties"))
@@ -4486,7 +4867,9 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the value of a record property based on its type.
+    /// <summary>
+    /// Formats one record property value based on its property type.
+    /// </summary>
     private JToken rtrRcd_FormatRecordPropertyValue(JObject propertyValue, JObject propertySchema)
     {
         if (propertyValue == null || !propertyValue.ContainsKey("type") || !propertyValue.ContainsKey("value"))
@@ -4508,7 +4891,9 @@ public class Script : ScriptBase
         }
     }
 
-    // Formats the value for a monetary amount property.
+    /// <summary>
+    /// Formats a record monetary amount value into the connector's amount/currency object.
+    /// </summary>
     private JObject rtrRcd_FormatMonetaryAmountPropertyValue(JObject monetaryAmount)
     {
         if (monetaryAmount == null)
@@ -4523,32 +4908,20 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the value for a duration property.
+    /// <summary>
+    /// Expands an ISO 8601 duration string for RetrieveRecord helper outputs.
+    /// </summary>
     private JObject rtrRcd_FormatDurationPropertyValue(string isoDuration)
     {
-        var result = new JObject { ["isoDuration"] = isoDuration };
-
-        var regex = new Regex(@"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?");
-        var match = regex.Match(isoDuration);
-
-        if (match.Success)
-        {
-            result["years"] = rtrRcd_ParseDurationComponent(match.Groups[1].Value);
-            result["months"] = rtrRcd_ParseDurationComponent(match.Groups[2].Value);
-            result["weeks"] = rtrRcd_ParseDurationComponent(match.Groups[3].Value);
-            result["days"] = rtrRcd_ParseDurationComponent(match.Groups[4].Value);
-        }
-
-        return result;
+        return CreateExpandedDurationObject(
+            isoDuration
+        );
     }
 
-    // Parses a duration component from a string, returning 0 if empty.
-    private int rtrRcd_ParseDurationComponent(string value)
-    {
-        return string.IsNullOrEmpty(value) ? 0 : int.Parse(value);
-    }
-
-    // Formats a clause property by extracting its clause details and adding display information.
+    /// <summary>
+    /// Formats one record clause into the connector's clause helper object with display
+    /// metadata and clause content.
+    /// </summary>
     private JObject rtrRcd_FormatClauseProperty(JProperty property)
     {
         var clauseValue = (property.Value as JObject)?["value"] as JObject;
@@ -4576,7 +4949,9 @@ public class Script : ScriptBase
         };
     }
 
-    // Creates the schema for a clause property.
+    /// <summary>
+    /// Builds the formatted schema used for one record clause property.
+    /// </summary>
     private JObject rtrRcd_CreateClauseSchema(string displayName, string description)
     {
         return new JObject
@@ -4585,114 +4960,214 @@ public class Script : ScriptBase
             ["title"] = displayName,
             ["description"] = description,
             ["x-ms-visibility"] = "important",
-            ["properties"] = new JObject
-            {
-                ["displayName"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Display Name",
-                    ["description"] = "The display name of the clause."
-                },
-                ["description"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Description",
-                    ["description"] = "The description of the clause."
-                },
-                ["clauseText"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Clause Text",
-                    ["description"] = "The text content of the clause."
-                },
-                ["source"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Source",
-                    ["description"] = "The source of the clause.",
-                    ["x-ms-visibility"] = "internal"
-                },
-                ["clauseType"] = new JObject
-                {
-                    ["type"] = "string",
-                    ["title"] = "Clause Type",
-                    ["description"] = "The type of the clause.",
-                    ["x-ms-visibility"] = "internal"
-                },
-                ["languagePosition"] = new JObject
-                {
-                    ["type"] = "object",
-                    ["title"] = "Language Position",
-                    ["description"] = "The language position of the clause.",
-                    ["x-ms-visibility"] = "internal",
-                    ["properties"] = new JObject
-                    {
-                        ["type"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Type",
-                            ["description"] = "The type of language position."
-                        }
-                    }
-                }
-            }
+            ["properties"] = CreateClauseSchemaProperties(
+                "The display name of the clause.",
+                "The description of the clause.",
+                "The text content of the clause.",
+                "The source of the clause.",
+                "The type of the clause.",
+                "internal",
+                "The language position of the clause.",
+                "The type of language position."
+            )
         };
     }
 
-    // Creates the attachment schema for the provided attachments.
+    /// <summary>
+    /// The record schema routes expose clause objects with slightly different wording and
+    /// visibility rules. This helper centralizes the shared object shape so both routes
+    /// keep emitting the exact same connector contract.
+    /// </summary>
+    private JObject CreateClauseSchemaProperties(
+        string displayNameDescription,
+        string descriptionDescription,
+        string clauseTextDescription,
+        string sourceDescription,
+        string clauseTypeDescription,
+        string internalVisibility,
+        string languagePositionDescription,
+        string languagePositionTypeDescription
+    )
+    {
+        return new JObject
+        {
+            ["displayName"] = CreateClauseSchemaTextField(
+                "Display Name",
+                displayNameDescription,
+                null
+            ),
+            ["description"] = CreateClauseSchemaTextField(
+                "Description",
+                descriptionDescription,
+                null
+            ),
+            ["clauseText"] = CreateClauseSchemaTextField(
+                "Clause Text",
+                clauseTextDescription,
+                null
+            ),
+            ["source"] = CreateClauseSchemaTextField(
+                "Source",
+                sourceDescription,
+                internalVisibility
+            ),
+            ["clauseType"] = CreateClauseSchemaTextField(
+                "Clause Type",
+                clauseTypeDescription,
+                internalVisibility
+            ),
+            ["languagePosition"] = CreateClauseLanguagePositionSchema(
+                languagePositionDescription,
+                languagePositionTypeDescription,
+                internalVisibility
+            )
+        };
+    }
+
+    /// <summary>
+    /// Creates a string field schema used inside the shared clause schema builders.
+    /// </summary>
+    private JObject CreateClauseSchemaTextField(
+        string title,
+        string description,
+        string visibility
+    )
+    {
+        var field = new JObject
+        {
+            ["type"] = "string",
+            ["title"] = title,
+            ["description"] = description
+        };
+
+        if (!string.IsNullOrEmpty(visibility))
+        {
+            field["x-ms-visibility"] = visibility;
+        }
+
+        return field;
+    }
+
+    /// <summary>
+    /// Creates the languagePosition object schema used inside clause helper outputs.
+    /// </summary>
+    private JObject CreateClauseLanguagePositionSchema(
+        string description,
+        string typeDescription,
+        string visibility
+    )
+    {
+        var schema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = new JObject
+            {
+                ["type"] = CreateClauseSchemaTextField("Type", typeDescription, null)
+            }
+        };
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            schema["title"] = "Language Position";
+            schema["description"] = description;
+        }
+
+        if (!string.IsNullOrEmpty(visibility))
+        {
+            schema["x-ms-visibility"] = visibility;
+        }
+
+        return schema;
+    }
+
+    /// <summary>
+    /// Builds a record attachment schema object. The two record routes that expose
+    /// attachment schemas differ only in whether they include the displayName field and
+    /// in the wording of the key description.
+    /// </summary>
+    private JObject CreateRecordAttachmentSchemaObject(
+        string displayName,
+        string description,
+        bool includeDisplayNameField,
+        string keyDescription
+    )
+    {
+        var properties = new JObject
+        {
+            ["filename"] = new JObject
+            {
+                ["type"] = "string",
+                ["title"] = "Filename",
+                ["description"] = $"The filename of the {displayName}."
+            },
+            ["contentType"] = new JObject
+            {
+                ["type"] = "string",
+                ["title"] = "Content Type",
+                ["description"] = $"The content type of the {displayName}."
+            },
+            ["href"] = new JObject
+            {
+                ["type"] = "string",
+                ["title"] = "Download URL",
+                ["description"] = $"The download URL for the {displayName}."
+            }
+        };
+
+        if (includeDisplayNameField)
+        {
+            properties["displayName"] = new JObject
+            {
+                ["type"] = "string",
+                ["title"] = "Display Name",
+                ["description"] = $"The display name of the {displayName}."
+            };
+        }
+
+        properties["key"] = new JObject
+        {
+            ["type"] = "string",
+            ["title"] = "Key",
+            ["description"] = keyDescription
+        };
+
+        return new JObject
+        {
+            ["type"] = "object",
+            ["title"] = displayName,
+            ["description"] = description,
+            ["x-ms-visibility"] = "important",
+            ["properties"] = properties
+        };
+    }
+
+    /// <summary>
+    /// Builds the formattedSchema recordAttachments object for a retrieved record.
+    /// </summary>
     private JObject rtrRcd_CreateAttachmentSchema(JObject attachments)
     {
         var attachmentProperties = new JObject();
-
-        if (recordSchemaInfo != null && recordSchemaInfo["attachments"] is JObject attachmentSchemas)
+        var attachmentSchemas = rtrRcd_GetAttachmentSchemas();
+        if (attachmentSchemas != null)
         {
             foreach (var attachment in attachments.Properties())
             {
                 var attachmentName = attachment.Name;
-                var attachmentSchema = attachmentSchemas[attachmentName] as JObject;
+                var attachmentSchema = rtrRcd_GetAttachmentSchemaInfo(
+                    attachmentSchemas,
+                    attachmentName
+                );
                 var displayName = attachmentSchema?["displayName"]?.ToString() ?? attachmentName;
-                var description = attachmentSchema?["description"]?.ToString() ?? $"The {displayName} attachment.";
+                var description =
+                    attachmentSchema?["description"]?.ToString()
+                    ?? $"The {displayName} attachment.";
 
-                attachmentProperties[attachmentName] = new JObject
-                {
-                    ["type"] = "object",
-                    ["title"] = displayName,
-                    ["description"] = description,
-                    ["x-ms-visibility"] = "important",
-                    ["properties"] = new JObject
-                    {
-                        ["filename"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Filename",
-                            ["description"] = $"The filename of the {displayName}."
-                        },
-                        ["contentType"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Content Type",
-                            ["description"] = $"The content type of the {displayName}."
-                        },
-                        ["href"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Download URL",
-                            ["description"] = $"The download URL for the {displayName}."
-                        },
-                        ["displayName"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Display Name",
-                            ["description"] = $"The display name of the {displayName}."
-                        },
-                        ["key"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["title"] = "Key",
-                            ["description"] = $"The key of the {displayName}."
-                        }
-                    }
-                };
+                attachmentProperties[attachmentName] = CreateRecordAttachmentSchemaObject(
+                    displayName,
+                    description,
+                    true,
+                    $"The key of the {displayName}."
+                );
             }
         }
 
@@ -4706,18 +5181,23 @@ public class Script : ScriptBase
         };
     }
 
-    // Formats the attachments values.
+    /// <summary>
+    /// Formats retrieved record attachments into the connector's attachment helper objects.
+    /// </summary>
     private JObject rtrRcd_FormatAttachments(JObject attachments)
     {
         var formattedAttachments = new JObject();
-
-        if (recordSchemaInfo != null && recordSchemaInfo["attachments"] is JObject attachmentSchemas)
+        var attachmentSchemas = rtrRcd_GetAttachmentSchemas();
+        if (attachmentSchemas != null)
         {
             foreach (var attachment in attachments.Properties())
             {
                 var attachmentName = attachment.Name;
                 var attachmentValue = attachment.Value as JObject;
-                var attachmentSchema = attachmentSchemas[attachmentName] as JObject;
+                var attachmentSchema = rtrRcd_GetAttachmentSchemaInfo(
+                    attachmentSchemas,
+                    attachmentName
+                );
                 var displayName = attachmentSchema?["displayName"]?.ToString() ?? attachmentName;
 
                 formattedAttachments[attachmentName] = new JObject
@@ -4734,17 +5214,22 @@ public class Script : ScriptBase
         return formattedAttachments;
     }
 
-    // Creates an array representation of the attachments.
+    /// <summary>
+    /// Builds the attachmentsAsArray helper output for a retrieved record.
+    /// </summary>
     private JArray rtrRcd_CreateAttachmentsArray(JObject attachments)
     {
         var attachmentsArray = new JArray();
-
-        if (recordSchemaInfo != null && recordSchemaInfo["attachments"] is JObject attachmentSchemas)
+        var attachmentSchemas = rtrRcd_GetAttachmentSchemas();
+        if (attachmentSchemas != null)
         {
             foreach (var attachment in attachments.Properties())
             {
                 var attachmentName = attachment.Name;
-                var attachmentSchema = attachmentSchemas[attachmentName] as JObject;
+                var attachmentSchema = rtrRcd_GetAttachmentSchemaInfo(
+                    attachmentSchemas,
+                    attachmentName
+                );
                 var displayName = attachmentSchema?["displayName"]?.ToString() ?? attachmentName;
 
                 attachmentsArray.Add(
@@ -4761,44 +5246,52 @@ public class Script : ScriptBase
         return attachmentsArray;
     }
 
-    // Asynchronously retrieves record schema information from the API and stores it in recordSchemaInfo.
+    /// <summary>
+    /// Returns the cached record attachment metadata loaded before RetrieveRecord runs.
+    /// </summary>
+    private JObject rtrRcd_GetAttachmentSchemas()
+    {
+        return recordSchemaInfo?["attachments"] as JObject;
+    }
+
+    /// <summary>
+    /// Returns the cached metadata entry for one record attachment name.
+    /// </summary>
+    private JObject rtrRcd_GetAttachmentSchemaInfo(JObject attachmentSchemas, string attachmentName)
+    {
+        return attachmentSchemas?[attachmentName] as JObject;
+    }
+
+    /// <summary>
+    /// Preloads record schema information before RetrieveRecord runs so the later response
+    /// formatter can emit the enriched schema and attachment structures expected today.
+    /// </summary>
     private async Task rtrRcd_RetrieveRecordSchemaInformation()
     {
-        var baseUrl = this.Context.Request.RequestUri.GetLeftPart(UriPartial.Authority);
-        var schemaUrl = new Uri(new Uri(baseUrl), "/public/api/v1/records/metadata");
-
-        var request = new HttpRequestMessage(HttpMethod.Get, schemaUrl);
-
-        foreach (var header in this.Context.Request.Headers)
-        {
-            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
-
-        var response = await this.Context
-            .SendAsync(request, this.CancellationToken)
+        var schemaResponse = await FetchJsonFromConnectorApiAsync(
+                "/public/api/v1/records/metadata",
+                "Failed to retrieve schema information."
+            )
             .ConfigureAwait(false);
 
-        if (response.IsSuccessStatusCode)
+        this.recordSchemaInfo = new JObject
         {
-            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var schemaResponse = JObject.Parse(content);
-            this.recordSchemaInfo = new JObject
-            {
-                ["properties"] = schemaResponse["properties"],
-                ["attachments"] = schemaResponse["attachments"]
-            };
+            ["properties"] = schemaResponse["properties"],
+            ["attachments"] = schemaResponse["attachments"]
+        };
 
-            this.Context.Logger.LogInformation($"Retrieved schema information: {this.recordSchemaInfo?.ToString()}");
-        }
-        else
-        {
-            throw new Exception($"Failed to retrieve schema information. Status code: {response.StatusCode}");
-        }
+        this.Context.Logger.LogInformation(
+            $"Retrieved schema information: {this.recordSchemaInfo?.ToString()}"
+        );
     }
 
     // ################################################################################
     // Retrieve Email Thread ##########################################################
     // ################################################################################
+    /// <summary>
+    /// Simplifies email thread attachments into the connector's download-link and key
+    /// shape while leaving the rest of the response untouched.
+    /// </summary>
     private JObject rtrEml_TransformRetrieveEmailThread(JObject body)
     {
         var attachments = body["attachments"] as JArray;
