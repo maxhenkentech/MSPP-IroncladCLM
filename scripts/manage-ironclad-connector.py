@@ -341,6 +341,38 @@ def build_pip_install_command(package_name: str) -> list[str]:
     ]
 
 
+def build_macos_ca_bundle(state_root: Path) -> Optional[Path]:
+    """Export macOS system keychains to a PEM bundle for corporate proxy SSL trust."""
+    if sys.platform != "darwin":
+        return None
+    if not shutil.which("security"):
+        return None
+
+    ca_bundle_path = state_root / "tooling" / "ca-bundle.pem"
+    ca_bundle_path.parent.mkdir(parents=True, exist_ok=True)
+
+    keychains = [
+        "/Library/Keychains/System.keychain",
+        "/System/Library/Keychains/SystemRootCertificates.keychain",
+    ]
+    pem_parts: list[str] = []
+    for keychain in keychains:
+        result = subprocess.run(
+            ["security", "export", "-t", "certs", "-f", "pemseq", "-k", keychain],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout:
+            pem_parts.append(result.stdout)
+
+    if not pem_parts:
+        return None
+
+    ca_bundle_path.write_text("\n".join(pem_parts))
+    return ca_bundle_path
+
+
 def ensure_managed_runtime(state_root: Path) -> None:
     if os.environ.get(MANAGED_VENV_ENVIRONMENT_VARIABLE) == "1":
         return
@@ -368,6 +400,12 @@ def ensure_managed_runtime(state_root: Path) -> None:
 
     environment = os.environ.copy()
     environment[MANAGED_VENV_ENVIRONMENT_VARIABLE] = "1"
+
+    if not environment.get("REQUESTS_CA_BUNDLE"):
+        ca_bundle = build_macos_ca_bundle(state_root)
+        if ca_bundle:
+            environment["REQUESTS_CA_BUNDLE"] = str(ca_bundle)
+
     os.execvpe(
         str(venv_python),
         [str(venv_python), str(Path(__file__).resolve()), *sys.argv[1:]],
