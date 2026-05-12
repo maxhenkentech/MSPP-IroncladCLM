@@ -1273,6 +1273,40 @@ def main() -> int:
                 if result.error:
                     write_detail(f"Error: {result.error}")
 
+        successful_results = [r for r in results if r.status == "Succeeded" and r.redirect_urls]
+        if successful_results:
+            write_section("Next Steps — Configure Ironclad OAuth")
+            if _console:
+                _console.print(
+                    "  The connector is deployed. Before users can authenticate, you must register\n"
+                    "  the [bold]Redirect URL[/bold] above in your Ironclad application so that OAuth\n"
+                    "  can complete successfully. Follow these steps for each deployed environment:\n"
+                )
+            else:
+                print(
+                    "\n  The connector is deployed. Before users can authenticate, you must register\n"
+                    "  the Redirect URL above in your Ironclad application so that OAuth\n"
+                    "  can complete successfully. Follow these steps for each deployed environment:\n"
+                )
+            write_step("Step 1 — Register the Redirect URL in Ironclad")
+            write_detail("Log in to your Ironclad account.")
+            write_detail("Navigate to Company Settings → API tab.")
+            write_detail("Open your existing application or click 'Create new app'.")
+            write_detail("Under 'Redirect URIs', paste the Redirect URL shown above.")
+            write_detail("Ensure Grant Type 'Authorization Code' is selected.")
+            write_detail("Add all required scopes (workflows, workflow-schemas, users, companies, approvals, metadata, webhooks).")
+            write_detail("Save the application and securely note your Client ID and Client Secret.")
+            write_step("Step 2 — Create a Connection in Power Platform")
+            write_detail("Open Power Automate (make.powerautomate.com) or Power Apps (make.powerapps.com).")
+            write_detail("Navigate to Custom Connectors and open 'Ironclad CLM'.")
+            write_detail("Go to the Security tab, click Edit, and confirm OAuth 2.0 is selected.")
+            write_detail("⚠  Do NOT save this page — close it after copying the Redirect URL if you only needed to verify it.")
+            write_detail("Create a new connection when building a flow or app.")
+            write_detail("When prompted, select your Ironclad instance (Global / EU1 / Demo / Preview).")
+            write_detail("Enter the Client ID and Client Secret from Step 1 and complete the sign-in.")
+            for result in successful_results:
+                write_success(f"Redirect URL for '{result.environment_name}': {result.redirect_urls[0]}")
+
         if any(result.status == "Failed" for result in results):
             raise RuntimeError("One or more environments failed. Review the summary above.")
         return 0
