@@ -179,15 +179,17 @@ It is designed to run on **Windows and macOS** with **Python 3**. A separate mac
 When you run it, the script:
 
 1. Explains what it is about to do.
-2. Checks whether `paconn` is available and installs it with Python `pip` if it is missing.
-3. Installs the Python terminal UI package it uses for the interactive pickers if it is missing.
-4. Runs `paconn login`.
-5. Retrieves the Power Platform environments you can access and shows them in a **multi-select picker**.
-6. Asks whether you want to **install** a new connector or **update** an existing one.
-7. Downloads the latest connector payload from GitHub for every run.
-8. Runs `paconn create` or `paconn update` for each selected environment.
-9. Creates a local deployment settings folder in the standard per-user app-data location for the current OS and saves the resulting settings file there.
-10. Reads the connector ID written by `paconn` and derives the generated redirect URL from it.
+2. Creates and reuses a private Python virtual environment in the installer data folder so it does not need to modify your system Python installation.
+3. Shows live status lines while it prepares dependencies and displays a progress bar while it downloads the connector payload from GitHub.
+4. Checks whether `paconn` is available in that private environment and installs it if it is missing.
+5. Uses a Rich-based console UI with styled panels, clearer tables, and guided numbered prompts for selections.
+6. Runs `paconn login`.
+7. Retrieves the Power Platform environments you can access and shows them in a clearer numbered selection table.
+8. Asks whether you want to **install** a new connector or **update** an existing one.
+9. Downloads the latest connector payload from GitHub for every run.
+10. Runs `paconn create` or `paconn update` for each selected environment.
+11. Creates a local deployment settings folder in the standard per-user app-data location for the current OS and saves the resulting settings file there.
+12. Reads the connector ID written by `paconn` and derives the generated redirect URL from it.
 
 > 💡 The installer uses the same `dummy` OAuth secret placeholder currently used in the manual `paconn create` flow. The real client ID and client secret are entered later when users create a connection.
 
@@ -236,6 +238,8 @@ Settings files are created automatically in:
 When you provide an existing settings file, the installer validates it, imports its connector information into the managed per-user settings location for that environment, and then continues the update from there.
 
 The installer prints the exact folder path when it runs and confirms the settings file location again after each successful deployment.
+
+The private Python tooling environment used by the installer is stored alongside those files in the same per-user app-data area, so the installer does not need to install `paconn` into your system Python.
 
 ### What happens for redirect URLs
 

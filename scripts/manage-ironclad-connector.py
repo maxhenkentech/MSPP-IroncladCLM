@@ -5,13 +5,16 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import itertools
 import json
 import os
+import queue
 import shutil
-import site
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,6 +27,7 @@ from typing import Any, Optional
 POWER_APPS_URL = "https://api.powerapps.com"
 POWER_APPS_API_VERSION = "2016-11-01"
 REDIRECT_URL_PREFIX = "https://global.consent.azure-apim.net/redirect/"
+MANAGED_VENV_ENVIRONMENT_VARIABLE = "IRONCLADCLM_MANAGED_VENV"
 
 
 @dataclass(frozen=True)
@@ -74,16 +78,226 @@ class DeploymentResult:
     error: Optional[str] = None
 
 
+_console: Any = None  # rich.console.Console instance, set once Rich is installed.
+
+
+def init_rich_console() -> None:
+    """Initialise the module-level Rich console. Called after Rich is installed."""
+    global _console
+    try:
+        from rich.console import Console  # noqa: PLC0415
+        _console = Console(highlight=False)
+    except ImportError:
+        pass
+
+
 def write_section(message: str) -> None:
-    print(f"\n== {message} ==")
+    if _console:
+        from rich.rule import Rule  # noqa: PLC0415
+        _console.print()
+        _console.print(Rule(f"[bold cyan]{message}[/bold cyan]", style="cyan"))
+    else:
+        print(f"\n== {message} ==")
 
 
 def write_step(message: str) -> None:
-    print(f"[Step] {message}")
+    if _console:
+        _console.print(f"\n[bold blue]▶[/bold blue] [bold]{message}[/bold]")
+    else:
+        print(f"[Step] {message}")
 
 
 def write_detail(message: str) -> None:
-    print(f"  - {message}")
+    if _console:
+        _console.print(f"  [dim cyan]•[/dim cyan] {message}")
+    else:
+        print(f"  - {message}")
+
+
+def write_success(message: str) -> None:
+    if _console:
+        _console.print(f"  [bold green]✓[/bold green] {message}")
+    else:
+        print(f"  ✓ {message}")
+
+
+def write_error(message: str) -> None:
+    if _console:
+        _console.print(f"  [bold red]✗[/bold red] {message}")
+    else:
+        print(f"  ✗ {message}")
+
+
+def _render_progress_bar_plain(label: str, current: int, total: int) -> None:
+    bar_width = 28
+    if total > 0:
+        ratio = min(max(current / total, 0), 1)
+        filled = int(bar_width * ratio)
+        bar = "#" * filled + "-" * (bar_width - filled)
+        percent = int(ratio * 100)
+        print(
+            f"\r  - {label}: [{bar}] {percent:3d}% ({current / 1024 / 1024:.1f} MB / {total / 1024 / 1024:.1f} MB)",
+            end="",
+            flush=True,
+        )
+    else:
+        print(
+            f"\r  - {label}: downloaded {current / 1024 / 1024:.1f} MB",
+            end="",
+            flush=True,
+        )
+
+
+def download_with_progress(request: urllib.request.Request, destination: Path, label: str) -> None:
+    if _console:
+        from rich.progress import (  # noqa: PLC0415
+            BarColumn,
+            DownloadColumn,
+            Progress,
+            TextColumn,
+            TimeRemainingColumn,
+            TransferSpeedColumn,
+        )
+        with urllib.request.urlopen(request, timeout=60) as response, destination.open("wb") as handle:
+            total_raw = response.headers.get("Content-Length", "0")
+            total = int(total_raw) if total_raw else 0
+            with Progress(
+                TextColumn("[bold cyan]{task.description}"),
+                BarColumn(bar_width=36, style="cyan", complete_style="bold cyan"),
+                "[progress.percentage]{task.percentage:>3.0f}%",
+                DownloadColumn(),
+                TransferSpeedColumn(),
+                TimeRemainingColumn(),
+                console=_console,
+                transient=False,
+            ) as progress:
+                task = progress.add_task(label, total=total if total > 0 else None)
+                while True:
+                    chunk = response.read(1024 * 128)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+                    progress.update(task, advance=len(chunk))
+    else:
+        with urllib.request.urlopen(request, timeout=60) as response, destination.open("wb") as handle:
+            total = int(response.headers.get("Content-Length", "0"))
+            downloaded = 0
+            _render_progress_bar_plain(label, downloaded, total)
+            while True:
+                chunk = response.read(1024 * 128)
+                if not chunk:
+                    break
+                handle.write(chunk)
+                downloaded += len(chunk)
+                _render_progress_bar_plain(label, downloaded, total)
+        _render_progress_bar_plain(label, downloaded, total)
+        print()
+
+
+def run_subprocess_with_spinner(command: list[str], status_message: str) -> subprocess.CompletedProcess[str]:
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if _console:
+        from rich.status import Status  # noqa: PLC0415
+        with Status(f"  [bold]{status_message}[/bold]", console=_console, spinner="dots"):
+            while process.poll() is None:
+                time.sleep(0.1)
+    else:
+        spinner = itertools.cycle("|/-\\")
+        while process.poll() is None:
+            print(f"\r  - {status_message} {next(spinner)}", end="", flush=True)
+            time.sleep(0.12)
+
+    stdout, stderr = process.communicate()
+    if process.returncode == 0:
+        if _console:
+            _console.print(f"  [bold green]✓[/bold green] {status_message}")
+        else:
+            print(f"\r  - {status_message} done{' ' * 20}")
+    else:
+        if _console:
+            _console.print(f"  [bold red]✗[/bold red] {status_message}")
+        else:
+            print(f"\r  - {status_message} failed{' ' * 18}")
+
+    return subprocess.CompletedProcess(command, process.returncode, stdout=stdout, stderr=stderr)
+
+
+def run_subprocess_with_live_output(
+    command: list[str],
+    status_message: str,
+) -> subprocess.CompletedProcess[str]:
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    output_queue: queue.Queue[Optional[str]] = queue.Queue()
+    captured_lines: list[str] = []
+
+    def reader() -> None:
+        assert process.stdout is not None
+        for line in process.stdout:
+            output_queue.put(line.rstrip("\n"))
+        output_queue.put(None)
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+
+    finished_reading = False
+    if _console:
+        from rich.status import Status  # noqa: PLC0415
+        with Status(f"  [bold]{status_message}[/bold]", console=_console, spinner="dots"):
+            while not finished_reading:
+                try:
+                    line = output_queue.get(timeout=0.15)
+                    if line is None:
+                        finished_reading = True
+                        continue
+                    captured_lines.append(line)
+                    _console.print(f"    [dim]{line}[/dim]")
+                except queue.Empty:
+                    if process.poll() is not None:
+                        finished_reading = True
+    else:
+        spinner = itertools.cycle("|/-\\")
+        while not finished_reading:
+            try:
+                line = output_queue.get(timeout=0.15)
+                if line is None:
+                    finished_reading = True
+                    continue
+                captured_lines.append(line)
+                print("\r" + " " * 120, end="\r", flush=True)
+                print(f"    {line}")
+            except queue.Empty:
+                if process.poll() is None:
+                    print(f"\r  - {status_message} {next(spinner)}", end="", flush=True)
+                else:
+                    finished_reading = True
+
+    return_code = process.wait()
+    if return_code == 0:
+        if _console:
+            _console.print(f"  [bold green]✓[/bold green] {status_message}")
+        else:
+            print("\r" + " " * 120, end="\r", flush=True)
+            print(f"  - {status_message} done")
+    else:
+        if _console:
+            _console.print(f"  [bold red]✗[/bold red] {status_message}")
+        else:
+            print("\r" + " " * 120, end="\r", flush=True)
+            print(f"  - {status_message} failed")
+
+    combined_output = "\n".join(captured_lines)
+    return subprocess.CompletedProcess(command, return_code, stdout=combined_output, stderr="")
 
 
 def get_default_state_root() -> Path:
@@ -102,11 +316,87 @@ def get_default_state_root() -> Path:
     return Path.home() / ".local" / "state" / "IroncladCLM"
 
 
-def run_python_module(arguments: list[str], *, interactive: bool = False) -> list[str]:
+def get_managed_venv_directory(state_root: Path) -> Path:
+    return state_root / "tooling" / "venv"
+
+
+def get_managed_venv_python(state_root: Path) -> Path:
+    venv_directory = get_managed_venv_directory(state_root)
+    if sys.platform == "win32":
+        return venv_directory / "Scripts" / "python.exe"
+    return venv_directory / "bin" / "python"
+
+
+def build_pip_install_command(package_name: str) -> list[str]:
+    return [
+        "-m",
+        "pip",
+        "install",
+        "--upgrade",
+        "--retries",
+        "5",
+        "--timeout",
+        "60",
+        package_name,
+    ]
+
+
+def ensure_managed_runtime(state_root: Path) -> None:
+    if os.environ.get(MANAGED_VENV_ENVIRONMENT_VARIABLE) == "1":
+        return
+
+    venv_directory = get_managed_venv_directory(state_root)
+    venv_python = get_managed_venv_python(state_root)
+
+    write_step("Preparing the private Python environment used for installer dependencies.")
+    write_detail(f"Installer packages will be isolated in '{venv_directory}'.")
+
+    if not venv_python.exists():
+        venv_directory.parent.mkdir(parents=True, exist_ok=True)
+        completed = run_subprocess_with_spinner(
+            [sys.executable, "-m", "venv", str(venv_directory)],
+            "Creating the private Python environment",
+        )
+        if completed.returncode != 0:
+            for line in completed.stdout.splitlines():
+                print(f"    {line}")
+            for line in completed.stderr.splitlines():
+                print(f"    {line}")
+            raise RuntimeError(
+                f"Failed to create the private Python environment at '{venv_directory}'."
+            )
+
+    environment = os.environ.copy()
+    environment[MANAGED_VENV_ENVIRONMENT_VARIABLE] = "1"
+    os.execvpe(
+        str(venv_python),
+        [str(venv_python), str(Path(__file__).resolve()), *sys.argv[1:]],
+        environment,
+    )
+
+
+def run_python_module(
+    arguments: list[str],
+    *,
+    interactive: bool = False,
+    stream_output: bool = False,
+    status_message: Optional[str] = None,
+) -> list[str]:
     command = [sys.executable, *arguments]
     if interactive:
         completed = subprocess.run(command, check=False)
         if completed.returncode != 0:
+            raise RuntimeError(f"Python command failed with exit code {completed.returncode}.")
+        return []
+
+    if stream_output:
+        completed = run_subprocess_with_live_output(
+            command,
+            status_message or "Running Python command",
+        )
+        if completed.returncode != 0:
+            for line in completed.stdout.splitlines():
+                print(f"    {line}")
             raise RuntimeError(f"Python command failed with exit code {completed.returncode}.")
         return []
 
@@ -136,12 +426,6 @@ def ensure_pip_available() -> None:
         run_python_module(["-m", "ensurepip", "--upgrade"])
 
 
-def add_user_site_packages() -> None:
-    user_site = site.getusersitepackages()
-    if user_site and user_site not in sys.path:
-        sys.path.append(user_site)
-
-
 def ensure_python_package(module_name: str, package_name: Optional[str] = None) -> Any:
     package_name = package_name or module_name
     try:
@@ -149,9 +433,12 @@ def ensure_python_package(module_name: str, package_name: Optional[str] = None) 
     except ImportError:
         write_detail(f"Installing Python package '{package_name}'.")
         ensure_pip_available()
-        run_python_module(["-m", "pip", "install", "--user", "--upgrade", package_name])
+        run_python_module(
+            build_pip_install_command(package_name),
+            stream_output=True,
+            status_message=f"Installing '{package_name}' into the private installer environment.",
+        )
         importlib.invalidate_caches()
-        add_user_site_packages()
         return importlib.import_module(module_name)
 
 
@@ -162,9 +449,13 @@ def ensure_paconn_installed() -> None:
     try:
         run_python_module(["-m", "paconn", "--version"])
     except RuntimeError:
-        write_detail("paconn is not installed. Installing it for the current user.")
+        write_detail("paconn is not installed. Installing it into the private installer environment.")
         ensure_pip_available()
-        run_python_module(["-m", "pip", "install", "--user", "--upgrade", "paconn"])
+        run_python_module(
+            build_pip_install_command("paconn"),
+            stream_output=True,
+            status_message="Installing 'paconn' into the private installer environment.",
+        )
 
     version_output = run_python_module(["-m", "paconn", "--version"])
     write_detail(f"paconn is ready. Version: {' '.join(version_output).strip()}")
@@ -330,95 +621,164 @@ def get_accessible_environments(token: dict[str, str]) -> list[EnvironmentRecord
     raise RuntimeError(f"Unable to retrieve Power Platform environments after paconn login. {last_error}")
 
 
-def ensure_questionary() -> Any:
-    write_step("Checking the interactive console UI package used for the action and environment pickers.")
-    return ensure_python_package("questionary")
+def ensure_rich() -> None:
+    write_step("Checking the Rich terminal library used for coloured output.")
+    ensure_python_package("rich")
+    init_rich_console()
 
 
-def select_action(questionary: Any) -> str:
+def prompt_text(prompt_message: str, default: Optional[str] = None) -> str:
+    if _console:
+        from rich.prompt import Prompt  # noqa: PLC0415
+
+        return str(Prompt.ask(prompt_message, default=default))
+
+    response = input(f"{prompt_message}: ").strip()
+    if response:
+        return response
+    if default is not None:
+        return default
+    raise RuntimeError(f"No value was provided for '{prompt_message}'.")
+
+
+def prompt_confirm(prompt_message: str, default: bool = False) -> bool:
+    if _console:
+        from rich.prompt import Confirm  # noqa: PLC0415
+
+        return bool(Confirm.ask(prompt_message, default=default))
+
+    suffix = " [Y/n]" if default else " [y/N]"
+    response = input(f"{prompt_message}{suffix}: ").strip().lower()
+    if not response:
+        return default
+    return response in {"y", "yes"}
+
+
+def parse_selection_input(raw_value: str, maximum: int) -> list[int]:
+    selected: set[int] = set()
+    for part in [segment.strip() for segment in raw_value.split(",") if segment.strip()]:
+        if "-" in part:
+            start_text, end_text = [segment.strip() for segment in part.split("-", 1)]
+            start = int(start_text)
+            end = int(end_text)
+            if start > end:
+                raise ValueError(f"Invalid range '{part}'.")
+            for index in range(start, end + 1):
+                if index < 1 or index > maximum:
+                    raise ValueError(f"Selection '{index}' is out of range.")
+                selected.add(index)
+        else:
+            index = int(part)
+            if index < 1 or index > maximum:
+                raise ValueError(f"Selection '{index}' is out of range.")
+            selected.add(index)
+
+    if not selected:
+        raise ValueError("At least one selection is required.")
+    return sorted(selected)
+
+
+def render_selection_table(title: str, columns: list[str], rows: list[list[str]]) -> None:
+    if _console:
+        from rich.table import Table  # noqa: PLC0415
+
+        table = Table(title=title, show_header=True, header_style="bold cyan", border_style="bright_blue")
+        for column in columns:
+            table.add_column(column, overflow="fold")
+        for row in rows:
+            table.add_row(*row)
+        _console.print(table)
+        return
+
+    print(title)
+    print(" | ".join(columns))
+    for row in rows:
+        print(" | ".join(row))
+
+
+def select_action() -> str:
     write_step("Asking whether you want to install a new connector or update an existing one.")
-    selection = questionary.select(
-        "Select the connector action to run",
-        choices=[
-            questionary.Choice(
-                title="Install - Create a new Ironclad CLM custom connector in one or more environments.",
-                value="Install",
-            ),
-            questionary.Choice(
-                title="Update - Update an existing Ironclad CLM custom connector with the latest GitHub payload.",
-                value="Update",
-            ),
+    render_selection_table(
+        "Connector action",
+        ["#", "Action", "Description"],
+        [
+            ["1", "Install", "Create a new Ironclad CLM custom connector in one or more environments."],
+            ["2", "Update", "Update an existing Ironclad CLM custom connector with the latest GitHub payload."],
         ],
-    ).ask()
-    if not selection:
-        raise RuntimeError("No action was selected. The installer cannot continue.")
-    return str(selection)
+    )
+    selection = prompt_text("Enter the action number", default="1").strip()
+    if selection == "1":
+        return "Install"
+    if selection == "2":
+        return "Update"
+    raise RuntimeError("No valid action was selected. The installer cannot continue.")
 
 
-def select_environments(questionary: Any, environments: list[EnvironmentRecord]) -> list[EnvironmentRecord]:
-    write_step("Presenting the environment picker. Use Space to select multiple environments, then press Enter.")
-    selection = questionary.checkbox(
-        "Select the environments for the Ironclad CLM connector",
-        choices=[
-            questionary.Choice(
-                title=" | ".join(
-                    filter(
-                        None,
-                        [
-                            environment.display_name,
-                            environment.environment_id,
-                            environment.environment_type,
-                            environment.location,
-                            environment.source,
-                        ],
-                    )
-                ),
-                value=environment,
-            )
-            for environment in environments
+def select_environments(environments: list[EnvironmentRecord]) -> list[EnvironmentRecord]:
+    write_step("Presenting the environment list. Choose one or more environment numbers separated by commas.")
+    render_selection_table(
+        "Available Power Platform environments",
+        ["#", "Name", "Environment ID", "Type", "Location", "Source"],
+        [
+            [
+                str(index),
+                environment.display_name,
+                environment.environment_id,
+                environment.environment_type or "—",
+                environment.location or "—",
+                environment.source,
+            ]
+            for index, environment in enumerate(environments, start=1)
         ],
-        validate=lambda selected: True if selected else "Select at least one environment.",
-    ).ask()
-    if not selection:
-        raise RuntimeError("No environments were selected. The installer cannot continue.")
-    return list(selection)
+    )
+    write_detail("Example selections: 1 or 1,3,5 or 2-4")
+    raw_selection = prompt_text("Enter the environment numbers").strip()
+    try:
+        indices = parse_selection_input(raw_selection, len(environments))
+    except ValueError as error:
+        raise RuntimeError(f"No valid environments were selected. {error}") from error
+    return [environments[index - 1] for index in indices]
 
 
 def select_connector_registration(
-    questionary: Any,
     environment_id: str,
     connectors: list[ConnectorRecord],
 ) -> ConnectorRecord:
     write_step(
         f"More than one matching connector was found in environment '{environment_id}'. Asking you to pick the one to update."
     )
-    selection = questionary.select(
-        f"Select the connector to update in {environment_id}",
-        choices=[
-            questionary.Choice(
-                title=" | ".join(filter(None, [connector.display_name, connector.connector_id, connector.created_by])),
-                value=connector,
-            )
-            for connector in connectors
+    render_selection_table(
+        f"Connectors in {environment_id}",
+        ["#", "Name", "Connector ID", "Created By"],
+        [
+            [
+                str(index),
+                connector.display_name or "—",
+                connector.connector_id,
+                connector.created_by or "—",
+            ]
+            for index, connector in enumerate(connectors, start=1)
         ],
-    ).ask()
-    if selection is None:
+    )
+    selection = prompt_text("Enter the connector number").strip()
+    try:
+        index = int(selection)
+    except ValueError as error:
+        raise RuntimeError(f"No connector was selected for environment '{environment_id}'.") from error
+    if index < 1 or index > len(connectors):
         raise RuntimeError(f"No connector was selected for environment '{environment_id}'.")
-    return selection
+    return connectors[index - 1]
 
 
-def select_existing_settings_file(questionary: Any) -> Optional[Path]:
-    use_existing_settings = questionary.confirm(
+def select_existing_settings_file() -> Optional[Path]:
+    use_existing_settings = prompt_confirm(
         "Do you want to import an existing settings.json file for this deployment?",
         default=False,
-    ).ask()
+    )
     if not use_existing_settings:
         return None
 
-    selected_path = questionary.text(
-        "Enter the full path to the existing settings.json file",
-        validate=lambda value: True if value and value.strip() else "Enter a settings.json path.",
-    ).ask()
+    selected_path = prompt_text("Enter the full path to the existing settings.json file").strip()
     if not selected_path:
         raise RuntimeError("A settings.json path was requested but no path was provided.")
     return Path(str(selected_path)).expanduser()
@@ -443,9 +803,9 @@ def download_connector_bundle(repo_owner: str, repo_name: str, ref: str) -> Bund
             "Accept": "application/vnd.github+json",
         },
     )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        archive_path.write_bytes(response.read())
+    download_with_progress(request, archive_path, "Downloading connector payload")
 
+    write_detail("Extracting the downloaded connector bundle.")
     with zipfile.ZipFile(archive_path) as archive:
         archive.extractall(extract_path)
 
@@ -574,7 +934,6 @@ def get_connector_registrations(token: dict[str, str], environment_id: str) -> l
 
 
 def resolve_connector_id_for_update(
-    questionary: Any,
     token: dict[str, str],
     environment_id: str,
     bundle: BundlePaths,
@@ -616,7 +975,7 @@ def resolve_connector_id_for_update(
             f"No existing '{connector_name}' connector was found in environment '{environment_id}', and no saved settings file exists."
         )
 
-    selected_connector = matches[0] if len(matches) == 1 else select_connector_registration(questionary, environment_id, matches)
+    selected_connector = matches[0] if len(matches) == 1 else select_connector_registration(environment_id, matches)
     write_settings_file(settings_file_path, environment_id, bundle, selected_connector.connector_id)
     return ResolvedConnector(selected_connector.connector_id, settings_file_path, selected_connector)
 
@@ -641,15 +1000,39 @@ def get_connector_redirect_urls(connector_id: str) -> list[str]:
 
 
 def show_intro() -> None:
-    write_section("Ironclad CLM custom connector installer")
-    print(
-        "This script downloads the latest connector payload from GitHub, checks paconn, signs you in, "
-        "lets you pick environments, and then installs or updates the Ironclad CLM connector."
-    )
-    print(
-        "For each completed deployment it saves an environment-specific settings file and then derives "
-        "the generated redirect URL from the deployed connector ID so it can print it immediately."
-    )
+    if _console:
+        from rich.align import Align  # noqa: PLC0415
+        from rich.panel import Panel  # noqa: PLC0415
+        from rich.text import Text  # noqa: PLC0415
+        body = Text(justify="center")
+        body.append("Downloads the latest connector payload from GitHub,\n", style="white")
+        body.append("verifies ", style="dim white")
+        body.append("paconn", style="bold cyan")
+        body.append(", authenticates, and lets you pick\nenvironments to ", style="dim white")
+        body.append("install", style="bold green")
+        body.append(" or ", style="dim white")
+        body.append("update", style="bold yellow")
+        body.append(" the Ironclad CLM connector.", style="dim white")
+        _console.print()
+        _console.print(
+            Panel(
+                Align.center(body),
+                title="[bold cyan]🔗  Ironclad CLM[/bold cyan]  [dim white]•  Custom Connector Manager[/dim white]",
+                border_style="bright_blue",
+                padding=(1, 4),
+            )
+        )
+        _console.print()
+    else:
+        write_section("Ironclad CLM custom connector installer")
+        print(
+            "This script downloads the latest connector payload from GitHub, checks paconn, signs you in, "
+            "lets you pick environments, and then installs or updates the Ironclad CLM connector."
+        )
+        print(
+            "For each completed deployment it saves an environment-specific settings file and then derives "
+            "the generated redirect URL from the deployed connector ID so it can print it immediately."
+        )
 
 
 def remove_temporary_bundle(bundle: BundlePaths | None) -> None:
@@ -686,21 +1069,22 @@ def main() -> int:
     bundle: Optional[BundlePaths] = None
 
     try:
+        ensure_managed_runtime(state_root)
+        ensure_rich()
         show_intro()
         ensure_paconn_installed()
-        questionary = ensure_questionary()
         invoke_paconn_login()
         deployment_directory = announce_deployment_directory(state_root)
 
         token = get_paconn_access_token()
-        mode = select_action(questionary)
+        mode = select_action()
         environments = get_accessible_environments(token)
-        selected_environments = select_environments(questionary, environments)
+        selected_environments = select_environments(environments)
         existing_settings_file: Optional[Path] = None
         if mode == "Update":
             existing_settings_file = Path(args.settings_file).expanduser() if args.settings_file else None
             if existing_settings_file is None:
-                existing_settings_file = select_existing_settings_file(questionary)
+                existing_settings_file = select_existing_settings_file()
             if existing_settings_file is not None and len(selected_environments) != 1:
                 raise RuntimeError(
                     "An existing settings.json file can only be imported when exactly one environment is selected."
@@ -722,7 +1106,6 @@ def main() -> int:
                     write_settings_file(settings_file_path, environment_id, bundle)
                 else:
                     resolved_connector = resolve_connector_id_for_update(
-                        questionary,
                         token,
                         environment_id,
                         bundle,
@@ -763,9 +1146,9 @@ def main() -> int:
                 write_detail(f"Saved deployment settings under '{deployment_directory}'.")
                 if redirect_urls:
                     for redirect_url in redirect_urls:
-                        print(f"  Redirect URL: {redirect_url}")
+                        write_success(f"Redirect URL: {redirect_url}")
                 else:
-                    print("  Redirect URL: No redirect URL could be derived automatically.")
+                    write_detail("Redirect URL: No redirect URL could be derived automatically.")
             except Exception as error:  # noqa: BLE001
                 results.append(
                     DeploymentResult(
@@ -779,31 +1162,72 @@ def main() -> int:
                         error=str(error),
                     )
                 )
-                print(f"  Deployment failed for environment {environment_id}: {error}")
+                write_error(f"Deployment failed for environment {environment_id}: {error}")
 
-        write_section("Deployment summary")
-        for result in results:
-            print(f"[{result.status}] {result.environment_name} ({result.environment_id})")
-            if result.connector_id:
-                write_detail(f"Connector ID: {result.connector_id}")
-            if result.settings_file:
-                write_detail(f"Settings file: {result.settings_file}")
-            if result.redirect_urls:
-                for redirect_url in result.redirect_urls:
-                    write_detail(f"Redirect URL: {redirect_url}")
-            elif result.status == "Succeeded":
-                write_detail("Redirect URL: could not be derived automatically.")
-            if result.error:
-                write_detail(f"Error: {result.error}")
+        write_section("Deployment Summary")
+        if _console:
+            import rich.box  # noqa: PLC0415
+            from rich.table import Table  # noqa: PLC0415
+            table = Table(
+                show_header=True,
+                header_style="bold cyan",
+                box=rich.box.ROUNDED,
+                border_style="cyan",
+                show_lines=True,
+            )
+            table.add_column("Environment", style="bold white", no_wrap=False)
+            table.add_column("Status", no_wrap=True)
+            table.add_column("Mode", style="dim white", no_wrap=True)
+            table.add_column("Connector ID", style="dim", no_wrap=False)
+            table.add_column("Redirect URL", style="cyan", no_wrap=False)
+            for result in results:
+                status_cell = (
+                    "[bold green]✓  Succeeded[/bold green]"
+                    if result.status == "Succeeded"
+                    else "[bold red]✗  Failed[/bold red]"
+                )
+                redirect_cell = (
+                    result.redirect_urls[0]
+                    if result.redirect_urls
+                    else ("—" if result.status == "Succeeded" else "")
+                )
+                env_cell = f"{result.environment_name}\n[dim]{result.environment_id}[/dim]"
+                table.add_row(env_cell, status_cell, result.mode, result.connector_id or "—", redirect_cell)
+            _console.print(table)
+            for result in results:
+                if result.settings_file:
+                    write_detail(f"Settings file ({result.environment_name}): {result.settings_file}")
+                if result.error:
+                    write_error(f"{result.environment_name}: {result.error}")
+        else:
+            for result in results:
+                print(f"[{result.status}] {result.environment_name} ({result.environment_id})")
+                if result.connector_id:
+                    write_detail(f"Connector ID: {result.connector_id}")
+                if result.settings_file:
+                    write_detail(f"Settings file: {result.settings_file}")
+                if result.redirect_urls:
+                    for redirect_url in result.redirect_urls:
+                        write_detail(f"Redirect URL: {redirect_url}")
+                elif result.status == "Succeeded":
+                    write_detail("Redirect URL: could not be derived automatically.")
+                if result.error:
+                    write_detail(f"Error: {result.error}")
 
         if any(result.status == "Failed" for result in results):
             raise RuntimeError("One or more environments failed. Review the summary above.")
         return 0
     except KeyboardInterrupt:
-        print("\nInstaller cancelled by user.")
+        if _console:
+            _console.print("\n[bold yellow]⚠  Installer cancelled by user.[/bold yellow]")
+        else:
+            print("\nInstaller cancelled by user.")
         return 1
     except Exception as error:  # noqa: BLE001
-        print(f"\nInstaller failed: {error}")
+        if _console:
+            _console.print(f"\n[bold red]✗  Installer failed:[/bold red] {error}")
+        else:
+            print(f"\nInstaller failed: {error}")
         return 1
     finally:
         remove_temporary_bundle(bundle)

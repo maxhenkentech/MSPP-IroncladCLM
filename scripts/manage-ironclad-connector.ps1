@@ -582,27 +582,78 @@ function Invoke-PaconnDeployment {
     }
 }
 
+function Find-RedirectUrls {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        $Node
+    )
+
+    $urls = New-Object System.Collections.Generic.List[string]
+    $pattern = [regex]'https://[^"''\s]+/redirect(?:/[^"''\s]+)?'
+
+    function Search-Node {
+        param($Value)
+
+        if ($null -eq $Value) {
+            return
+        }
+
+        if ($Value -is [string]) {
+            foreach ($match in $pattern.Matches($Value)) {
+                if (-not $urls.Contains($match.Value)) {
+                    $urls.Add($match.Value)
+                }
+            }
+            return
+        }
+
+        if ($Value -is [System.Collections.IDictionary]) {
+            foreach ($entry in $Value.GetEnumerator()) {
+                Search-Node -Value $entry.Value
+            }
+            return
+        }
+
+        if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string])) {
+            foreach ($item in $Value) {
+                Search-Node -Value $item
+            }
+            return
+        }
+
+        foreach ($property in $Value.PSObject.Properties) {
+            Search-Node -Value $property.Value
+        }
+    }
+
+    Search-Node -Value $Node
+    return @($urls)
+}
+
 function Get-ConnectorRedirectUrls {
     param(
+        [Parameter(Mandatory = $true)]
+        [psobject]$Token,
+        [Parameter(Mandatory = $true)]
+        [string]$EnvironmentId,
         [Parameter(Mandatory = $true)]
         [string]$ConnectorId
     )
 
-    Write-Step "Deriving the generated redirect URL from the deployed connector ID."
-    $redirectId = if ($ConnectorId.StartsWith("shared_", [System.StringComparison]::OrdinalIgnoreCase)) {
-        $ConnectorId.Substring(7)
-    }
-    else {
-        $ConnectorId
-    }
+    Write-Step ("Retrieving the connector registration so the generated redirect URL can be reported for environment '{0}'." -f $EnvironmentId)
+    $filter = [uri]::EscapeDataString("environment eq '$EnvironmentId'")
+    $uri = "https://api.powerapps.com/providers/Microsoft.PowerApps/apis/$ConnectorId?api-version=2016-11-01&`$filter=$filter"
+    $response = Invoke-PowerAppsRequest -Uri $uri -Token $Token
 
-    return @("https://global.consent.azure-apim.net/redirect/$redirectId")
+    $redirectUrls = Find-RedirectUrls -Node $response
+    return @($redirectUrls)
 }
 
 function Show-Intro {
     Write-Section "Ironclad CLM custom connector installer"
     Write-Host "This script downloads the latest connector payload from GitHub, checks paconn, signs you in, lets you pick environments, and then installs or updates the Ironclad CLM connector." -ForegroundColor White
-    Write-Host "For each completed deployment it saves an environment-specific settings file and then derives the generated redirect URL from the deployed connector ID so it can print it immediately." -ForegroundColor White
+    Write-Host "For each completed deployment it saves an environment-specific settings file and then tries to read the deployed connector back from Power Platform so it can print any generated redirect URLs." -ForegroundColor White
 }
 
 function Remove-TemporaryBundle {
@@ -651,10 +702,10 @@ try {
 
             $redirectUrls = @()
             try {
-                $redirectUrls = Get-ConnectorRedirectUrls -ConnectorId $connectorId
+                $redirectUrls = Get-ConnectorRedirectUrls -Token $token -EnvironmentId $environmentId -ConnectorId $connectorId
             }
             catch {
-                Write-Detail ("The connector was deployed but the redirect URL could not be derived: {0}" -f $_.Exception.Message)
+                Write-Detail ("The connector was deployed but the redirect URL lookup failed: {0}" -f $_.Exception.Message)
             }
 
             $results += [pscustomobject]@{
@@ -674,7 +725,7 @@ try {
                 }
             }
             else {
-                Write-Host "  Redirect URL: No redirect URL could be derived automatically." -ForegroundColor Yellow
+                Write-Host "  Redirect URL: No redirect URL was discovered automatically in the connector registration." -ForegroundColor Yellow
             }
         }
         catch {
@@ -708,7 +759,7 @@ try {
             }
         }
         elseif ($result.Status -eq "Succeeded") {
-            Write-Detail "Redirect URL: could not be derived automatically."
+            Write-Detail "Redirect URL: not discovered automatically from the connector registration."
         }
         if ($result.PSObject.Properties.Name -contains "Error") {
             Write-Detail ("Error: {0}" -f $result.Error)
