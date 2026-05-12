@@ -1273,7 +1273,7 @@ def main() -> int:
                 if result.error:
                     write_detail(f"Error: {result.error}")
 
-        successful_results = [r for r in results if r.status == "Succeeded" and r.redirect_urls]
+        successful_results = [r for r in results if r.status == "Succeeded" and r.redirect_urls and r.mode == "Install"]
         if successful_results:
             write_section("Next Steps — Configure Ironclad OAuth")
             if _console:
