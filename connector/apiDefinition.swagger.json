@@ -179,7 +179,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Reecords Exported",
+                        "description": "Records Exported",
                         "schema": {
                             "description": "The XLSX file of the records report.",
                             "title": "Records Report",
@@ -230,12 +230,6 @@
                         "description": "Record Schema Retrieved",
                         "schema": {
                             "properties": {
-                                "properties": {
-                                    "$ref": "#/definitions/recordSchemaPropertiesGet_object"
-                                },
-                                "recordTypes": {
-                                    "$ref": "#/definitions/recordTypesDictionary_object"
-                                },
                                 "formattedRecordTypes": {
                                     "$ref": "#/definitions/recordTypesFormatted_array"
                                 },
@@ -243,16 +237,10 @@
                                     "$ref": "#/definitions/recordPropertiesFormatted_array"
                                 },
                                 "formattedClauses": {
-                                    "$ref": "#/definitions/recordPropertiesFormatted_array"
+                                    "$ref": "#/definitions/recordClausesFormatted_array"
                                 },
                                 "formattedAttachments": {
                                     "$ref": "#/definitions/recordAttachmentsFormatted_array"
-                                },
-                                "requestedProperties": {
-                                    "$ref": "#/definitions/requestedProperties_string"
-                                },
-                                "formattedSchema": {
-                                    "$ref": "#/definitions/recordSchemaFormatted_object"
                                 }
                             },
                             "type": "object"
@@ -281,10 +269,55 @@
                 "x-ms-visibility": "important"
             }
         },
+        "/public/api/v1/records/formattedSchema": {
+            "get": {
+                "description": "Return only the formatted record schema used by dynamic schema consumers.",
+                "operationId": "RetrieveFormattedRecordSchema",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    },
+                    {
+                        "$ref": "#/parameters/recordProperties_query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Formatted Record Schema Retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/recordSchemaFormatted_object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "Retrieve Formatted Record Schema",
+                "x-ms-visibility": "internal"
+            }
+        },
         "/public/api/v1/records/smart-import": {
             "get": {
                 "description": "Retrieve status of predictions of specific smart import record or all records in an import, one of Record Id or Import Id is required.",
-                "operationId": "RerievePredictions",
+                "operationId": "RetrievePredictions",
                 "parameters": [
                     {
                         "$ref": "#/parameters/recordId_query"
@@ -5898,22 +5931,20 @@
                     "title": "Formatted Properties",
                     "type": "object",
                     "x-ms-dynamic-properties": {
-                        "itemValuePath": "formattedSchema",
-                        "operationId": "RetrieveRecordSchemas",
+                        "operationId": "RetrieveFormattedRecordSchema",
                         "parameters": {
-                            "recordPorperties": {
-                                "parameterReference": "recordPorperties"
+                            "recordProperties": {
+                                "parameterReference": "recordProperties"
                             }
                         }
                     },
                     "x-ms-dynamic-schema": {
-                        "operationId": "RetrieveRecordSchemas",
+                        "operationId": "RetrieveFormattedRecordSchema",
                         "parameters": {
-                            "recordPorperties": {
-                                "parameter": "recordPorperties"
+                            "recordProperties": {
+                                "parameter": "recordProperties"
                             }
-                        },
-                        "value-path": "formattedSchema"
+                        }
                     },
                     "x-ms-visibility": "important"
                 },
@@ -6143,6 +6174,38 @@
                 "type": "object",
                 "title": "Formatted Property",
                 "description": "A property of the record schema.",
+                "x-ms-visibility": "important",
+                "properties": {
+                    "systemName": {
+                        "$ref": "#/definitions/propertySystemName_string"
+                    },
+                    "displayName": {
+                        "$ref": "#/definitions/recordPropertyDisplayName_string"
+                    },
+                    "type": {
+                        "$ref": "#/definitions/recordPropertyType_string"
+                    },
+                    "visible": {
+                        "$ref": "#/definitions/recordPropertyvisible_boolean"
+                    },
+                    "resolvesTo": {
+                        "$ref": "#/definitions/recordPropertyResolvesTo_string"
+                    },
+                    "label": {
+                        "$ref": "#/definitions/recordPropertyLabel_string"
+                    }
+                }
+            }
+        },
+        "recordClausesFormatted_array": {
+            "title": "Formatted Clauses",
+            "description": "The formatted clauses of the record schema.",
+            "type": "array",
+            "x-ms-visibility": "important",
+            "items": {
+                "type": "object",
+                "title": "Formatted Clause",
+                "description": "A clause of the record schema.",
                 "x-ms-visibility": "important",
                 "properties": {
                     "systemName": {
@@ -8078,6 +8141,20 @@
             "type": "object",
             "x-ms-visibility": "important"
         },
+        "workflowSchemaListItem_object": {
+            "description": "A workflow schema summary.",
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/templateId_string"
+                },
+                "name": {
+                    "$ref": "#/definitions/templateTitle_string"
+                }
+            },
+            "title": "Workflow Schema Summary",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
         "workflowSchemaAsArrayGet_array": {
             "description": "The schema of the workflow as an array.",
             "items": {
@@ -8312,7 +8389,7 @@
         "workflowSchemas_array": {
             "description": "The list of workflow schemas",
             "items": {
-                "$ref": "#/definitions/workflowSchema_object"
+                "$ref": "#/definitions/workflowSchemaListItem_object"
             },
             "title": "Workflow Schemas",
             "type": "array",
@@ -8929,7 +9006,7 @@
             "x-ms-visibility": "important"
         },
         "recordProperties_query": {
-            "name": "recordPorperties",
+            "name": "recordProperties",
             "in": "query",
             "description": "A comma separated list of properties, clauses and attachments to include in the retrieved records.",
             "required": false,
