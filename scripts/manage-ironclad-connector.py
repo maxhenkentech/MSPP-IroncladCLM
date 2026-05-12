@@ -1019,7 +1019,7 @@ def resolve_connector_id_for_update(
     return ResolvedConnector(selected_connector.connector_id, settings_file_path, selected_connector)
 
 
-def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_secret: str) -> Optional[str]:
+def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_root: Path, connector_secret: str) -> Optional[str]:
     verb = "create" if mode == "Install" else "update"
     write_step(f"Running paconn {verb}.")
 
@@ -1030,6 +1030,16 @@ def invoke_paconn_deployment(mode: str, settings_file_path: Path, connector_secr
     output = run_python_module(arguments)
     for line in output:
         print(f"    {line}")
+
+    paconn_settings_file = connector_root / "settings.json"
+    if paconn_settings_file.exists():
+        try:
+            paconn_settings = json.loads(paconn_settings_file.read_text(encoding="utf-8"))
+            connector_id = paconn_settings.get("connectorId")
+            if isinstance(connector_id, str) and connector_id.strip():
+                return connector_id.strip()
+        except Exception:  # noqa: BLE001
+            pass
 
     for line in output:
         match = re.search(r"(shared_\S+)\s+(?:created|updated)\s+successfully", line, re.IGNORECASE)
@@ -1161,7 +1171,7 @@ def main() -> int:
                     settings_file_path = resolved_connector.settings_file
                     connector_id = resolved_connector.connector_id
 
-                paconn_connector_id = invoke_paconn_deployment(mode, settings_file_path, args.connector_secret)
+                paconn_connector_id = invoke_paconn_deployment(mode, settings_file_path, bundle.connector_root, args.connector_secret)
 
                 if paconn_connector_id:
                     connector_id = paconn_connector_id
