@@ -26,9 +26,7 @@ using System.Web;
 /// </summary>
 public class Script : ScriptBase
 {
-    // Keep this typo as-is because it is part of the current connector contract and is
-    // already used by the existing custom connector definition and captured baselines.
-    private const string RecordPropertiesQueryParameter = "recordPorperties";
+    private const string RecordPropertiesQueryParameter = "recordProperties";
 
     // SCIM patch operations require this exact schema marker in the request body.
     private const string ScimPatchOperationSchema =
@@ -3721,7 +3719,7 @@ public class Script : ScriptBase
 
     /// <summary>
     /// Builds the formatted record schema response from raw record metadata while preserving
-    /// the connector's current "recordPorperties" query behavior.
+    /// the connector's current record-properties query behavior.
     /// </summary>
     private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
     {
@@ -4182,7 +4180,7 @@ public class Script : ScriptBase
 
     /// <summary>
     /// Handles ListAllRecords metadata-driven shaping, including validation of the current
-    /// "recordPorperties" query parameter before the connector builds its formatted response.
+    /// record-properties query parameter before the connector builds its formatted response.
     /// </summary>
     private async Task<HttpResponseMessage> lstAllRcd_HandleRequest()
     {

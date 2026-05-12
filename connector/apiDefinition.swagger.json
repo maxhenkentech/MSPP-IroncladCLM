@@ -5933,16 +5933,16 @@
                     "x-ms-dynamic-properties": {
                         "operationId": "RetrieveFormattedRecordSchema",
                         "parameters": {
-                            "recordPorperties": {
-                                "parameterReference": "recordPorperties"
+                            "recordProperties": {
+                                "parameterReference": "recordProperties"
                             }
                         }
                     },
                     "x-ms-dynamic-schema": {
                         "operationId": "RetrieveFormattedRecordSchema",
                         "parameters": {
-                            "recordPorperties": {
-                                "parameter": "recordPorperties"
+                            "recordProperties": {
+                                "parameter": "recordProperties"
                             }
                         }
                     },
@@ -9006,7 +9006,7 @@
             "x-ms-visibility": "important"
         },
         "recordProperties_query": {
-            "name": "recordPorperties",
+            "name": "recordProperties",
             "in": "query",
             "description": "A comma separated list of properties, clauses and attachments to include in the retrieved records.",
             "required": false,
