@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 import shutil
 import site
 import subprocess
@@ -83,6 +84,22 @@ def write_step(message: str) -> None:
 
 def write_detail(message: str) -> None:
     print(f"  - {message}")
+
+
+def get_default_state_root() -> Path:
+    if sys.platform == "win32":
+        app_data = os.environ.get("APPDATA")
+        if app_data:
+            return Path(app_data) / "IroncladCLM"
+        return Path.home() / "AppData" / "Roaming" / "IroncladCLM"
+
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "IroncladCLM"
+
+    xdg_state_home = os.environ.get("XDG_STATE_HOME")
+    if xdg_state_home:
+        return Path(xdg_state_home) / "IroncladCLM"
+    return Path.home() / ".local" / "state" / "IroncladCLM"
 
 
 def run_python_module(arguments: list[str], *, interactive: bool = False) -> list[str]:
@@ -390,6 +407,23 @@ def select_connector_registration(
     return selection
 
 
+def select_existing_settings_file(questionary: Any) -> Optional[Path]:
+    use_existing_settings = questionary.confirm(
+        "Do you want to import an existing settings.json file for this deployment?",
+        default=False,
+    ).ask()
+    if not use_existing_settings:
+        return None
+
+    selected_path = questionary.text(
+        "Enter the full path to the existing settings.json file",
+        validate=lambda value: True if value and value.strip() else "Enter a settings.json path.",
+    ).ask()
+    if not selected_path:
+        raise RuntimeError("A settings.json path was requested but no path was provided.")
+    return Path(str(selected_path)).expanduser()
+
+
 def new_temporary_working_directory() -> Path:
     return Path(tempfile.mkdtemp(prefix="ironcladclm-"))
 
@@ -442,6 +476,13 @@ def get_deployment_directory(state_root: Path) -> Path:
     return deployment_directory
 
 
+def announce_deployment_directory(state_root: Path) -> Path:
+    deployment_directory = get_deployment_directory(state_root)
+    write_step("Preparing the local deployment settings folder used for later updates.")
+    write_detail(f"Settings files will be stored in '{deployment_directory}'.")
+    return deployment_directory
+
+
 def get_settings_file_path(state_root: Path, environment_id: str) -> Path:
     return get_deployment_directory(state_root) / f"{environment_id}_settings.json"
 
@@ -465,6 +506,43 @@ def write_settings_file(
         settings["connectorId"] = connector_id
 
     settings_file_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+
+
+def load_existing_settings_file(settings_file_path: Path) -> dict[str, Any]:
+    if not settings_file_path.exists():
+        raise RuntimeError(f"The supplied settings file '{settings_file_path}' does not exist.")
+    if not settings_file_path.is_file():
+        raise RuntimeError(f"The supplied settings path '{settings_file_path}' is not a file.")
+
+    try:
+        settings = json.loads(settings_file_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"The supplied settings file '{settings_file_path}' is not valid JSON: {error}") from error
+
+    if not isinstance(settings, dict):
+        raise RuntimeError(f"The supplied settings file '{settings_file_path}' does not contain a JSON object.")
+    return settings
+
+
+def import_existing_settings_file(
+    source_settings_file: Path,
+    target_settings_file: Path,
+    environment_id: str,
+    bundle: BundlePaths,
+) -> Optional[str]:
+    settings = load_existing_settings_file(source_settings_file)
+    source_environment = settings.get("environment")
+    if isinstance(source_environment, str) and source_environment.strip() and source_environment != environment_id:
+        raise RuntimeError(
+            f"The supplied settings file targets environment '{source_environment}', not '{environment_id}'."
+        )
+
+    connector_id = settings.get("connectorId")
+    normalized_connector_id = connector_id if isinstance(connector_id, str) and connector_id.strip() else None
+    write_detail(f"Importing settings from '{source_settings_file}'.")
+    write_settings_file(target_settings_file, environment_id, bundle, normalized_connector_id)
+    write_detail(f"Imported settings were copied to '{target_settings_file}'.")
+    return normalized_connector_id
 
 
 def get_connector_records_from_response(response: Any) -> list[Any]:
@@ -502,8 +580,22 @@ def resolve_connector_id_for_update(
     bundle: BundlePaths,
     connector_name: str,
     state_root: Path,
+    existing_settings_file: Optional[Path],
 ) -> ResolvedConnector:
     settings_file_path = get_settings_file_path(state_root, environment_id)
+    if existing_settings_file is not None:
+        imported_connector_id = import_existing_settings_file(
+            existing_settings_file,
+            settings_file_path,
+            environment_id,
+            bundle,
+        )
+        if imported_connector_id:
+            return ResolvedConnector(imported_connector_id, settings_file_path, None)
+        write_detail(
+            "The imported settings file did not contain a connectorId, so the installer will look up the connector in Power Platform."
+        )
+
     if settings_file_path.exists():
         saved_settings = json.loads(settings_file_path.read_text(encoding="utf-8"))
         saved_connector_id = saved_settings.get("connectorId")
@@ -573,13 +665,17 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--connector-name", default="Ironclad CLM", help="Connector display name.")
     parser.add_argument(
         "--state-root",
-        default=str(Path.home() / ".ironcladclm"),
+        default=str(get_default_state_root()),
         help="Directory used to store environment-specific deployment settings.",
     )
     parser.add_argument(
         "--connector-secret",
         default="dummy",
         help="OAuth client secret placeholder passed to paconn create.",
+    )
+    parser.add_argument(
+        "--settings-file",
+        help="Path to an existing settings.json file to import for a single-environment deployment.",
     )
     return parser.parse_args()
 
@@ -594,11 +690,23 @@ def main() -> int:
         ensure_paconn_installed()
         questionary = ensure_questionary()
         invoke_paconn_login()
+        deployment_directory = announce_deployment_directory(state_root)
 
         token = get_paconn_access_token()
         mode = select_action(questionary)
         environments = get_accessible_environments(token)
         selected_environments = select_environments(questionary, environments)
+        existing_settings_file: Optional[Path] = None
+        if mode == "Update":
+            existing_settings_file = Path(args.settings_file).expanduser() if args.settings_file else None
+            if existing_settings_file is None:
+                existing_settings_file = select_existing_settings_file(questionary)
+            if existing_settings_file is not None and len(selected_environments) != 1:
+                raise RuntimeError(
+                    "An existing settings.json file can only be imported when exactly one environment is selected."
+                )
+        elif args.settings_file:
+            raise RuntimeError("The --settings-file option is only supported when running an update.")
         bundle = download_connector_bundle(args.repo_owner, args.repo_name, args.ref)
 
         results: list[DeploymentResult] = []
@@ -620,6 +728,7 @@ def main() -> int:
                         bundle,
                         args.connector_name,
                         state_root,
+                        existing_settings_file,
                     )
                     settings_file_path = resolved_connector.settings_file
                     connector_id = resolved_connector.connector_id
@@ -651,6 +760,7 @@ def main() -> int:
                 )
 
                 write_detail(f"Deployment finished. Settings file: {settings_file_path}")
+                write_detail(f"Saved deployment settings under '{deployment_directory}'.")
                 if redirect_urls:
                     for redirect_url in redirect_urls:
                         print(f"  Redirect URL: {redirect_url}")

@@ -186,7 +186,7 @@ When you run it, the script:
 6. Asks whether you want to **install** a new connector or **update** an existing one.
 7. Downloads the latest connector payload from GitHub for every run.
 8. Runs `paconn create` or `paconn update` for each selected environment.
-9. Saves the resulting settings file as `~/.ironcladclm/deployments/<environment-guid>_settings.json`.
+9. Creates a local deployment settings folder in the standard per-user app-data location for the current OS and saves the resulting settings file there.
 10. Reads the connector ID written by `paconn` and derives the generated redirect URL from it.
 
 > 💡 The installer uses the same `dummy` OAuth secret placeholder currently used in the manual `paconn create` flow. The real client ID and client secret are entered later when users create a connection.
@@ -223,8 +223,19 @@ py .\scripts\manage-ironclad-connector.py
 
 ### What happens for updates
 
-- If `~/.ironcladclm/deployments/<environment-guid>_settings.json` already exists, the script uses it automatically.
+- If the per-environment settings file already exists, the script uses it automatically.
+- If you want to start from an existing `settings.json`, the installer lets you provide its full path during **update** mode, or you can pass `--settings-file /full/path/to/settings.json`.
 - If no saved settings file exists, the script queries the selected environment for matching Ironclad CLM connectors and asks you which one to update when more than one match is found.
+
+Settings files are created automatically in:
+
+- **macOS:** `~/Library/Application Support/IroncladCLM/deployments/<environment-guid>_settings.json`
+- **Windows:** `%APPDATA%\\IroncladCLM\\deployments\\<environment-guid>_settings.json`
+- **Linux:** `$XDG_STATE_HOME/IroncladCLM/deployments/<environment-guid>_settings.json` or `~/.local/state/IroncladCLM/deployments/<environment-guid>_settings.json`
+
+When you provide an existing settings file, the installer validates it, imports its connector information into the managed per-user settings location for that environment, and then continues the update from there.
+
+The installer prints the exact folder path when it runs and confirms the settings file location again after each successful deployment.
 
 ### What happens for redirect URLs
 
