@@ -118,6 +118,12 @@ public class Script : ScriptBase
             case "UpdateWorkflowMetadata":
                 await updWflMd_TransformUpdateWorkflowMetadataRequest().ConfigureAwait(false);
                 break;
+            case "ListAllRecords":
+                lstAllRcd_StripRecordPropertiesFromRequest();
+                break;
+            case "RetrieveRecordSchemas":
+                rtrRcdSch_StripToggleParamsFromRequest();
+                break;
         }
     }
 
@@ -175,7 +181,8 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "ListAllRecords":
-                var listAllRecordsQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
+                var listAllRecordsProperties = GetRequestQueryValues(RecordPropertiesQueryParameter);
+                var listAllRecordsQuery = string.Join(",", listAllRecordsProperties);
                 await this.TransformResponseJsonBody(
                         body =>
                             lstAllRcd_TransformListAllRecordsResponse(body, listAllRecordsQuery),
@@ -184,15 +191,20 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "RetrieveRecordSchemas":
-                var retrieveRecordSchemasQuery = GetRequestQueryValue(
-                    RecordPropertiesQueryParameter
-                );
+                var includeRecordTypes = GetRequestQueryBool("includeRecordTypes");
+                var includeProperties = GetRequestQueryBool("includeProperties");
+                var includeClauses = GetRequestQueryBool("includeClauses");
+                var includeAttachments = GetRequestQueryBool("includeAttachments");
                 await this.TransformResponseJsonBody(
                         body =>
                             rtrRcdSch_TransformRetrieveRecordSchemas(
                                 body,
-                                retrieveRecordSchemasQuery,
-                                false
+                                string.Empty,
+                                false,
+                                includeRecordTypes,
+                                includeProperties,
+                                includeClauses,
+                                includeAttachments
                             ),
                         response
                     )
@@ -345,6 +357,31 @@ public class Script : ScriptBase
     {
         return HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query)[parameterName]
             ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Reads a boolean query parameter. Returns true when the parameter is absent or empty
+    /// (backward-compatible default), false only when explicitly set to "false".
+    /// </summary>
+    private bool GetRequestQueryBool(string parameterName, bool defaultValue = true)
+    {
+        var raw = HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query)[parameterName];
+        if (string.IsNullOrWhiteSpace(raw))
+            return defaultValue;
+        return !raw.Equals("false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Reads all values for a repeated query parameter (e.g. ?recordProperties=a&amp;recordProperties=b)
+    /// and returns them as a list. Returns an empty list when the parameter is absent.
+    /// </summary>
+    private List<string> GetRequestQueryValues(string parameterName)
+    {
+        var queryString = HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query);
+        var values = queryString.GetValues(parameterName);
+        if (values == null || values.Length == 0)
+            return new List<string>();
+        return values.SelectMany(v => v.Split(',')).Select(v => v.Trim()).Where(v => v.Length > 0).ToList();
     }
 
     /// <summary>
@@ -3703,6 +3740,22 @@ public class Script : ScriptBase
     // ################################################################################
 
     /// <summary>
+    /// Strips the include* toggle query parameters from the request URL before forwarding
+    /// to the Ironclad API, which does not recognise them.
+    /// </summary>
+    private void rtrRcdSch_StripToggleParamsFromRequest()
+    {
+        var uri = this.Context.Request.RequestUri;
+        var query = HttpUtility.ParseQueryString(uri.Query);
+        query.Remove("includeRecordTypes");
+        query.Remove("includeProperties");
+        query.Remove("includeClauses");
+        query.Remove("includeAttachments");
+        var builder = new UriBuilder(uri) { Query = query.ToString() };
+        this.Context.Request.RequestUri = builder.Uri;
+    }
+
+    /// <summary>
     /// Repoints the formatted-record-schema route to the raw record metadata endpoint.
     /// The response is reformatted afterward so callers still receive the existing schema shape.
     /// </summary>
@@ -3723,7 +3776,8 @@ public class Script : ScriptBase
     /// </summary>
     private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
     {
-        var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
+        var propertiesValues = GetRequestQueryValues(RecordPropertiesQueryParameter);
+        var propertiesQuery = string.Join(",", propertiesValues);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         var metadata = JObject.Parse(content);
         var transformedData = rtrRcdSch_TransformRetrieveRecordSchemas(
@@ -3745,64 +3799,22 @@ public class Script : ScriptBase
     {
         try
         {
-            var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
-
             var metadata = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
-            // If we have a query, validate all properties exist
-            if (!string.IsNullOrWhiteSpace(propertiesQuery))
-            {
-                var requestedItems = propertiesQuery.Split(',').Select(p => p.Trim()).ToList();
-                var properties = metadata["properties"] as JObject;
-                var attachments = metadata["attachments"] as JObject;
-
-                foreach (var item in requestedItems)
-                {
-                    bool exists = false;
-
-                    // Check in properties (including clauses)
-                    if (properties != null && properties.ContainsKey(item))
-                    {
-                        var propObj = properties[item] as JObject;
-                        if (propObj != null)
-                        {
-                            exists =
-                                propObj["type"] != null
-                                && (
-                                    propObj["resolvesTo"] == null
-                                    || propObj["resolvesTo"].Type == JTokenType.Null
-                                );
-                        }
-                    }
-                    // Check in attachments
-                    else if (attachments != null && attachments.ContainsKey(item))
-                    {
-                        var attachmentObj = attachments[item] as JObject;
-                        exists = attachmentObj != null;
-                    }
-
-                    if (!exists)
-                    {
-                        return new HttpResponseMessage(HttpStatusCode.BadRequest)
-                        {
-                            Content = CreateJsonContent(
-                                new JObject
-                                {
-                                    ["error"] = new JObject
-                                    {
-                                        ["message"] = $"Property '{item}' not found"
-                                    }
-                                }.ToString()
-                            )
-                        };
-                    }
-                }
-            }
+            var schIncludeRecordTypes = GetRequestQueryBool("includeRecordTypes");
+            var schIncludeProperties = GetRequestQueryBool("includeProperties");
+            var schIncludeClauses = GetRequestQueryBool("includeClauses");
+            var schIncludeAttachments = GetRequestQueryBool("includeAttachments");
 
             // Transform the metadata
             var transformedData = rtrRcdSch_TransformRetrieveRecordSchemas(
                 metadata,
-                propertiesQuery
+                string.Empty,
+                false,
+                schIncludeRecordTypes,
+                schIncludeProperties,
+                schIncludeClauses,
+                schIncludeAttachments
             );
 
             // Create response
@@ -3840,11 +3852,18 @@ public class Script : ScriptBase
     /// <summary>
     /// Rewrites the record metadata response into the connector's formatted property,
     /// clause, attachment, and optional formattedSchema outputs.
+    /// When include* toggles are false the corresponding section is dropped from the
+    /// response (the full metadata is still fetched from the Ironclad API).
+    /// Missing or empty toggle values are treated as true for backward compatibility.
     /// </summary>
     private JObject rtrRcdSch_TransformRetrieveRecordSchemas(
         JObject body,
         string propertiesQuery,
-        bool includeFormattedSchema = false
+        bool includeFormattedSchema = false,
+        bool includeRecordTypes = true,
+        bool includeProperties = true,
+        bool includeClauses = true,
+        bool includeAttachments = true
     )
     {
         var properties = body["properties"] as JObject;
@@ -3963,13 +3982,19 @@ public class Script : ScriptBase
                 }
             }
 
-            body["formattedProperties"] = formattedProperties;
-            body["formattedClauses"] = formattedClauses;
-            body["formattedAttachments"] = formattedAttachments;
+            body["formattedProperties"] = includeProperties ? formattedProperties : new JArray();
+            body["formattedClauses"] = includeClauses ? formattedClauses : new JArray();
+            body["formattedAttachments"] = includeAttachments ? formattedAttachments : new JArray();
             body.Remove("properties");
             body.Remove("recordTypes");
             body.Remove("attachments");
             body.Remove("requestedProperties");
+
+            // Drop formattedRecordTypes when not requested
+            if (!includeRecordTypes)
+            {
+                body.Remove("formattedRecordTypes");
+            }
 
             if (includeFormattedSchema)
             {
@@ -4179,6 +4204,19 @@ public class Script : ScriptBase
     // ################################################################################
 
     /// <summary>
+    /// Strips the recordProperties query parameter from the request URL before forwarding
+    /// to the Ironclad API, which does not support property-level filtering on list records.
+    /// </summary>
+    private void lstAllRcd_StripRecordPropertiesFromRequest()
+    {
+        var uri = this.Context.Request.RequestUri;
+        var query = HttpUtility.ParseQueryString(uri.Query);
+        query.Remove(RecordPropertiesQueryParameter);
+        var builder = new UriBuilder(uri) { Query = query.ToString() };
+        this.Context.Request.RequestUri = builder.Uri;
+    }
+
+    /// <summary>
     /// Handles ListAllRecords metadata-driven shaping, including validation of the current
     /// record-properties query parameter before the connector builds its formatted response.
     /// </summary>
@@ -4186,18 +4224,18 @@ public class Script : ScriptBase
     {
         try
         {
-            var propertiesQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
+            var propertiesValues = GetRequestQueryValues(RecordPropertiesQueryParameter);
+            var propertiesQuery = string.Join(",", propertiesValues);
 
             var metadata = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
 
             // If we have a query, validate all properties exist
-            if (!string.IsNullOrWhiteSpace(propertiesQuery))
+            if (propertiesValues.Any())
             {
-                var requestedItems = propertiesQuery.Split(',').Select(p => p.Trim()).ToList();
                 var properties = metadata["properties"] as JObject;
                 var attachments = metadata["attachments"] as JObject;
 
-                foreach (var item in requestedItems)
+                foreach (var item in propertiesValues)
                 {
                     bool exists = false;
 

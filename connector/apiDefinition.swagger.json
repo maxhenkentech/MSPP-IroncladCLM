@@ -45,7 +45,28 @@
                         "$ref": "#/parameters/page_query"
                     },
                     {
-                        "$ref": "#/parameters/recordProperties_query"
+                        "name": "recordProperties",
+                        "in": "query",
+                        "description": "Select properties to include in the formatted output of each record.",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "x-ms-dynamic-values": {
+                                "operationId": "RetrieveRecordSchemas",
+                                "parameters": {
+                                    "includeRecordTypes": false,
+                                    "includeProperties": true,
+                                    "includeClauses": false,
+                                    "includeAttachments": false
+                                },
+                                "value-collection": "formattedProperties",
+                                "value-path": "systemName",
+                                "value-title": "label"
+                            }
+                        },
+                        "x-ms-summary": "Record Properties",
+                        "x-ms-visibility": "important"
                     },
                     {
                         "$ref": "#/parameters/pageSize_query"
@@ -222,7 +243,16 @@
                         "$ref": "#/parameters/x-as-user-id_header"
                     },
                     {
-                        "$ref": "#/parameters/recordProperties_query"
+                        "$ref": "#/parameters/includeRecordTypes_query"
+                    },
+                    {
+                        "$ref": "#/parameters/includeProperties_query"
+                    },
+                    {
+                        "$ref": "#/parameters/includeClauses_query"
+                    },
+                    {
+                        "$ref": "#/parameters/includeAttachments_query"
                     }
                 ],
                 "responses": {
@@ -281,7 +311,16 @@
                         "$ref": "#/parameters/x-as-user-id_header"
                     },
                     {
-                        "$ref": "#/parameters/recordProperties_query"
+                        "name": "recordProperties",
+                        "in": "query",
+                        "description": "Select properties to include in the formatted schema.",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-ms-summary": "Record Properties",
+                        "x-ms-visibility": "important"
                     }
                 ],
                 "responses": {
@@ -5357,6 +5396,12 @@
             "type": "string",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
+                "parameters": {
+                    "includeRecordTypes": false,
+                    "includeProperties": true,
+                    "includeClauses": false,
+                    "includeAttachments": false
+                },
                 "value-collection": "formattedProperties",
                 "value-path": "systemName",
                 "value-title": "label"
@@ -5369,6 +5414,12 @@
             "type": "string",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
+                "parameters": {
+                    "includeRecordTypes": false,
+                    "includeProperties": true,
+                    "includeClauses": false,
+                    "includeAttachments": false
+                },
                 "value-collection": "formattedProperties",
                 "value-path": "systemName",
                 "value-title": "label"
@@ -6381,6 +6432,12 @@
             "x-ms-visibility": "important",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
+                "parameters": {
+                    "includeRecordTypes": false,
+                    "includeProperties": true,
+                    "includeClauses": false,
+                    "includeAttachments": false
+                },
                 "value-collection": "formattedProperties",
                 "value-path": "systemName",
                 "value-title": "label"
@@ -6462,6 +6519,12 @@
             "type": "string",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
+                "parameters": {
+                    "includeRecordTypes": true,
+                    "includeProperties": false,
+                    "includeClauses": false,
+                    "includeAttachments": false
+                },
                 "value-collection": "formattedRecordTypes",
                 "value-path": "systemName",
                 "value-title": "displayName"
@@ -9014,6 +9077,46 @@
             "x-ms-summary": "Record Properties",
             "x-ms-visibility": "important"
         },
+        "includeRecordTypes_query": {
+            "name": "includeRecordTypes",
+            "in": "query",
+            "description": "Include record types in the response.",
+            "required": false,
+            "type": "boolean",
+            "default": true,
+            "x-ms-summary": "Record Types",
+            "x-ms-visibility": "advanced"
+        },
+        "includeProperties_query": {
+            "name": "includeProperties",
+            "in": "query",
+            "description": "Include properties in the response.",
+            "required": false,
+            "type": "boolean",
+            "default": true,
+            "x-ms-summary": "Properties",
+            "x-ms-visibility": "advanced"
+        },
+        "includeClauses_query": {
+            "name": "includeClauses",
+            "in": "query",
+            "description": "Include clauses in the response.",
+            "required": false,
+            "type": "boolean",
+            "default": true,
+            "x-ms-summary": "Clauses",
+            "x-ms-visibility": "advanced"
+        },
+        "includeAttachments_query": {
+            "name": "includeAttachments",
+            "in": "query",
+            "description": "Include attachments in the response.",
+            "required": false,
+            "type": "boolean",
+            "default": true,
+            "x-ms-summary": "Attachments",
+            "x-ms-visibility": "advanced"
+        },
         "recordDocumentKeyFromSchema_path": {
             "description": "The unique identifier for the attachment. This key can be located using the Retrieve a workflow endpoint. In the response, locate the file attribute (e.g., draft) and look at its download parameter. The download parameter includes the key at the end of the URL .../document/{ATTACHMENT_KEY}/download.",
             "in": "path",
@@ -9022,7 +9125,12 @@
             "type": "string",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
-                "parameters": {},
+                "parameters": {
+                    "includeRecordTypes": false,
+                    "includeProperties": false,
+                    "includeClauses": false,
+                    "includeAttachments": true
+                },
                 "value-collection": "formattedAttachments",
                 "value-path": "systemName",
                 "value-title": "displayName"
@@ -9122,6 +9230,12 @@
             "x-ms-visibility": "important",
             "x-ms-dynamic-values": {
                 "operationId": "RetrieveRecordSchemas",
+                "parameters": {
+                    "includeRecordTypes": true,
+                    "includeProperties": false,
+                    "includeClauses": false,
+                    "includeAttachments": false
+                },
                 "value-collection": "formattedRecordTypes",
                 "value-path": "systemName",
                 "value-title": "displayName"
