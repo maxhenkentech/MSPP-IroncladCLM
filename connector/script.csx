@@ -3768,7 +3768,7 @@ public class Script : ScriptBase
     /// <summary>
     /// Builds the formatted record schema response from raw record metadata,
     /// optionally filtering to a subset of properties via the recordProperties query parameter.
-    /// Returns a direct OpenAPI-compliant schema object: { "type": "object", "properties": { ... } }
+    /// Returns a wrapped schema object: { "formattedSchema": { "type": "object", "properties": { ... } } }
     /// where each key is a record property systemName and each value is a JSON Schema property definition.
     /// </summary>
     private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
@@ -3831,8 +3831,11 @@ public class Script : ScriptBase
 
         var result = new JObject
         {
-            ["type"] = "object",
-            ["properties"] = flatProperties
+            ["formattedSchema"] = new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = flatProperties
+            }
         };
 
         response.Content = CreateJsonContent(result.ToString());

@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "priceSchedulesDataFeed_ac575fe0-dd53-436a-83e3-8e79287fc5fe_monetaryAmount": {
+      "type": "object",
+      "title": "Price Air Schedules",
+      "description": "The Price Air Schedules.",
+      "x-ms-visibility": "important",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "title": "Amount",
+          "description": "The monetary amount value for Price Air Schedules."
+        },
+        "currency": {
+          "type": "string",
+          "title": "Currency",
+          "description": "The currency code for Price Air Schedules."
+        }
+      }
+    }
+  }
+}

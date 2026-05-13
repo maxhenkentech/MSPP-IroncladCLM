@@ -6538,7 +6538,7 @@
                     "title": "Formatted Properties",
                     "type": "object",
                     "x-ms-dynamic-properties": {
-                        "itemValuePath": "",
+                        "itemValuePath": "formattedSchema",
                         "operationId": "RetrieveFormattedRecordSchema",
                         "parameters": {
                             "recordProperties": {
