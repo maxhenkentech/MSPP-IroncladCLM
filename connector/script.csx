@@ -34,6 +34,8 @@ public class Script : ScriptBase
 
     private JObject recordSchemaInfo;
     private string listAllRecordsV2PropertiesQuery;
+    private string listAllRecordsV2ClausesQuery;
+    private string listAllRecordsV2AttachmentsQuery;
 
     /// <summary>
     /// Main Power Platform script entry point.
@@ -192,11 +194,7 @@ public class Script : ScriptBase
                 break;
             case "ListAllRecordsV2":
                 await this.TransformResponseJsonBody(
-                        body =>
-                            lstAllRcd_TransformListAllRecordsResponse(
-                                body,
-                                this.listAllRecordsV2PropertiesQuery ?? string.Empty
-                            ),
+                        body => lstAllRcdV2_TransformResponse(body),
                         response
                     )
                     .ConfigureAwait(false);
@@ -4547,6 +4545,18 @@ public class Script : ScriptBase
             ? string.Join(",", propsArray.Select(p => p.ToString()))
             : string.Empty;
 
+        // Capture record clauses for use in response transform
+        var clausesArray = body["recordClauses"] as JArray;
+        this.listAllRecordsV2ClausesQuery = clausesArray != null && clausesArray.Count > 0
+            ? string.Join(",", clausesArray.Select(p => p.ToString()))
+            : string.Empty;
+
+        // Capture record attachments for use in response transform
+        var attachmentsArray = body["recordAttachments"] as JArray;
+        this.listAllRecordsV2AttachmentsQuery = attachmentsArray != null && attachmentsArray.Count > 0
+            ? string.Join(",", attachmentsArray.Select(p => p.ToString()))
+            : string.Empty;
+
         // Build query string from body fields
         var query = HttpUtility.ParseQueryString(string.Empty);
 
@@ -4614,6 +4624,201 @@ public class Script : ScriptBase
 
         var value = filter["value"]?.ToString() ?? string.Empty;
         return $"{op}([{property}], '{value}')";
+    }
+
+    /// <summary>
+    /// Splits a comma-separated string into a trimmed list.
+    /// Returns an empty list when the input is null or whitespace.
+    /// </summary>
+    private static List<string> ParseCommaSeparated(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            ? value.Split(',').Select(p => p.Trim()).ToList()
+            : new List<string>();
+    }
+
+    /// <summary>
+    /// Transforms the ListAllRecordsV2 response by enriching each record with a
+    /// formattedProperties object containing three sub-objects: recordProperties,
+    /// recordClauses and recordAttachments.  Which items appear in each bucket is
+    /// determined by the three arrays the caller supplied in the request body.
+    /// </summary>
+    private JObject lstAllRcdV2_TransformResponse(JObject body)
+    {
+        var requestedProperties = ParseCommaSeparated(this.listAllRecordsV2PropertiesQuery);
+        var requestedClauses = ParseCommaSeparated(this.listAllRecordsV2ClausesQuery);
+        var requestedAttachments = ParseCommaSeparated(this.listAllRecordsV2AttachmentsQuery);
+        bool hasAnyRequested = requestedProperties.Any()
+            || requestedClauses.Any()
+            || requestedAttachments.Any();
+
+        if (body.ContainsKey("list") && body["list"] is JArray list)
+        {
+            foreach (var record in list.Children<JObject>())
+            {
+                var originalProperties = record["properties"] as JObject;
+                var originalAttachments = record["attachments"] as JObject;
+
+                // Promote counterpartyName to root level
+                if (
+                    originalProperties != null
+                    && originalProperties.ContainsKey("counterpartyName")
+                    && originalProperties["counterpartyName"] is JObject counterpartyProp
+                    && counterpartyProp["value"] != null
+                )
+                {
+                    record["counterpartyName"] = counterpartyProp["value"];
+                }
+
+                // Build label
+                string ironcladId = record["ironcladId"]?.ToString() ?? "";
+                string name = record["name"]?.ToString() ?? "";
+                record["label"] = $"{ironcladId}: {name}";
+
+                // Format attachments array (full list, independent of selection)
+                if (originalAttachments != null)
+                {
+                    var attachmentsArray = new JArray();
+                    foreach (var att in originalAttachments)
+                    {
+                        attachmentsArray.Add(
+                            new JObject
+                            {
+                                ["displayName"] = att.Value["displayName"] ?? att.Key,
+                                ["name"] = att.Key,
+                                ["key"] = att.Key
+                            }
+                        );
+                    }
+                    record["formattedAttachments"] = attachmentsArray;
+                }
+
+                // Build formattedProperties with three sub-objects
+                if (hasAnyRequested)
+                {
+                    var recordProps = new JObject();
+                    var recordClauses = new JObject();
+                    var recordAtts = new JObject();
+
+                    // --- Properties ---
+                    foreach (var propName in requestedProperties)
+                    {
+                        if (
+                            originalProperties != null
+                            && originalProperties.ContainsKey(propName)
+                        )
+                        {
+                            var property = originalProperties[propName] as JObject;
+                            if (property != null)
+                            {
+                                recordProps[propName] = lstAllRcdV2_FormatPropertyValue(property);
+                            }
+                        }
+                    }
+
+                    // --- Clauses ---
+                    foreach (var clauseName in requestedClauses)
+                    {
+                        if (
+                            originalProperties != null
+                            && originalProperties.ContainsKey(clauseName)
+                        )
+                        {
+                            var clause = originalProperties[clauseName] as JObject;
+                            if (clause != null)
+                            {
+                                recordClauses[clauseName] = lstAllRcdV2_FormatClauseValue(
+                                    clauseName,
+                                    clause
+                                );
+                            }
+                        }
+                    }
+
+                    // --- Attachments ---
+                    foreach (var attName in requestedAttachments)
+                    {
+                        if (
+                            originalAttachments != null
+                            && originalAttachments.ContainsKey(attName)
+                        )
+                        {
+                            var attachment = originalAttachments[attName] as JObject;
+                            if (attachment != null)
+                            {
+                                recordAtts[attName] = new JObject
+                                {
+                                    ["filename"] = attachment["filename"],
+                                    ["contentType"] = attachment["contentType"],
+                                    ["href"] = attachment["href"],
+                                    ["displayName"] = attachment["displayName"] ?? attName,
+                                    ["key"] = attName
+                                };
+                            }
+                        }
+                    }
+
+                    record["formattedProperties"] = new JObject
+                    {
+                        ["recordProperties"] = recordProps,
+                        ["recordClauses"] = recordClauses,
+                        ["recordAttachments"] = recordAtts
+                    };
+                }
+            }
+        }
+
+        return body;
+    }
+
+    /// <summary>
+    /// Formats one record property value for the V2 list response, expanding durations
+    /// and monetary amounts while leaving other types as simple values.
+    /// </summary>
+    private JToken lstAllRcdV2_FormatPropertyValue(JObject property)
+    {
+        if (property == null || !property.ContainsKey("type") || !property.ContainsKey("value"))
+            return null;
+
+        string propertyType = property["type"].ToString().ToLower();
+        var value = property["value"];
+
+        switch (propertyType)
+        {
+            case "duration":
+                return CreateExpandedDurationObject(value.ToString());
+            case "monetary_amount":
+                return value as JObject ?? new JObject();
+            default:
+                return value;
+        }
+    }
+
+    /// <summary>
+    /// Formats one clause property for the V2 list response into the connector's
+    /// clause helper object.
+    /// </summary>
+    private JObject lstAllRcdV2_FormatClauseValue(string clauseName, JObject clause)
+    {
+        var clauseValue = clause["value"] as JObject;
+        if (clauseValue == null)
+            return new JObject();
+
+        var displayName = clauseName;
+        if (!displayName.EndsWith(" Clause", StringComparison.OrdinalIgnoreCase))
+        {
+            displayName += " Clause";
+        }
+
+        return new JObject
+        {
+            ["displayName"] = displayName,
+            ["description"] = $"The {clauseName} clause.",
+            ["clauseText"] = clauseValue["clauseText"],
+            ["source"] = clauseValue["source"],
+            ["clauseType"] = clauseValue["clauseType"],
+            ["languagePosition"] = clauseValue["languagePosition"]
+        };
     }
 
     // ################################################################################

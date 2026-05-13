@@ -6683,6 +6683,90 @@
                         }
                     }
                 },
+                "recordClauses": {
+                    "type": "array",
+                    "description": "Clauses to include in the formatted output of each record. Each item is selected from a dynamic dropdown.",
+                    "x-ms-summary": "Record Clauses",
+                    "x-ms-visibility": "important",
+                    "items": {
+                        "type": "string",
+                        "x-ms-summary": "Clause",
+                        "x-ms-dynamic-values": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "parameters": {
+                                "includeRecordTypes": false,
+                                "includeProperties": false,
+                                "includeClauses": true,
+                                "includeAttachments": false
+                            },
+                            "value-collection": "formattedClauses",
+                            "value-path": "systemName",
+                            "value-title": "label"
+                        },
+                        "x-ms-dynamic-list": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "itemsPath": "formattedClauses",
+                            "itemValuePath": "systemName",
+                            "itemTitlePath": "label",
+                            "parameters": {
+                                "includeRecordTypes": {
+                                    "value": false
+                                },
+                                "includeProperties": {
+                                    "value": false
+                                },
+                                "includeClauses": {
+                                    "value": true
+                                },
+                                "includeAttachments": {
+                                    "value": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "recordAttachments": {
+                    "type": "array",
+                    "description": "Attachments to include in the formatted output of each record. Each item is selected from a dynamic dropdown.",
+                    "x-ms-summary": "Record Attachments",
+                    "x-ms-visibility": "important",
+                    "items": {
+                        "type": "string",
+                        "x-ms-summary": "Attachment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "parameters": {
+                                "includeRecordTypes": false,
+                                "includeProperties": false,
+                                "includeClauses": false,
+                                "includeAttachments": true
+                            },
+                            "value-collection": "formattedAttachments",
+                            "value-path": "systemName",
+                            "value-title": "displayName"
+                        },
+                        "x-ms-dynamic-list": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "itemsPath": "formattedAttachments",
+                            "itemValuePath": "systemName",
+                            "itemTitlePath": "displayName",
+                            "parameters": {
+                                "includeRecordTypes": {
+                                    "value": false
+                                },
+                                "includeProperties": {
+                                    "value": false
+                                },
+                                "includeClauses": {
+                                    "value": false
+                                },
+                                "includeAttachments": {
+                                    "value": true
+                                }
+                            }
+                        }
+                    }
+                },
                 "types": {
                     "type": "array",
                     "description": "Filter results to these record types. Each item is selected from a dynamic dropdown.",
