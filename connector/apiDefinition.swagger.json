@@ -45,28 +45,7 @@
                         "$ref": "#/parameters/page_query"
                     },
                     {
-                        "name": "recordProperties",
-                        "in": "query",
-                        "description": "Select properties to include in the formatted output of each record.",
-                        "required": false,
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "x-ms-dynamic-values": {
-                                "operationId": "RetrieveRecordSchemas",
-                                "parameters": {
-                                    "includeRecordTypes": false,
-                                    "includeProperties": true,
-                                    "includeClauses": false,
-                                    "includeAttachments": false
-                                },
-                                "value-collection": "formattedProperties",
-                                "value-path": "systemName",
-                                "value-title": "label"
-                            }
-                        },
-                        "x-ms-summary": "Record Properties",
-                        "x-ms-visibility": "important"
+                        "$ref": "#/parameters/recordProperties_query"
                     },
                     {
                         "$ref": "#/parameters/pageSize_query"
@@ -177,6 +156,70 @@
                     }
                 },
                 "summary": "Create a Record",
+                "x-ms-visibility": "important"
+            }
+        },
+        "/public/api/v1/records/query": {
+            "post": {
+                "description": "Query records using a structured request body with multi-select property filtering, record type filtering, and a guided filter expression. The request is translated to the Ironclad List Records GET endpoint by the connector script.",
+                "operationId": "ListAllRecordsV2",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/x-as-user-email_header"
+                    },
+                    {
+                        "$ref": "#/parameters/x-as-user-id_header"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/listAllRecordsV2Request_object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Records Retrieved",
+                        "schema": {
+                            "properties": {
+                                "count": {
+                                    "$ref": "#/definitions/count_integer"
+                                },
+                                "list": {
+                                    "$ref": "#/definitions/recordsGetFormatted_array"
+                                },
+                                "page": {
+                                    "$ref": "#/definitions/page_integer"
+                                },
+                                "pageSize": {
+                                    "$ref": "#/definitions/pageSize_integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "default": {
+                        "description": "Operation Failed."
+                    }
+                },
+                "summary": "List All Records V2",
                 "x-ms-visibility": "important"
             }
         },
@@ -6474,6 +6517,239 @@
             "title": "Records",
             "type": "array",
             "x-ms-visibility": "advanced"
+        },
+        "listAllRecordsV2Request_object": {
+            "title": "List All Records V2 Request",
+            "description": "Request body for the List All Records V2 operation.",
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/page_integer"
+                },
+                "pageSize": {
+                    "$ref": "#/definitions/pageSize_integer"
+                },
+                "sortField": {
+                    "type": "string",
+                    "default": "lastUpdated",
+                    "description": "The field to sort the results by.",
+                    "enum": [
+                        "lastUpdated",
+                        "agreementDate",
+                        "name"
+                    ],
+                    "x-ms-enum-values": [
+                        {
+                            "displayName": "Last Updated",
+                            "value": "lastUpdated"
+                        },
+                        {
+                            "displayName": "Agreement Date",
+                            "value": "agreementDate"
+                        },
+                        {
+                            "displayName": "Name",
+                            "value": "name"
+                        }
+                    ],
+                    "x-ms-summary": "Sort Field",
+                    "x-ms-visibility": "important"
+                },
+                "sortDirection": {
+                    "type": "string",
+                    "default": "DESC",
+                    "description": "The direction the results are sorted.",
+                    "enum": [
+                        "DESC",
+                        "ASC"
+                    ],
+                    "x-ms-enum-values": [
+                        {
+                            "displayName": "Descending",
+                            "value": "DESC"
+                        },
+                        {
+                            "displayName": "Ascending",
+                            "value": "ASC"
+                        }
+                    ],
+                    "x-ms-summary": "Sort Direction",
+                    "x-ms-visibility": "important"
+                },
+                "lastUpdated": {
+                    "$ref": "#/definitions/lastUpdated_string"
+                },
+                "recordProperties": {
+                    "type": "array",
+                    "description": "Properties to include in the formatted output of each record. Each item is selected from a dynamic dropdown.",
+                    "x-ms-summary": "Record Properties",
+                    "x-ms-visibility": "important",
+                    "items": {
+                        "type": "string",
+                        "x-ms-summary": "Property",
+                        "x-ms-dynamic-values": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "parameters": {
+                                "includeRecordTypes": false,
+                                "includeProperties": true,
+                                "includeClauses": false,
+                                "includeAttachments": false
+                            },
+                            "value-collection": "formattedProperties",
+                            "value-path": "systemName",
+                            "value-title": "label"
+                        },
+                        "x-ms-dynamic-list": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "itemsPath": "formattedProperties",
+                            "itemValuePath": "systemName",
+                            "itemTitlePath": "label",
+                            "parameters": {
+                                "includeRecordTypes": {
+                                    "value": false
+                                },
+                                "includeProperties": {
+                                    "value": true
+                                },
+                                "includeClauses": {
+                                    "value": false
+                                },
+                                "includeAttachments": {
+                                    "value": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "types": {
+                    "type": "array",
+                    "description": "Filter results to these record types. Each item is selected from a dynamic dropdown.",
+                    "x-ms-summary": "Record Types",
+                    "x-ms-visibility": "important",
+                    "items": {
+                        "type": "string",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-dynamic-values": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "parameters": {
+                                "includeRecordTypes": true,
+                                "includeProperties": false,
+                                "includeClauses": false,
+                                "includeAttachments": false
+                            },
+                            "value-collection": "formattedRecordTypes",
+                            "value-path": "systemName",
+                            "value-title": "displayName"
+                        },
+                        "x-ms-dynamic-list": {
+                            "operationId": "RetrieveRecordSchemas",
+                            "itemsPath": "formattedRecordTypes",
+                            "itemValuePath": "systemName",
+                            "itemTitlePath": "displayName",
+                            "parameters": {
+                                "includeRecordTypes": {
+                                    "value": true
+                                },
+                                "includeProperties": {
+                                    "value": false
+                                },
+                                "includeClauses": {
+                                    "value": false
+                                },
+                                "includeAttachments": {
+                                    "value": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "filter": {
+                    "type": "object",
+                    "description": "A structured filter expression applied to the record list.",
+                    "x-ms-summary": "Filter",
+                    "x-ms-visibility": "important",
+                    "properties": {
+                        "property": {
+                            "type": "string",
+                            "description": "The system name of the record property to filter on.",
+                            "x-ms-summary": "Property",
+                            "x-ms-visibility": "important",
+                            "x-ms-dynamic-values": {
+                                "operationId": "RetrieveRecordSchemas",
+                                "parameters": {
+                                    "includeRecordTypes": false,
+                                    "includeProperties": true,
+                                    "includeClauses": false,
+                                    "includeAttachments": false
+                                },
+                                "value-collection": "formattedProperties",
+                                "value-path": "systemName",
+                                "value-title": "label"
+                            },
+                            "x-ms-dynamic-list": {
+                                "operationId": "RetrieveRecordSchemas",
+                                "itemsPath": "formattedProperties",
+                                "itemValuePath": "systemName",
+                                "itemTitlePath": "label",
+                                "parameters": {
+                                    "includeRecordTypes": {
+                                        "value": false
+                                    },
+                                    "includeProperties": {
+                                        "value": true
+                                    },
+                                    "includeClauses": {
+                                        "value": false
+                                    },
+                                    "includeAttachments": {
+                                        "value": false
+                                    }
+                                }
+                            }
+                        },
+                        "operator": {
+                            "type": "string",
+                            "description": "The filter operator. IsEmpty, IsNotEmpty, and Today do not require a value.",
+                            "x-ms-summary": "Operator",
+                            "x-ms-visibility": "important",
+                            "enum": [
+                                "Equals",
+                                "NotEqual",
+                                "Contains",
+                                "IsEmpty",
+                                "IsNotEmpty",
+                                "LessThan",
+                                "LessThanOrEqual",
+                                "GreaterThan",
+                                "GreaterThanOrEqual",
+                                "Date",
+                                "Today",
+                                "RelativeDate"
+                            ],
+                            "x-ms-enum-values": [
+                                { "displayName": "Equals", "value": "Equals" },
+                                { "displayName": "Not Equal", "value": "NotEqual" },
+                                { "displayName": "Contains", "value": "Contains" },
+                                { "displayName": "Is Empty", "value": "IsEmpty" },
+                                { "displayName": "Is Not Empty", "value": "IsNotEmpty" },
+                                { "displayName": "Less Than", "value": "LessThan" },
+                                { "displayName": "Less Than Or Equal", "value": "LessThanOrEqual" },
+                                { "displayName": "Greater Than", "value": "GreaterThan" },
+                                { "displayName": "Greater Than Or Equal", "value": "GreaterThanOrEqual" },
+                                { "displayName": "Date", "value": "Date" },
+                                { "displayName": "Today", "value": "Today" },
+                                { "displayName": "Relative Date", "value": "RelativeDate" }
+                            ]
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "The comparator value. Not required for IsEmpty, IsNotEmpty, or Today.",
+                            "x-ms-summary": "Value",
+                            "x-ms-visibility": "important"
+                        }
+                    }
+                }
+            }
         },
         "recordSource_object": {
             "description": "The source of the record.",

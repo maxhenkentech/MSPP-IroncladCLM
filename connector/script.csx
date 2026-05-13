@@ -33,6 +33,7 @@ public class Script : ScriptBase
         "urn:ietf:params:scim:api:messages:2.0:PatchOp";
 
     private JObject recordSchemaInfo;
+    private string listAllRecordsV2PropertiesQuery;
 
     /// <summary>
     /// Main Power Platform script entry point.
@@ -121,6 +122,9 @@ public class Script : ScriptBase
             case "ListAllRecords":
                 lstAllRcd_StripRecordPropertiesFromRequest();
                 break;
+            case "ListAllRecordsV2":
+                await lstAllRcdV2_TransformRequest().ConfigureAwait(false);
+                break;
         }
     }
 
@@ -178,11 +182,21 @@ public class Script : ScriptBase
                     .ConfigureAwait(false);
                 break;
             case "ListAllRecords":
-                var listAllRecordsProperties = GetRequestQueryValues(RecordPropertiesQueryParameter);
-                var listAllRecordsQuery = string.Join(",", listAllRecordsProperties);
+                var listAllRecordsQuery = GetRequestQueryValue(RecordPropertiesQueryParameter);
                 await this.TransformResponseJsonBody(
                         body =>
                             lstAllRcd_TransformListAllRecordsResponse(body, listAllRecordsQuery),
+                        response
+                    )
+                    .ConfigureAwait(false);
+                break;
+            case "ListAllRecordsV2":
+                await this.TransformResponseJsonBody(
+                        body =>
+                            lstAllRcd_TransformListAllRecordsResponse(
+                                body,
+                                this.listAllRecordsV2PropertiesQuery ?? string.Empty
+                            ),
                         response
                     )
                     .ConfigureAwait(false);
@@ -4465,6 +4479,93 @@ public class Script : ScriptBase
             ["clauseType"] = clauseValue["clauseType"],
             ["languagePosition"] = clauseValue["languagePosition"]
         };
+    }
+
+    // ################################################################################
+    // List All Records V2 ############################################################
+    // ################################################################################
+
+    /// <summary>
+    /// Rewrites the ListAllRecordsV2 POST request into a GET request against the Ironclad
+    /// List Records endpoint, translating the structured body into URL query parameters.
+    /// </summary>
+    private async Task lstAllRcdV2_TransformRequest()
+    {
+        var body = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false) ?? new JObject();
+
+        // Capture record properties for use in response transform
+        var propsArray = body["recordProperties"] as JArray;
+        this.listAllRecordsV2PropertiesQuery = propsArray != null && propsArray.Count > 0
+            ? string.Join(",", propsArray.Select(p => p.ToString()))
+            : string.Empty;
+
+        // Build query string from body fields
+        var query = HttpUtility.ParseQueryString(string.Empty);
+
+        var page = body["page"];
+        if (page != null) query["page"] = page.ToString();
+
+        var pageSize = body["pageSize"];
+        if (pageSize != null) query["pageSize"] = pageSize.ToString();
+
+        var sortField = body["sortField"]?.ToString();
+        if (!string.IsNullOrEmpty(sortField)) query["sortField"] = sortField;
+
+        var sortDirection = body["sortDirection"]?.ToString();
+        if (!string.IsNullOrEmpty(sortDirection)) query["sortDirection"] = sortDirection;
+
+        var lastUpdated = body["lastUpdated"]?.ToString();
+        if (!string.IsNullOrEmpty(lastUpdated)) query["lastUpdated"] = lastUpdated;
+
+        // Add record types as repeated query params
+        var typesArray = body["types"] as JArray;
+        if (typesArray != null)
+        {
+            foreach (var t in typesArray)
+            {
+                var tv = t.ToString();
+                if (!string.IsNullOrEmpty(tv)) query.Add("types", tv);
+            }
+        }
+
+        // Build and append the filter formula
+        var filter = body["filter"] as JObject;
+        var filterString = lstAllRcdV2_BuildFilterString(filter);
+        if (!string.IsNullOrEmpty(filterString)) query["filter"] = filterString;
+
+        // Rewrite request: POST /public/api/v1/records/query → GET /public/api/v1/records
+        var uri = this.Context.Request.RequestUri;
+        var baseUrl = uri.GetLeftPart(UriPartial.Authority) + "/public/api/v1/records";
+        var newUri = new Uri(baseUrl + "?" + query.ToString());
+
+        this.Context.Request.Method = HttpMethod.Get;
+        this.Context.Request.RequestUri = newUri;
+        this.Context.Request.Content = null;
+    }
+
+    /// <summary>
+    /// Builds an Ironclad filter formula string from the structured filter object.
+    /// Operators that take no value (IsEmpty, IsNotEmpty, Today) omit the value argument.
+    /// </summary>
+    private string lstAllRcdV2_BuildFilterString(JObject filter)
+    {
+        if (filter == null) return null;
+
+        var op = filter["operator"]?.ToString();
+        var property = filter["property"]?.ToString();
+
+        if (string.IsNullOrEmpty(op) || string.IsNullOrEmpty(property)) return null;
+
+        var noValueOperators = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "IsEmpty", "IsNotEmpty", "Today"
+        };
+
+        if (noValueOperators.Contains(op))
+            return $"{op}([{property}])";
+
+        var value = filter["value"]?.ToString() ?? string.Empty;
+        return $"{op}([{property}], '{value}')";
     }
 
     // ################################################################################
