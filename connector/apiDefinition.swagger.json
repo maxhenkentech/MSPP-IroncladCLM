@@ -352,18 +352,6 @@
                     },
                     {
                         "$ref": "#/parameters/x-as-user-id_header"
-                    },
-                    {
-                        "name": "recordProperties",
-                        "in": "query",
-                        "description": "Select properties to include in the formatted schema.",
-                        "required": false,
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "x-ms-summary": "Record Properties",
-                        "x-ms-visibility": "important"
                     }
                 ],
                 "responses": {
@@ -6024,22 +6012,6 @@
                     "description": "The OpenAPI formatted properties of the record.",
                     "title": "Formatted Properties",
                     "type": "object",
-                    "x-ms-dynamic-properties": {
-                        "operationId": "RetrieveFormattedRecordSchema",
-                        "parameters": {
-                            "recordProperties": {
-                                "parameterReference": "recordProperties"
-                            }
-                        }
-                    },
-                    "x-ms-dynamic-schema": {
-                        "operationId": "RetrieveFormattedRecordSchema",
-                        "parameters": {
-                            "recordProperties": {
-                                "parameter": "recordProperties"
-                            }
-                        }
-                    },
                     "x-ms-visibility": "important"
                 },
                 "recordType": {
