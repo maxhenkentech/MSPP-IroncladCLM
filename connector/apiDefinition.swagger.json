@@ -364,7 +364,7 @@
                         },
                         "collectionFormat": "csv",
                         "x-ms-summary": "Record Properties",
-                        "x-ms-visibility": "advanced"
+                        "x-ms-visibility": "important"
                     }
                 ],
                 "responses": {
