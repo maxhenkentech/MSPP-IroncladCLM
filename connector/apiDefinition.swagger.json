@@ -6546,15 +6546,6 @@
                             }
                         }
                     },
-                    "x-ms-dynamic-schema": {
-                        "operationId": "RetrieveFormattedRecordSchema",
-                        "parameters": {
-                            "recordProperties": {
-                                "parameter": "body/recordProperties"
-                            }
-                        },
-                        "value-path": "properties"
-                    },
                     "x-ms-visibility": "important"
                 },
                 "recordType": {
