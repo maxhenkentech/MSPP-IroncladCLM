@@ -121,9 +121,6 @@ public class Script : ScriptBase
             case "ListAllRecords":
                 lstAllRcd_StripRecordPropertiesFromRequest();
                 break;
-            case "RetrieveRecordSchemas":
-                rtrRcdSch_StripToggleParamsFromRequest();
-                break;
         }
     }
 
@@ -3738,22 +3735,6 @@ public class Script : ScriptBase
     // ################################################################################
     // Retrieve Record Schema #########################################################
     // ################################################################################
-
-    /// <summary>
-    /// Strips the include* toggle query parameters from the request URL before forwarding
-    /// to the Ironclad API, which does not recognise them.
-    /// </summary>
-    private void rtrRcdSch_StripToggleParamsFromRequest()
-    {
-        var uri = this.Context.Request.RequestUri;
-        var query = HttpUtility.ParseQueryString(uri.Query);
-        query.Remove("includeRecordTypes");
-        query.Remove("includeProperties");
-        query.Remove("includeClauses");
-        query.Remove("includeAttachments");
-        var builder = new UriBuilder(uri) { Query = query.ToString() };
-        this.Context.Request.RequestUri = builder.Uri;
-    }
 
     /// <summary>
     /// Repoints the formatted-record-schema route to the raw record metadata endpoint.
