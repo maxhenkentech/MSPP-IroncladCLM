@@ -3766,15 +3766,18 @@ public class Script : ScriptBase
     }
 
     /// <summary>
-    /// Builds the formatted record schema response from raw record metadata.
+    /// Builds the formatted record schema response from raw record metadata,
+    /// optionally filtering to a subset of properties via the recordProperties query parameter.
     /// </summary>
     private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
     {
+        var propertiesValues = GetRequestQueryValues(RecordPropertiesQueryParameter);
+        var propertiesQuery = string.Join(",", propertiesValues);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         var metadata = JObject.Parse(content);
         var transformedData = rtrRcdSch_TransformRetrieveRecordSchemas(
             metadata,
-            string.Empty,
+            propertiesQuery,
             true
         );
         var formattedSchema =

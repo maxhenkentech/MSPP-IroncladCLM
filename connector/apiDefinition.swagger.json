@@ -188,7 +188,7 @@
                                     "$ref": "#/definitions/count_integer"
                                 },
                                 "list": {
-                                    "$ref": "#/definitions/recordsGetFormatted_array"
+                                    "$ref": "#/definitions/recordsGetFormattedV2_array"
                                 },
                                 "page": {
                                     "$ref": "#/definitions/page_integer"
@@ -352,6 +352,19 @@
                     },
                     {
                         "$ref": "#/parameters/x-as-user-id_header"
+                    },
+                    {
+                        "name": "recordProperties",
+                        "in": "query",
+                        "description": "Record property system names to include in the schema. If omitted, all properties are returned.",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "x-ms-summary": "Record Properties",
+                        "x-ms-visibility": "advanced"
                     }
                 ],
                 "responses": {
@@ -6485,6 +6498,83 @@
             "description": "The records matching the query.",
             "items": {
                 "$ref": "#/definitions/recordGetFormatted_object"
+            },
+            "title": "Records",
+            "type": "array",
+            "x-ms-visibility": "advanced"
+        },
+        "recordGetFormattedV2_object": {
+            "description": "A record and its associated data.",
+            "properties": {
+                "counterpartyName": {
+                    "$ref": "#/definitions/counterpartyNameGet_string"
+                },
+                "attachments": {
+                    "$ref": "#/definitions/recordAttachmentsGet_object"
+                },
+                "childIds": {
+                    "$ref": "#/definitions/recordChildIdsGet_array"
+                },
+                "id": {
+                    "$ref": "#/definitions/recordId_string"
+                },
+                "ironcladId": {
+                    "$ref": "#/definitions/recordIroncladId_string"
+                },
+                "lastUpdated": {
+                    "$ref": "#/definitions/lastUpdated_string"
+                },
+                "links": {
+                    "$ref": "#/definitions/recordLinksGet_array"
+                },
+                "name": {
+                    "$ref": "#/definitions/recordName_string"
+                },
+                "parentId": {
+                    "$ref": "#/definitions/recordParentGet_string"
+                },
+                "formattedProperties": {
+                    "description": "The OpenAPI formatted properties of the record.",
+                    "title": "Formatted Properties",
+                    "type": "object",
+                    "x-ms-dynamic-properties": {
+                        "itemValuePath": "",
+                        "operationId": "RetrieveFormattedRecordSchema",
+                        "parameters": {
+                            "recordProperties": {
+                                "parameterReference": "body/recordProperties"
+                            }
+                        }
+                    },
+                    "x-ms-dynamic-schema": {
+                        "operationId": "RetrieveFormattedRecordSchema",
+                        "parameters": {
+                            "recordProperties": {
+                                "parameter": "body/recordProperties"
+                            }
+                        },
+                        "value-path": "properties"
+                    },
+                    "x-ms-visibility": "important"
+                },
+                "recordType": {
+                    "$ref": "#/definitions/recordTypeGet_string"
+                },
+                "source": {
+                    "$ref": "#/definitions/recordSource_object"
+                },
+                "label": {
+                    "$ref": "#/definitions/recordLabelGet_string"
+                }
+            },
+            "title": "Record",
+            "type": "object",
+            "x-ms-visibility": "important"
+        },
+        "recordsGetFormattedV2_array": {
+            "description": "The records matching the query.",
+            "items": {
+                "$ref": "#/definitions/recordGetFormattedV2_object"
             },
             "title": "Records",
             "type": "array",
