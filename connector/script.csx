@@ -3768,6 +3768,8 @@ public class Script : ScriptBase
     /// <summary>
     /// Builds the formatted record schema response from raw record metadata,
     /// optionally filtering to a subset of properties via the recordProperties query parameter.
+    /// Returns a direct OpenAPI-compliant schema object: { "type": "object", "properties": { ... } }
+    /// where each key is a record property systemName and each value is a JSON Schema property definition.
     /// </summary>
     private async Task rtrRcdFmtSch_TransformResponse(HttpResponseMessage response)
     {
@@ -3775,15 +3777,65 @@ public class Script : ScriptBase
         var propertiesQuery = string.Join(",", propertiesValues);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         var metadata = JObject.Parse(content);
+
+        // Always build the full schema (pass propertiesQuery for filtering)
         var transformedData = rtrRcdSch_TransformRetrieveRecordSchemas(
             metadata,
             propertiesQuery,
             true
         );
-        var formattedSchema =
-            transformedData["formattedSchema"] as JObject ?? rtrRcdSch_CreateEmptyFormattedSchema();
 
-        response.Content = CreateJsonContent(formattedSchema.ToString());
+        // Extract the formattedSchema, which contains recordProperties/recordClauses/recordAttachments
+        var formattedSchema =
+            transformedData["formattedSchema"] as JObject;
+
+        // Build a flat OpenAPI schema with all property definitions directly under "properties"
+        var flatProperties = new JObject();
+
+        if (formattedSchema != null)
+        {
+            var schemaProps = formattedSchema["properties"] as JObject;
+            if (schemaProps != null)
+            {
+                // Merge recordProperties inner properties
+                var recordProps = schemaProps["recordProperties"]?["properties"] as JObject;
+                if (recordProps != null)
+                {
+                    foreach (var p in recordProps.Properties())
+                    {
+                        flatProperties[p.Name] = p.Value;
+                    }
+                }
+
+                // Merge recordClauses inner properties
+                var clauseProps = schemaProps["recordClauses"]?["properties"] as JObject;
+                if (clauseProps != null)
+                {
+                    foreach (var p in clauseProps.Properties())
+                    {
+                        flatProperties[p.Name] = p.Value;
+                    }
+                }
+
+                // Merge recordAttachments inner properties
+                var attachmentProps = schemaProps["recordAttachments"]?["properties"] as JObject;
+                if (attachmentProps != null)
+                {
+                    foreach (var p in attachmentProps.Properties())
+                    {
+                        flatProperties[p.Name] = p.Value;
+                    }
+                }
+            }
+        }
+
+        var result = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = flatProperties
+        };
+
+        response.Content = CreateJsonContent(result.ToString());
     }
 
     /// <summary>
@@ -3993,128 +4045,121 @@ public class Script : ScriptBase
 
             if (includeFormattedSchema)
             {
-                if (!string.IsNullOrWhiteSpace(propertiesQuery))
+                var propertiesSchema = new JObject();
+
+                foreach (var prop in formattedProperties)
                 {
-                    var propertiesSchema = new JObject();
+                    var propertyObj = prop as JObject;
+                    var propertyName = propertyObj["systemName"].ToString();
+                    var propertyType = propertyObj["type"].ToString().ToLower();
+                    var displayName = propertyObj["displayName"].ToString();
+                    var description =
+                        propertyObj["description"]?.ToString() ?? $"The {displayName}.";
 
-                    foreach (var prop in formattedProperties)
-                    {
-                        var propertyObj = prop as JObject;
-                        var propertyName = propertyObj["systemName"].ToString();
-                        var propertyType = propertyObj["type"].ToString().ToLower();
-                        var displayName = propertyObj["displayName"].ToString();
-                        var description =
-                            propertyObj["description"]?.ToString() ?? $"The {displayName}.";
-
-                        JObject schemaProperty = FormatRecordPropertySchemaCore(
-                            propertyType,
-                            displayName,
-                            description,
-                            (recordDisplayName, recordDescription) =>
-                                new JObject
-                                {
-                                    ["type"] = "object",
-                                    ["title"] = recordDisplayName,
-                                    ["description"] = recordDescription,
-                                    ["x-ms-visibility"] = "important",
-                                    ["properties"] = new JObject
-                                    {
-                                        ["amount"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Amount",
-                                            ["description"] =
-                                                $"The monetary amount value for {recordDisplayName}."
-                                        },
-                                        ["currency"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = "Currency",
-                                            ["description"] =
-                                                $"The currency code for {recordDisplayName}."
-                                        }
-                                    }
-                                },
-                            (recordDisplayName, recordDescription) =>
-                                new JObject
-                                {
-                                    ["type"] = "object",
-                                    ["title"] = recordDisplayName,
-                                    ["description"] = recordDescription,
-                                    ["x-ms-visibility"] = "important",
-                                    ["properties"] = new JObject
-                                    {
-                                        ["isoDuration"] = new JObject
-                                        {
-                                            ["type"] = "string",
-                                            ["title"] = "ISO Duration",
-                                            ["description"] =
-                                                $"The ISO 8601 duration representation for {recordDisplayName}."
-                                        },
-                                        ["years"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Years",
-                                            ["description"] =
-                                                $"The number of years in {recordDisplayName}."
-                                        },
-                                        ["months"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Months",
-                                            ["description"] =
-                                                $"The number of months in {recordDisplayName}."
-                                        },
-                                        ["weeks"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Weeks",
-                                            ["description"] =
-                                                $"The number of weeks in {recordDisplayName}."
-                                        },
-                                        ["days"] = new JObject
-                                        {
-                                            ["type"] = "number",
-                                            ["title"] = "Days",
-                                            ["description"] =
-                                                $"The number of days in {recordDisplayName}."
-                                        }
-                                    }
-                                }
-                        );
-
-                        propertiesSchema[propertyName] = schemaProperty;
-                    }
-
-                    body["formattedSchema"] = new JObject
-                    {
-                        ["type"] = "object",
-                        ["description"] =
-                            "The record schema formatted for compatibility with the OpenAPI standard.",
-                        ["x-ms-visibility"] = "important",
-                        ["properties"] = new JObject
-                        {
-                            ["recordProperties"] = new JObject
+                    JObject schemaProperty = FormatRecordPropertySchemaCore(
+                        propertyType,
+                        displayName,
+                        description,
+                        (recordDisplayName, recordDescription) =>
+                            new JObject
                             {
                                 ["type"] = "object",
-                                ["title"] = "Properties",
-                                ["description"] = "The properties of the record.",
+                                ["title"] = recordDisplayName,
+                                ["description"] = recordDescription,
                                 ["x-ms-visibility"] = "important",
-                                ["properties"] = propertiesSchema
+                                ["properties"] = new JObject
+                                {
+                                    ["amount"] = new JObject
+                                    {
+                                        ["type"] = "number",
+                                        ["title"] = "Amount",
+                                        ["description"] =
+                                            $"The monetary amount value for {recordDisplayName}."
+                                    },
+                                    ["currency"] = new JObject
+                                    {
+                                        ["type"] = "string",
+                                        ["title"] = "Currency",
+                                        ["description"] =
+                                            $"The currency code for {recordDisplayName}."
+                                    }
+                                }
                             },
-                            ["recordClauses"] = rtrRcdSch_FormatRecordClausesSchema(
-                                formattedClauses
-                            ),
-                            ["recordAttachments"] = rtrRcdSch_CreateAttachmentSchema(
-                                formattedAttachments
-                            )
-                        }
-                    };
+                        (recordDisplayName, recordDescription) =>
+                            new JObject
+                            {
+                                ["type"] = "object",
+                                ["title"] = recordDisplayName,
+                                ["description"] = recordDescription,
+                                ["x-ms-visibility"] = "important",
+                                ["properties"] = new JObject
+                                {
+                                    ["isoDuration"] = new JObject
+                                    {
+                                        ["type"] = "string",
+                                        ["title"] = "ISO Duration",
+                                        ["description"] =
+                                            $"The ISO 8601 duration representation for {recordDisplayName}."
+                                    },
+                                    ["years"] = new JObject
+                                    {
+                                        ["type"] = "number",
+                                        ["title"] = "Years",
+                                        ["description"] =
+                                            $"The number of years in {recordDisplayName}."
+                                    },
+                                    ["months"] = new JObject
+                                    {
+                                        ["type"] = "number",
+                                        ["title"] = "Months",
+                                        ["description"] =
+                                            $"The number of months in {recordDisplayName}."
+                                    },
+                                    ["weeks"] = new JObject
+                                    {
+                                        ["type"] = "number",
+                                        ["title"] = "Weeks",
+                                        ["description"] =
+                                            $"The number of weeks in {recordDisplayName}."
+                                    },
+                                    ["days"] = new JObject
+                                    {
+                                        ["type"] = "number",
+                                        ["title"] = "Days",
+                                        ["description"] =
+                                            $"The number of days in {recordDisplayName}."
+                                    }
+                                }
+                            }
+                    );
+
+                    propertiesSchema[propertyName] = schemaProperty;
                 }
-                else
+
+                body["formattedSchema"] = new JObject
                 {
-                    body["formattedSchema"] = rtrRcdSch_CreateEmptyFormattedSchema();
-                }
+                    ["type"] = "object",
+                    ["description"] =
+                        "The record schema formatted for compatibility with the OpenAPI standard.",
+                    ["x-ms-visibility"] = "important",
+                    ["properties"] = new JObject
+                    {
+                        ["recordProperties"] = new JObject
+                        {
+                            ["type"] = "object",
+                            ["title"] = "Properties",
+                            ["description"] = "The properties of the record.",
+                            ["x-ms-visibility"] = "important",
+                            ["properties"] = propertiesSchema
+                        },
+                        ["recordClauses"] = rtrRcdSch_FormatRecordClausesSchema(
+                            formattedClauses
+                        ),
+                        ["recordAttachments"] = rtrRcdSch_CreateAttachmentSchema(
+                            formattedAttachments
+                        )
+                    }
+                };
             }
         }
 

@@ -394,7 +394,7 @@
                     }
                 },
                 "summary": "Retrieve Formatted Record Schema",
-                "x-ms-visibility": "internal"
+                "x-ms-visibility": "advanced"
             }
         },
         "/public/api/v1/records/smart-import": {
