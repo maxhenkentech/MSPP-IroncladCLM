@@ -11,8 +11,8 @@ A powerful custom connector for [Ironclad CLM](https://ironcladapp.com/), enabli
 - [Publisher](#-publisher)
 - [Prerequisites](#-prerequisites)
 - [Supported Operations](#-supported-operations)
+- [📖 Action Reference Guide](REFERENCE.md) — detailed inputs, outputs, and usage tips for every operation
 - [Getting Started](#-getting-started)
-- [Deployment Instructions](#-deployment-instructions)
 - [Known Issues and Limitations](#️-known-issues-and-limitations)
 - [Common Issues & Troubleshooting](#-common-issues--troubleshooting)
 - [FAQ](#-frequently-asked-questions)
@@ -28,11 +28,17 @@ Maximilian Henkensiefken (Amadeus IT Group, S.A.) in collaboration with Ironclad
 
 ## ✅ Prerequisites
 
-| Requirement | Description |
-|-------------|-------------|
-| 🔐 Ironclad Account | An Ironclad CLM account with APIs enabled (additional charges may apply) |
-| 🔑 API Credentials | Client ID and Secret from a registered application in Ironclad Admin panel |
-| 💼 Power Platform License | Licensed access to Power Automate, Power Apps, or Copilot Studio |
+<table style="width:100%">
+<thead>
+<tr><th>Requirement</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>🔐 Ironclad Account</td><td>An Ironclad CLM account with APIs enabled (additional charges may apply)</td></tr>
+<tr><td>🔑 API Credentials</td><td>Client ID and Secret from a registered application in Ironclad Admin panel</td></tr>
+<tr><td>💼 Power Platform License</td><td>Licensed access to Power Automate, Power Apps, or Copilot Studio</td></tr>
+<tr><td>🏗️ Environment Maker Role</td><td>Required in the Power Platform environment you are deploying to</td></tr>
+</tbody>
+</table>
 
 ---
 
@@ -40,188 +46,383 @@ Maximilian Henkensiefken (Amadeus IT Group, S.A.) in collaboration with Ironclad
 
 Almost all Ironclad API operations are available. For complete API documentation, visit the [Ironclad Developer Center](https://developer.ironcladapp.com/docs/getting-started).
 
+> 📖 **See the [Action Reference Guide](REFERENCE.md)** for detailed input/output documentation, usage patterns, and tips for every operation.
+
 ### 📋 Workflow Operations
 
-| Operation | Description |
-|-----------|-------------|
-| List all Workflow Schemas | Returns a list of workflow schemas |
-| Retrieve a Workflow Schema | Returns the fields used in the workflow's launch form |
-| List all Workflows | List all workflows in your Ironclad account |
-| Create a Workflow Synchronously | Launch a new workflow synchronously |
-| Create a Workflow Asynchronously | Launch a new workflow asynchronously |
-| Retrieve a Workflow | View the data associated with a specific workflow |
-| Update Workflow Metadata | Update the attributes on a workflow in the Review step |
-| Retrieve Async Workflow Status | Check the status of an asynchronously created workflow |
-| List all Workflow Approvals | Returns a list of approvals for the workflow |
-| Update Approval on a Workflow | Updates an approval to the specified status |
-| Cancel Workflow | Cancel a workflow |
-| Pause Workflow | Pause a workflow |
-| Resume Workflow | Resume a workflow |
-| Revert to Review Step | Reverts a workflow to the Review step |
-| List All Workflow Signers | Returns a list of workflow signers and their signature status |
-| Retrieve Approval Requests | Returns a list of workflow approval requests |
-| List all Comments | Return a list of comments on a workflow |
-| Create a Comment | Creates a comment in the workflow's activity feed |
-| Retrieve a Comment | Return a single comment for a specified workflow |
-| Retrieve a Workflow Document | Download a document associated with a specific workflow |
-| Create a Workflow Document | Create a document in the specified workflow attribute |
-| Retrieve Email Threads | List all email threads in the specified workflow |
-| Retrieve an Email Thread | List a single email thread for a specified workflow |
-| Retrieve Email Attachment | Retrieve an attachment from the specified email thread |
-| List all Workflow Participants | Returns a list of workflow participants |
-| Retrieve Turn History | An array of objects for each turn on a workflow |
-| Create a Signed Document | Upload a signed document to a workflow in sign step |
+#### Schemas
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-workflow-schemas">List all Workflow Schemas</a></td><td>Returns a list of workflow schemas</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-workflow-schema">Retrieve a Workflow Schema</a></td><td>Returns the fields used in the workflow's launch form</td></tr>
+</tbody>
+</table>
+
+#### Approvals
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-workflow-approvals">List all Workflow Approvals</a></td><td>Returns a list of approvals for the workflow</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-approval-requests">Retrieve Approval Requests</a></td><td>Returns a list of workflow approval requests</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-approval-on-a-workflow">Update Approval on a Workflow</a></td><td>Updates an approval to the specified status</td></tr>
+</tbody>
+</table>
+
+#### Comments
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-comment">Create a Comment</a></td><td>Creates a comment in the workflow's activity feed</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-comments">List all Comments</a></td><td>Return a list of comments on a workflow</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-comment">Retrieve a Comment</a></td><td>Return a single comment for a specified workflow</td></tr>
+</tbody>
+</table>
+
+#### Documents
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-signed-document">Create a Signed Document</a></td><td>Upload a signed document to a workflow in sign step</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-workflow-document">Create a Workflow Document</a></td><td>Create a document in the specified workflow attribute</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-workflow-document">Retrieve a Workflow Document</a></td><td>Download a document associated with a specific workflow</td></tr>
+</tbody>
+</table>
+
+#### Email
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-an-email-thread">Retrieve an Email Thread</a></td><td>List a single email thread for a specified workflow</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-email-threads">Retrieve Email Threads</a></td><td>List all email threads in the specified workflow</td></tr>
+</tbody>
+</table>
+
+#### Participants & Turn History
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-workflow-participants">List all Workflow Participants</a></td><td>Returns a list of workflow participants</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-turn-history">Retrieve Turn History</a></td><td>An array of objects for each turn on a workflow</td></tr>
+</tbody>
+</table>
+
+#### Workflow Lifecycle
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#cancel-workflow">Cancel Workflow</a></td><td>Cancel a workflow</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-workflow-asynchronously">Create a Workflow Asynchronously</a></td><td>Launch a new workflow asynchronously</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-workflow-raw-body">Create a Workflow (Raw Body)</a></td><td>Launch a workflow with a raw JSON request body (no schema transformation)</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-workflow-synchronously">Create a Workflow Synchronously</a></td><td>Launch a new workflow synchronously</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-workflows">List all Workflows</a></td><td>List all workflows in your Ironclad account</td></tr>
+<tr><td><code>POST</code></td><td><strong><a href="REFERENCE.md#list-all-workflows-v2">List All Workflows V2</a></strong> ⭐</td><td>Query workflows with structured filtering, status multi-select, and formatted output</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#pause-workflow">Pause Workflow</a></td><td>Pause a workflow</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-workflow">Retrieve a Workflow</a></td><td>View the data associated with a specific workflow</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-async-workflow-status">Retrieve Async Workflow Status</a></td><td>Check the status of an asynchronously created workflow</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#resume-workflow">Resume Workflow</a></td><td>Resume a workflow</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#revert-to-review-step">Revert to Review Step</a></td><td>Reverts a workflow to the Review step</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-workflow-metadata">Update Workflow Metadata</a></td><td>Update the attributes on a workflow in the Review step</td></tr>
+</tbody>
+</table>
 
 ### ✍️ Signature Operations
 
 > 🧪 **Note:** Operations marked with 🧪 are untested (Ironclad Signature not available to publisher).
 
-| Operation | Description |
-|-----------|-------------|
-| Retrieve Sign Status | Returns sign status information for a workflow in the sign step |
-| Send Signature Request | Send a signature packet out for signature |
-| Cancel Signature Request | Cancel a signature request that was out for signature |
-| Update a Signer | Update a signer's details (email, name) |
-| Delete a Signer | Remove a signer from a signature packet ⚠️ *Cancels current packet* |
-| Remind a Signer | Send a reminder to a signer |
-| 🧪 Create Recipient URL | Create a recipient URL for signature access *(Ironclad Signature only)* |
-| 🧪 Create Embeddable Recipient URL | Create an embeddable URL for iframe integration *(Ironclad Signature only)* |
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#cancel-signature-request">Cancel Signature Request</a></td><td>Cancel a signature request that was out for signature</td></tr>
+<tr><td><code>POST</code></td><td>🧪 <a href="REFERENCE.md#create-embeddable-recipient-url">Create Embeddable Recipient URL</a></td><td>Create an embeddable URL for iframe integration <em>(Ironclad Signature only)</em></td></tr>
+<tr><td><code>POST</code></td><td>🧪 <a href="REFERENCE.md#create-recipient-url">Create Recipient URL</a></td><td>Create a recipient URL for signature access <em>(Ironclad Signature only)</em></td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#delete-a-signer">Delete a Signer</a></td><td>Remove a signer from a signature packet ⚠️ <em>Cancels current packet</em></td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-workflow-signers">List All Workflow Signers</a></td><td>Returns a list of workflow signers and their signature status</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#remind-a-signer">Remind a Signer</a></td><td>Send a reminder to a signer</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-sign-status">Retrieve Sign Status</a></td><td>Returns sign status information for a workflow in the sign step</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#send-signature-request">Send Signature Request</a></td><td>Send a signature packet out for signature</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-a-signer">Update a Signer</a></td><td>Update a signer's details (email, name)</td></tr>
+</tbody>
+</table>
 
 ### 📤 Data Export Operations
 
 > 💰 *Requires Security & Data Pro add-on*
 
-| Operation | Description |
-|-----------|-------------|
-| Create a Data Export Job | Submit a request to generate a new data export |
-| Retrieve Data Export Job Status | Check the status of a data export job |
-| Download Data Export File | Download the completed data export file |
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-data-export-job">Create a Data Export Job</a></td><td>Submit a request to generate a new data export</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#download-data-export-file">Download Data Export File</a></td><td>Download the completed data export file</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-data-export-job-status">Retrieve Data Export Job Status</a></td><td>Check the status of a data export job</td></tr>
+</tbody>
+</table>
 
 ### 📁 Record Operations
 
-| Operation | Description |
-|-----------|-------------|
-| List All Records | View all records in the company, with filtering available |
-| Create a Record | Create a contract record with specified metadata properties |
-| Retrieve XLSX Export | Export a records report with filtering options |
-| Retrieve Record Schemas | View the schema associated with contract records |
-| Retrieve Predictions | Get status of predictions for smart import records |
-| Create Smart Import Record | Upload a file to create a record with smart import |
-| Upload to Existing Import | Add a file to an existing import |
-| Retrieve Record | View a specific record and its associated data |
-| Replace a Record | Update an existing record with new metadata |
-| Update Record Metadata | Update specific fields on a record |
-| Delete a Record | Delete an existing record |
-| Retrieve Record Signed Copy | View the signed copy of a specific record |
-| Create Record Signed Copy | Create a signed copy for a specific record |
-| Remove Record Signed Copy | Remove the signed copy from a specific record |
-| Retrieve Attachment | View an attachment on a specific record |
-| Create Attachment | Create an attachment for a specific record |
-| Delete Attachment | Remove an attachment from a specific record |
+> ℹ️ **List All Records V2** (`POST`) is the recommended way to query records. It supports structured body filtering, multi-select property filters, and guided filter expressions. The older `List All Records` (`GET`) is preserved for backwards compatibility but is discouraged for new flows.
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-an-attachment">Create an Attachment</a></td><td>Create an attachment for a specific record</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-record">Create a Record</a></td><td>Create a contract record with specified metadata properties</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-record-signed-copy">Create Record Signed Copy</a></td><td>Create a signed copy for a specific record</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-a-smart-import-record">Create a Smart Import Record</a></td><td>Upload a file to create a record with smart import</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#delete-a-record">Delete a Record</a></td><td>Delete an existing record</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#remove-an-attachment">Delete Attachment</a></td><td>Remove an attachment from a specific record</td></tr>
+<tr><td><del><code>GET</code></del></td><td><del><a href="REFERENCE.md#list-all-records-deprecated">List All Records</a></del></td><td><del>View all records in the company — deprecated, use List All Records V2</del></td></tr>
+<tr><td><code>POST</code></td><td><strong><a href="REFERENCE.md#list-all-records-v2">List All Records V2</a></strong> ⭐</td><td>Query records with structured body, multi-select filtering, and guided expressions</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#remove-record-signed-copy">Remove Record Signed Copy</a></td><td>Remove the signed copy from a specific record</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-record">Retrieve a Record</a></td><td>View a specific record and its associated data</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-an-attachment">Retrieve an Attachment</a></td><td>View an attachment on a specific record</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-formatted-record-schema">Retrieve Formatted Record Schema</a></td><td>Return the formatted record schema for a specific section</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-predictions">Retrieve Predictions</a></td><td>Get status of predictions for smart import records</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-record-schemas">Retrieve Record Schemas</a></td><td>View the schema associated with contract records</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-record-signed-copy">Retrieve Record Signed Copy</a></td><td>View the signed copy of a specific record</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-xlsx-export">Retrieve XLSX Export</a></td><td>Export a records report with filtering options</td></tr>
+<tr><td><code>PUT</code></td><td><a href="REFERENCE.md#replace-a-record">Replace a Record</a></td><td>Update an existing record with new metadata</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-record-metadata">Update Record Metadata</a></td><td>Update specific fields on a record</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#upload-to-existing-import">Upload to Existing Import</a></td><td>Add a file to an existing smart import</td></tr>
+</tbody>
+</table>
+
+### 🔔 Webhook Operations
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-webhook">Create Webhook</a></td><td>Register a new webhook endpoint</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#delete-a-webhook">Delete a Webhook</a></td><td>Remove a registered webhook</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-a-webhook">Retrieve a Webhook</a></td><td>Get details of a specific webhook</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-a-webhook">Update a Webhook</a></td><td>Modify a webhook's configuration</td></tr>
+</tbody>
+</table>
+
+### 🔗 Entity Operations
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-an-entity">Create an Entity</a></td><td>Create a new entity</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#delete-an-entity">Delete an Entity</a></td><td>Delete an entity</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#get-relationship-type">Get Relationship Type</a></td><td>Get details of a specific entity relationship type</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-all-entities">List All Entities</a></td><td>List all entities</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-relationship-types">List Relationship Types</a></td><td>List all entity relationship types</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-an-entity">Retrieve an Entity</a></td><td>Get details of a specific entity</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-an-entity">Update an Entity</a></td><td>Update entity metadata</td></tr>
+</tbody>
+</table>
 
 ### 👥 User & Group Operations (SCIM)
 
-| Operation | Users | Groups |
-|-----------|-------|--------|
-| List | ✅ | ✅ |
-| Create | ✅ | ✅ |
-| Retrieve | ✅ | ✅ |
-| Replace | ✅ | ✅ |
-| Update | ✅ | ✅ |
-| Delete | ✅ | ✅ |
+#### Users
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#users">Create a User</a></td><td>Provision a new user</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#users">Delete a User</a></td><td>Remove a user</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#users">List all Users</a></td><td>List all provisioned users</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#users">Retrieve a User</a></td><td>Retrieve a specific user</td></tr>
+<tr><td><code>PUT</code></td><td><a href="REFERENCE.md#users">Replace a User</a></td><td>Replace a user's full record</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#users">Update a User</a></td><td>Update a user's attributes</td></tr>
+</tbody>
+</table>
+
+#### Groups
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#groups">Create a Group</a></td><td>Provision a new group</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#groups">Delete a Group</a></td><td>Remove a group</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#groups">List all Groups</a></td><td>List all provisioned groups</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#groups">Retrieve a Group</a></td><td>Retrieve a specific group</td></tr>
+<tr><td><code>PUT</code></td><td><a href="REFERENCE.md#groups">Replace a Group</a></td><td>Replace a group's full record</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#groups">Update a Group</a></td><td>Update a group's attributes</td></tr>
+</tbody>
+</table>
 
 ---
 
 ## 🚀 Getting Started
 
-### 🌍 Supported Environments
+> 📚 For official Ironclad setup documentation, see [Setting up the Ironclad Power Automate Connector](https://developer.ironcladapp.com/docs/setting-up-the-ironclad-power-automate-connector).
 
-| Environment | URL | Description |
-|-------------|-----|-------------|
-| 🌐 Global | `ironcladapp.com` | Production (majority of customers) |
-| 🇪🇺 EU1 | `eu1.ironcladapp.com` | EU Production |
-| 🧪 Demo | `demo.ironcladapp.com` | Sandbox environment |
-| 🔮 Preview | `preview.ironcladapp.com` | Preview features |
+### Quick-start overview
 
-> ⚠️ Each environment requires separate client application registration.
+<table style="width:100%">
+<thead>
+<tr><th>#</th><th>Step</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><strong>Install the connector</strong> in your Power Platform environment</td><td>Installer prints the callback URL automatically</td></tr>
+<tr><td>2</td><td><strong>Note the OAuth callback URL</strong> from the installer output</td><td>Manual retrieval only needed if not using the script</td></tr>
+<tr><td>3</td><td><strong>Register an Ironclad application</strong> with the callback URL and all required scopes</td><td>In Ironclad Company Settings → API</td></tr>
+<tr><td>4</td><td><strong>Create a connection</strong> in Power Automate / Power Apps using your Client ID and Secret</td><td>—</td></tr>
+</tbody>
+</table>
 
-### 🔐 Obtaining Credentials
-
-1. Log in to your Ironclad account
-2. Navigate to **Company Settings** > **API** tab
-3. Click **Create new app**
-4. Configure:
-   - Title and Description
-   - Grant Types → Select **Authorization Code**
-   - Redirect URIs
-   - Required Resource Scopes
-5. Save the **Client ID** and **Client Secret** securely
-
-📚 For more details, visit the [Ironclad Developer Hub - API Authentication](https://developer.ironcladapp.com/reference/authentication-api).
+> ⚠️ Each Ironclad environment (Global, EU1, Demo, Preview) requires a separate application registration. The OAuth callback URL is different for each Power Platform environment — if you deploy to multiple environments, all their callback URLs must be added to the same Ironclad app's Redirect URIs.
 
 ---
 
-## 📦 Deployment Instructions
+### 🌍 Supported Environments
 
-### Prerequisites
+<table style="width:100%">
+<thead>
+<tr><th>Environment</th><th>URL</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>🌐 Global</td><td><code>ironcladapp.com</code></td><td>Production (majority of customers)</td></tr>
+<tr><td>🇪🇺 EU1</td><td><code>eu1.ironcladapp.com</code></td><td>EU Production</td></tr>
+<tr><td>🧪 Demo</td><td><code>demo.ironcladapp.com</code></td><td>Sandbox environment</td></tr>
+<tr><td>🔮 Preview</td><td><code>preview.ironcladapp.com</code></td><td>Preview features</td></tr>
+</tbody>
+</table>
 
-- [Microsoft Power Platform CLI (paconn)](https://learn.microsoft.com/en-us/connectors/custom-connectors/paconn-cli) installed
-- Access to a Power Platform environment with custom connector permissions
-- An Ironclad account with API access enabled
+---
 
-### Step 1️⃣: Deploy the Custom Connector
+### Step 1️⃣: Install the Connector
 
-Open a terminal and navigate to the connector directory:
+#### Recommended: Run the installer directly (no clone needed)
 
-```bash
-cd "Custom Connectors/Ironclad CLM"
+**Windows — PowerShell (no Python required)**
+
+```powershell
+irm https://raw.githubusercontent.com/maxhenkentech/MSPP-IroncladCLM/main/scripts/manage-ironclad-connector.ps1 | iex
 ```
 
-Log in to Power Platform:
+**macOS / Linux**
 
 ```bash
+python3 -c 'import pathlib, runpy, tempfile, urllib.request; p = pathlib.Path(tempfile.gettempdir()) / "manage-ironclad-connector.py"; urllib.request.urlretrieve("https://raw.githubusercontent.com/maxhenkentech/MSPP-IroncladCLM/main/scripts/manage-ironclad-connector.py", p); runpy.run_path(str(p), run_name="__main__")'
+```
+
+The installer will:
+
+1. Log in to Power Platform (`paconn login`)
+2. List your environments and let you select one
+3. Ask whether you want to **install** (new) or **update** (existing connector)
+4. Download the latest connector payload from GitHub
+5. Run `paconn create` or `paconn update`
+6. **Print the OAuth callback URL** — copy this for Step 2
+
+> 💡 Both installers use a `dummy` OAuth secret placeholder. The real client ID and client secret are entered later when creating a connection.
+
+#### Alternative: Run from a local clone
+
+**Windows:**
+
+```powershell
+.\scripts\manage-ironclad-connector.ps1
+```
+
+**macOS / Linux:**
+
+```bash
+python3 ./scripts/manage-ironclad-connector.py
+```
+
+#### Alternative: Manual deployment with paconn
+
+Navigate to the `connector` directory in the repository:
+
+```powershell
+cd connector
 paconn login
-```
-
-Deploy the custom connector:
-
-```bash
 paconn create --api-def apiDefinition.swagger.json --api-prop apiProperties.json --script script.csx --icon icon.png --secret dummy
 ```
 
-> 💡 The `--secret dummy` parameter is a placeholder. The actual client secret will be configured when creating a connection.
+> 💡 The `--secret dummy` parameter is a placeholder. The actual client secret is configured when creating a connection.
 
-### Step 2️⃣: Retrieve the Callback URL
+##### Retrieving the callback URL manually
 
-After deploying, retrieve the OAuth callback URL to configure in Ironclad:
+> ℹ️ **Only needed if you deployed manually.** The installer script prints the callback URL automatically — skip this if you used the script.
+
+After manual deployment, retrieve the OAuth callback URL from Power Platform:
 
 1. Open [Power Automate](https://make.powerautomate.com) or [Power Apps](https://make.powerapps.com)
 2. Navigate to **Custom Connectors**
 3. Find and open **Ironclad CLM**
-4. Go to the **Security** tab
-5. Click **Edit**
-6. Ensure **OAuth 2.0** is selected
-7. Copy the **Redirect URL** at the bottom
+4. Go to the **Security** tab → **Edit**
+5. Ensure **OAuth 2.0** is selected
+6. Copy the **Redirect URL** at the bottom
 
 ![Copy Redirect URL from Power Platform](screenshots/Copy%20Redirect%20URL.png)
 
 > ⚠️ **CRITICAL:** Leave this page **WITHOUT SAVING**. Do not click "Update connector". Simply close the tab after copying the URL.
 
-### Step 3️⃣: Configure the Ironclad Application
+The redirect URL follows the format: `https://global.consent.azure-apim.net/redirect/<connector-id-without-shared_>`.
+
+##### Updating existing connectors
+
+- If a per-environment settings file already exists, the script uses it automatically.
+- If no saved settings file exists, the script queries the selected environment for matching connectors.
+- Settings files are stored in:
+  - **macOS:** `~/Library/Application Support/IroncladCLM/deployments/<environment-guid>_settings.json`
+  - **Windows:** `%APPDATA%\\IroncladCLM\\deployments\\<environment-guid>_settings.json`
+  - **Linux:** `$XDG_STATE_HOME/IroncladCLM/deployments/<environment-guid>_settings.json`
+
+---
+
+### Step 2️⃣: Register an Ironclad Application
+
+Using the callback URL from Step 1:
 
 1. Log in to your Ironclad account
 2. Navigate to **Company Settings** > **API** tab
-3. Click **Create new app** (or edit existing)
+3. Click **Create new app** (or edit an existing one)
 4. Configure:
    - **Title**: e.g., "Power Platform Connector"
-   - **Grant Types**: Select "Authorization Code"
-   - **Redirect URIs**: Paste the callback URL from Step 2
-   - **Resource Scopes**: Select all [required scopes](#-required-scopes)
-5. Save and securely store the **Client ID** and **Client Secret**
+   - **Grant Types**: Select **Authorization Code**
+   - **Redirect URIs**: Paste the callback URL from Step 1
+   - **Resource Scopes**: Select **all** [required scopes](#-required-scopes)
+5. Click **Save** and securely store the **Client ID** and **Client Secret**
 
 ![Paste Redirect URL in Ironclad](screenshots/Paste%20Redirect%20URL.png)
 
-### Step 4️⃣: Create a Connection
+📚 For more details, visit the [Ironclad Developer Hub — API Authentication](https://developer.ironcladapp.com/reference/authentication-api).
+
+---
+
+### Step 3️⃣: Create a Connection
 
 1. Return to Power Automate or Power Apps
 2. Create a new flow/app using the Ironclad CLM connector
@@ -230,6 +431,8 @@ After deploying, retrieve the OAuth callback URL to configure in Ironclad:
    - Enter your **Client ID**
    - Enter your **Client Secret**
 4. Complete the OAuth authorization flow
+
+---
 
 ### 🔑 Required Scopes
 
@@ -342,22 +545,29 @@ scim.schemas.readSchemas
 
 When updating workflow or record metadata, use the raw data format:
 
-| Type | ❌ Don't Use | ✅ Use |
-|------|-------------|--------|
-| Monetary | "EUR 1,598.12" | `{"currency": "EUR", "amount": "1598.12"}` |
-| Date | "31st January 2024" | `"2024-01-31T00:00:00Z"` |
-| Address | Single line | Use `\n` for line breaks |
+<table style="width:100%">
+<thead>
+<tr><th>Type</th><th>❌ Don't Use</th><th>✅ Use</th></tr>
+</thead>
+<tbody>
+<tr><td>Monetary</td><td>"EUR 1,598.12"</td><td><code>{"currency": "EUR", "amount": "1598.12"}</code></td></tr>
+<tr><td>Date</td><td>"31st January 2024"</td><td><code>"2024-01-31T00:00:00Z"</code></td></tr>
+<tr><td>Address</td><td>Single line</td><td>Use <code>\n</code> for line breaks</td></tr>
+</tbody>
+</table>
 
 > This only applies to update operations, not reads.
 
 ### ⏱️ Synchronous Workflow Creation
 
-The synchronous workflow creation has limitations:
+The synchronous workflow creation action has a timeout imposed by Microsoft Power Platform:
 
-- ✅ Works for simple workflows with basic approvers
-- ❌ Often fails for complex workflows (5-second timeout)
+- ✅ Works reliably for simple workflows with basic approvers
+- ❌ Often fails for complex workflows due to the timeout
 
-**Recommended Pattern for Complex Workflows:**
+> 🆕 **If your connector was first installed after mid-2025**, Microsoft has increased the action timeout and you can now safely use synchronous workflow creation for most cases. However, **updating an older connector installation does not retroactively raise the timeout** — if you updated from a pre-mid-2025 install, the old limit still applies. In that case, use the asynchronous pattern below.
+
+**Recommended Pattern for Complex Workflows (or pre-mid-2025 installs):**
 1. Use `Create a Workflow Asynchronously`
 2. Add a delay (10+ seconds)
 3. Check status with `Retrieve Async Workflow Status`
@@ -369,23 +579,54 @@ The synchronous workflow creation has limitations:
 - Approver lists require explicit workflow specification
 - Dynamic workflow IDs prevent schema fetching at runtime
 - Affects operations like `Update Approval on a Workflow`
+- Power Platform enforces an approximate 8 MB limit on the full response used for dynamic schema resolution, so record schema consumers use an internal schema-only endpoint instead of the larger `Retrieve Record Schemas` payload
 
 ### ✍️ Signature Operations
 
 > 🧪 **Note:** The Ironclad Signature-specific features (Recipient URLs, Embedded URLs) have not been tested as the publisher does not have access to Ironclad Signature. These operations are implemented based on API documentation. Please report any issues.
 
-| Consideration | Details |
-|---------------|---------|
-| Workflow Step | Must be in **Sign** step |
-| Delete Signer | ⚠️ Cancels current signature packet |
-| Adobe Sign | Reminding one signer reminds ALL; updating cancels request |
-| Embedded URLs | Ironclad Signature only (not Adobe Sign/DocuSign) |
-| Tag Requirements | All signers need signature/initials tags before sending |
+<table style="width:100%">
+<thead>
+<tr><th>Consideration</th><th>Details</th></tr>
+</thead>
+<tbody>
+<tr><td>Workflow Step</td><td>Must be in <strong>Sign</strong> step</td></tr>
+<tr><td>Delete Signer</td><td>⚠️ Cancels current signature packet</td></tr>
+<tr><td>Adobe Sign</td><td>Reminding one signer reminds ALL; updating cancels request</td></tr>
+<tr><td>Embedded URLs</td><td>Ironclad Signature only (not Adobe Sign/DocuSign)</td></tr>
+<tr><td>Tag Requirements</td><td>All signers need signature/initials tags before sending</td></tr>
+</tbody>
+</table>
 
-### 📤 Data Export
+### 🌍 "Unable to find an unassigned function app in region" deployment error
 
-- 💰 Requires paid **Security & Data Pro** add-on
-- ⏳ Asynchronous process - poll status before downloading
+During `paconn create`, Power Platform may return:
+
+```
+Unable to find an unassigned function app in '<region>'
+```
+
+**Cause:** This is a known, intermittently occurring Microsoft Power Platform infrastructure issue. The connector requires a dedicated function app slot in your region.
+
+**This error is often transient.** Wait a few minutes and run the installer again — it frequently resolves on its own. If the error persists after 24 hours, raise a **Microsoft support ticket** and ask them to provision a function app slot in your region. Once Microsoft resolves this on their side, rerunning the installer will succeed.
+
+---
+
+### 🖥️ Power Automate Flow Editor — Custom Connector Actions Not Displaying Correctly
+
+There are currently active bugs in both Flow Editor v1 and v2 that can prevent custom connector actions from displaying properly in the action picker.
+
+**Cause:** Acknowledged bugs in Power Automate. Microsoft is aware and working on a fix.
+
+**Workaround:**
+- Use **Flow Editor v1** (not v2)
+- Do **not** click "See more" in the workflow action list — the actions that matter are already visible, and clicking "See more" may trigger the display issue. There is nothing additional to see there.
+
+---
+
+## Change Log
+
+- Corrected the Swagger `RetrievePredictions` operation ID spelling and fixed the records export success description text from `Reecords Exported` to `Records Exported`.
 
 ---
 
@@ -396,7 +637,7 @@ The synchronous workflow creation has limitations:
 **Cause:** The callback URL was not properly configured in Ironclad.
 
 **Solution:**
-1. Did you get the callback URL from Power Platform as described in [Step 2](#step-2️⃣-retrieve-the-callback-url)?
+1. Did you get the callback URL from the installer output or from Power Platform as described in [Step 1 — Retrieving the callback URL manually](#retrieving-the-callback-url-manually)?
 2. Did you click **Save** in the Ironclad app after adding the Redirect URI?
 
 ---
@@ -417,11 +658,16 @@ The synchronous workflow creation has limitations:
 
 **Solution - Check the following:**
 
-| Check | Action |
-|-------|--------|
-| Environment mismatch | Did you select the correct Ironclad environment (Global, EU1, Demo, Preview) in the connector? The environment must match where your app is registered. |
-| Unsaved changes | Did you click **Save** in the Ironclad app after creating the app and generating the secret? |
-| Accidental connector save | Did you accidentally save the custom connector when retrieving the callback URL from the Security tab? If so, you need to **redeploy** the connector using the steps in [Step 1](#step-1️⃣-deploy-the-custom-connector). |
+<table style="width:100%">
+<thead>
+<tr><th>Check</th><th>Action</th></tr>
+</thead>
+<tbody>
+<tr><td>Environment mismatch</td><td>Did you select the correct Ironclad environment (Global, EU1, Demo, Preview) in the connector? The environment must match where your app is registered.</td></tr>
+<tr><td>Unsaved changes</td><td>Did you click <strong>Save</strong> in the Ironclad app after creating the app and generating the secret?</td></tr>
+<tr><td>Accidental connector save</td><td>Did you accidentally save the custom connector when retrieving the callback URL from the Security tab? If so, you need to <strong>redeploy</strong> the connector — use the installer or the manual steps in <a href="#step-1️⃣-install-the-connector">Step 1</a>.</td></tr>
+</tbody>
+</table>
 
 ---
 
@@ -433,10 +679,7 @@ The synchronous workflow creation has limitations:
 1. Open the custom connector in Power Platform
 2. Go to the **4. Code** tab
 3. Verify that the code is visible and the toggle is **switched ON**
-4. If you cannot see the code, redeploy the connector with the `--script` parameter:
-   ```bash
-   paconn create --api-def apiDefinition.swagger.json --api-prop apiProperties.json --script script.csx --icon icon.png --secret dummy
-   ```
+4. If the code is missing, redeploy the connector using the installer or the manual `paconn` steps in [Step 1](#step-1️⃣-install-the-connector)
 
 ---
 
