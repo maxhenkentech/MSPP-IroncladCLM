@@ -279,6 +279,35 @@ Almost all Ironclad API operations are available. For complete API documentation
 </tbody>
 </table>
 
+### 📌 Obligation Operations
+
+> ⚠️ **Important:** Ironclad does not expose obligation property schemas via the API. When creating or updating obligations, property keys and their expected types must be entered manually based on your Ironclad configuration in the Data Manager.
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-an-obligation">Create an Obligation</a></td><td>Create a new obligation on a record</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-an-obligation">Retrieve an Obligation</a></td><td>View a specific obligation and its associated data</td></tr>
+<tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-an-obligation">Update an Obligation</a></td><td>Update an existing obligation</td></tr>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#list-all-obligations">List All Obligations</a></td><td>Query obligations with type filtering, property filters, and sort options</td></tr>
+</tbody>
+</table>
+
+### 🔍 Search Operations
+
+> 💡 **Note:** The `public.search.conversational` scope may not be available in all Ironclad instances. If you receive a scope error when connecting, contact [Ironclad Support](https://support.ironcladapp.com) to have this feature enabled for your account. Alternatively, use the **Demo (No Conversational Search)** connection type to exclude this scope.
+
+<table style="width:100%">
+<thead>
+<tr><th>Method</th><th>Operation</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>POST</code></td><td><a href="REFERENCE.md#conversational-search">Conversational Search</a></td><td>Search Ironclad contracts and records using natural language queries</td></tr>
+</tbody>
+</table>
+
 ---
 
 ## 🚀 Getting Started
@@ -313,6 +342,7 @@ Almost all Ironclad API operations are available. For complete API documentation
 <tr><td>🌐 Global</td><td><code>ironcladapp.com</code></td><td>Production (majority of customers)</td></tr>
 <tr><td>🇪🇺 EU1</td><td><code>eu1.ironcladapp.com</code></td><td>EU Production</td></tr>
 <tr><td>🧪 Demo</td><td><code>demo.ironcladapp.com</code></td><td>Sandbox environment</td></tr>
+<tr><td>🧪 Demo (No Conversational Search)</td><td><code>demo.ironcladapp.com</code></td><td>Sandbox environment — <code>public.search.conversational</code> scope excluded. Use this if your Ironclad instance does not have Conversational Search enabled.</td></tr>
 <tr><td>🔮 Preview</td><td><code>preview.ironcladapp.com</code></td><td>Preview features</td></tr>
 </tbody>
 </table>
@@ -537,6 +567,27 @@ scim.schemas.readSchemas
 ```
 </details>
 
+<details>
+<summary><b>📌 Obligations</b></summary>
+
+```
+public.obligations.readObligations
+public.obligations.createObligations
+public.obligations.updateObligations
+public.obligations.deleteObligations
+```
+</details>
+
+<details>
+<summary><b>🔍 Search</b> (may require enablement — contact Ironclad)</summary>
+
+```
+public.search.conversational
+```
+
+> ⚠️ **This scope may not be available in all Ironclad instances.** If you see an "invalid scope" or similar error during the OAuth connection flow, contact [Ironclad Support](https://support.ironcladapp.com) to request enablement for your account. If your instance does not support Conversational Search, use the **Demo (No Conversational Search)** connection type, which excludes this scope.
+</details>
+
 ---
 
 ## ⚠️ Known Issues and Limitations
@@ -580,6 +631,30 @@ The synchronous workflow creation action has a timeout imposed by Microsoft Powe
 - Dynamic workflow IDs prevent schema fetching at runtime
 - Affects operations like `Update Approval on a Workflow`
 - Power Platform enforces an approximate 8 MB limit on the full response used for dynamic schema resolution, so record schema consumers use an internal schema-only endpoint instead of the larger `Retrieve Record Schemas` payload
+
+### 📌 Obligation Property Keys Are Not Schema-Driven
+
+The Ironclad API does not expose obligation property schemas. When creating or updating obligations, the property keys and expected value types are not available to the connector at runtime:
+
+- Property key names must be entered manually (e.g., `dueDate`, `assignee`, `notes`)
+- Value types are not validated by the connector — incorrect types will return an API error
+- Available obligation types and their property keys are configured in the **Ironclad Data Manager** under **Obligation Types**
+
+For guidance on your organisation's obligation schema, check the Ironclad Data Manager or contact your Ironclad administrator.
+
+### 🚫 Custom Values Blocked by Enum Restrictions (Fixed in v2.x)
+
+Certain connector fields previously had `enum` constraints that blocked users from entering custom values outside the built-in list:
+
+| Field | Operations Affected | What Was Blocked |
+|---|---|---|
+| **SCIM Group PATCH — Path** | Patch a SCIM Group | Custom SCIM group attributes beyond `members`, `displayName`, `externalId` |
+| **Obligation Type Key** | Create Obligation, Update Obligation | Custom type keys configured in the Ironclad Data Manager |
+| **Obligation Filter — Property** | List Obligations | Custom obligation property keys beyond the 6 built-in filterable properties |
+
+The `enum` restrictions have been removed from all three fields. You can now type any value directly or use expression mode to pass dynamic values.
+
+---
 
 ### ✍️ Signature Operations
 
@@ -626,6 +701,31 @@ There are currently active bugs in both Flow Editor v1 and v2 that can prevent c
 
 ## Change Log
 
+### v2.1.0
+
+**New Operations**
+- **Obligation Operations** — Create, Retrieve, Update, and List All Obligations (requires `public.obligations.*` scopes)
+- **Conversational Search** — Search contracts and records using natural language (requires `public.search.conversational` scope — contact Ironclad to enable if not available in your instance)
+
+**SCIM Improvements**
+- Group PATCH `op` field now correctly limited to `add` and `remove` (SCIM spec compliant; `replace` is not supported by Ironclad groups)
+- User PATCH now accepts any valid SCIM attribute path (previously restricted by enum)
+- User POST/PUT: `password` field removed from required (not needed when SAML/SSO is configured)
+- User POST/PUT: Added `active` field — POST defaults to `true` (optional); PUT exposes enum with deactivation warning label
+- User POST/PUT: Added **Enterprise User Properties** array for IETF standard extension attributes (`department`, `division`, `organization`, `costCenter`, `employeeNumber`, `manager`)
+- User POST/PUT: Added **Ironclad User Properties** array for custom Ironclad extension attributes (requires Ironclad Support enablement)
+
+**Connection Parameter Sets**
+- Added **Demo (No Conversational Search)** connection type — same as Demo but excludes `public.search.conversational` scope, for Ironclad instances where Conversational Search is not enabled
+- Restored `public.search.conversational` scope to all other connection types
+
+**Bug Fixes / Minor Changes**
+- Removed enum restrictions on SCIM Group PATCH `path`, Obligation Type Key, and Obligation Filter property fields — custom values can now be entered freely
+
+---
+
+### Earlier
+
 - Corrected the Swagger `RetrievePredictions` operation ID spelling and fixed the records export success description text from `Reecords Exported` to `Records Exported`.
 
 ---
@@ -644,11 +744,12 @@ There are currently active bugs in both Flow Editor v1 and v2 that can prevent c
 
 ### ❌ "Invalid scope" error when creating a connection
 
-**Cause:** Missing required scopes in your Ironclad application.
+**Cause:** Missing required scopes in your Ironclad application, or a scope that is not enabled for your Ironclad instance.
 
 **Solution:**
 - Ensure you have added **ALL** [required scopes](#-required-scopes) to your Ironclad app
-- The connector requires all scopes to function properly - partial scope configuration is not supported
+- The connector requires all scopes to function properly — partial scope configuration is not supported
+- **`public.search.conversational` scope error?** This scope is not available in all Ironclad instances. Contact [Ironclad Support](https://support.ironcladapp.com) to request enablement, or use the **Demo (No Conversational Search)** connection type to connect without this scope.
 
 ---
 

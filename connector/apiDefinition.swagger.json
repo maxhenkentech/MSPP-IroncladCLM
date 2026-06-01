@@ -4012,7 +4012,7 @@
             "$ref": "#/parameters/scimUserID_path"
           },
           {
-            "$ref": "#/parameters/scimUser_body"
+            "$ref": "#/parameters/scimUserPut_body"
           },
           {
             "$ref": "#/parameters/scimExcludedAttributes_query"
@@ -4422,6 +4422,385 @@
           }
         },
         "x-ms-visibility": "important"
+      }
+    },
+    "/public/api/v1/workflows/{Workflow}/roles/{RoleName}": {
+      "patch": {
+        "description": "Updates the assignment of the specified role (e.g. Archiver, Signature Coordinator, etc.) on the workflow to a new user. The new assignee must be eligible to be assigned to the role per the workflow definition configured in workflow designer.",
+        "operationId": "UpdateWorkflowRoleAssignment",
+        "parameters": [
+          {
+            "$ref": "#/parameters/workflowId_path"
+          },
+          {
+            "$ref": "#/parameters/workflowRoleName_path"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "userId": {
+                  "description": "The ID of the Ironclad user to assign to the role. Must be eligible to be assigned to the role.",
+                  "title": "User ID",
+                  "type": "string",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListEligibleRoleAssignees",
+                    "parameters": {
+                      "Workflow": {
+                        "parameter": "Workflow"
+                      },
+                      "RoleName": {
+                        "parameter": "RoleName"
+                      },
+                      "page": 0,
+                      "pageSize": 100
+                    },
+                    "value-collection": "list",
+                    "value-path": "userId",
+                    "value-title": "displayName"
+                  }
+                }
+              },
+              "required": [
+                "userId"
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role Assignment Updated",
+            "schema": {
+              "$ref": "#/definitions/workflowRoleAssignmentUpdated_object"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        },
+        "summary": "Update Workflow Role Assignment",
+        "x-ms-visibility": "important"
+      }
+    },
+    "/public/api/v1/workflows/{Workflow}/roles/{RoleName}/eligible-assignees": {
+      "get": {
+        "description": "Returns a paginated list of users eligible to be assigned to the specified role on the workflow along with the user ID of current assignee if a user is already assigned to the role.",
+        "operationId": "ListEligibleRoleAssignees",
+        "parameters": [
+          {
+            "$ref": "#/parameters/workflowId_path"
+          },
+          {
+            "$ref": "#/parameters/workflowRoleName_path"
+          },
+          {
+            "$ref": "#/parameters/page_query"
+          },
+          {
+            "$ref": "#/parameters/pageSize_query"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eligible Assignees Retrieved",
+            "schema": {
+              "$ref": "#/definitions/workflowRoleEligibleAssigneesGet_object"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        },
+        "summary": "List Eligible Assignees for a Workflow Role",
+        "x-ms-visibility": "advanced"
+      }
+    },
+    "/public/api/v1/obligations": {
+      "post": {
+        "summary": "Create an Obligation",
+        "description": "Create a new obligation.",
+        "operationId": "CreateObligation",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/obligationPost_object"
+            },
+            "x-ms-visibility": "important"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          },
+          "201": {
+            "description": "Obligation created successfully",
+            "schema": {
+              "$ref": "#/definitions/obligationGet_object"
+            }
+          }
+        }
+      }
+    },
+    "/public/api/v1/obligations/{Obligation}": {
+      "get": {
+        "summary": "Retrieve an Obligation",
+        "description": "View a specific obligation and its associated data.",
+        "operationId": "RetrieveObligation",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/obligationId_path"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligation Retrieved",
+            "schema": {
+              "$ref": "#/definitions/obligationGet_object"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update an Obligation",
+        "description": "Update an existing obligation.",
+        "operationId": "UpdateObligation",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/obligationId_path"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/obligationPatch_object"
+            },
+            "x-ms-visibility": "important"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligation Updated",
+            "schema": {
+              "$ref": "#/definitions/obligationGet_object"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        }
+      }
+    },
+    "/public/api/v1/obligations/query": {
+      "post": {
+        "summary": "List All Obligations",
+        "description": "Query obligations using a structured request body with type filtering, property filters (combined with AND), and sort options. The request is rewritten to the Ironclad List Obligations GET endpoint by the connector script.",
+        "operationId": "ListAllObligations",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/listAllObligationsV2Request_object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligations Retrieved",
+            "schema": {
+              "$ref": "#/definitions/obligationListGet_object"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        }
+      }
+    },
+    "/public/api/v1/search/conversational": {
+      "post": {
+        "summary": "Conversational Search",
+        "description": "Search across workflows and records using a natural language query. Returns a markdown-formatted result summary and a map of matching record IDs to their Ironclad URLs.",
+        "operationId": "ConversationalSearch",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/conversationalSearchRequest_object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results returned",
+            "schema": {
+              "$ref": "#/definitions/conversationalSearchResponse_object"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        }
       }
     }
   },
@@ -6906,6 +7285,148 @@
         }
       }
     },
+    "listAllObligationsV2Request_object": {
+      "title": "List All Obligations V2 Request",
+      "description": "Request body for the List All Obligations V2 operation.",
+      "type": "object",
+      "properties": {
+        "page": {
+          "$ref": "#/definitions/page_integer"
+        },
+        "pageSize": {
+          "$ref": "#/definitions/pageSize_integer"
+        },
+        "lastUpdated": {
+          "$ref": "#/definitions/lastUpdated_string"
+        },
+        "sortField": {
+          "type": "string",
+          "default": "lastUpdated",
+          "description": "The field to sort the results by.",
+          "enum": [
+            "lastUpdated",
+            "name"
+          ],
+          "x-ms-enum-values": [
+            {
+              "displayName": "Last Updated",
+              "value": "lastUpdated"
+            },
+            {
+              "displayName": "Name",
+              "value": "name"
+            }
+          ],
+          "x-ms-summary": "Sort Field",
+          "x-ms-visibility": "important"
+        },
+        "sortDirection": {
+          "type": "string",
+          "default": "DESC",
+          "description": "The direction the results are sorted.",
+          "enum": [
+            "DESC",
+            "ASC"
+          ],
+          "x-ms-enum-values": [
+            {
+              "displayName": "Descending",
+              "value": "DESC"
+            },
+            {
+              "displayName": "Ascending",
+              "value": "ASC"
+            }
+          ],
+          "x-ms-summary": "Sort Direction",
+          "x-ms-visibility": "important"
+        },
+        "filters": {
+          "type": "array",
+          "description": "Filter conditions combined with AND. Each filter specifies a property, operator, and one or more values combined with OR. Built-in filterable properties: name, ironcladId, userFacingObligations_status, userFacingObligations_dueDate, userFacingObligations_assignee, userFacingObligations_description. Custom property keys can be entered using expression mode.",
+          "x-ms-summary": "Filters",
+          "x-ms-visibility": "important",
+          "items": {
+            "type": "object",
+            "properties": {
+              "property": {
+                "type": "string",
+                "description": "The obligation property to filter on. Select a built-in property or enter a custom property key in expression mode.",
+                "x-ms-summary": "Property",
+                "x-ms-visibility": "important"
+              },
+              "operator": {
+                "type": "string",
+                "description": "The filter operator. IsEmpty and IsNotEmpty do not require a value.",
+                "x-ms-summary": "Operator",
+                "x-ms-visibility": "important",
+                "enum": [
+                  "Equals",
+                  "NotEqual",
+                  "Contains",
+                  "IsEmpty",
+                  "IsNotEmpty",
+                  "LessThan",
+                  "LessThanOrEqual",
+                  "GreaterThan",
+                  "GreaterThanOrEqual"
+                ],
+                "x-ms-enum-values": [
+                  {
+                    "displayName": "Equals",
+                    "value": "Equals"
+                  },
+                  {
+                    "displayName": "Not Equal",
+                    "value": "NotEqual"
+                  },
+                  {
+                    "displayName": "Contains",
+                    "value": "Contains"
+                  },
+                  {
+                    "displayName": "Is Empty",
+                    "value": "IsEmpty"
+                  },
+                  {
+                    "displayName": "Is Not Empty",
+                    "value": "IsNotEmpty"
+                  },
+                  {
+                    "displayName": "Less Than",
+                    "value": "LessThan"
+                  },
+                  {
+                    "displayName": "Less Than Or Equal",
+                    "value": "LessThanOrEqual"
+                  },
+                  {
+                    "displayName": "Greater Than",
+                    "value": "GreaterThan"
+                  },
+                  {
+                    "displayName": "Greater Than Or Equal",
+                    "value": "GreaterThanOrEqual"
+                  }
+                ]
+              },
+              "values": {
+                "type": "array",
+                "description": "One or more comparator values. Multiple values are combined with OR. Not required for IsEmpty or IsNotEmpty.",
+                "x-ms-summary": "Values",
+                "x-ms-visibility": "important",
+                "items": {
+                  "type": "string",
+                  "description": "A comparator value. For date properties, use ISO 8601 format (e.g. 2026-01-31).",
+                  "title": "Value",
+                  "x-ms-visibility": "important"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "recordSource_object": {
       "description": "The source of the record.",
       "title": "Source",
@@ -7171,7 +7692,7 @@
       "items": {
         "properties": {
           "op": {
-            "$ref": "#/definitions/scimOp_string"
+            "$ref": "#/definitions/scimGroupOp_string"
           },
           "path": {
             "$ref": "#/definitions/scimGroupPath_string"
@@ -7182,8 +7703,7 @@
         },
         "required": [
           "op",
-          "path",
-          "value"
+          "path"
         ],
         "type": "object"
       },
@@ -7195,27 +7715,19 @@
       "title": "Value",
       "x-ms-visibility": "important"
     },
-    "scimGroupPath_string": {
-      "description": "The path of the attribute that you wish to change.",
+    "scimGroupOp_string": {
+      "description": "The operation to perform on the group. Only 'add' and 'remove' are supported for group membership.",
       "enum": [
-        "members",
-        "displayName",
-        "externalId"
+        "add",
+        "remove"
       ],
-      "x-ms-enum-values": [
-        {
-          "displayName": "Members",
-          "value": "members"
-        },
-        {
-          "displayName": "Display Name",
-          "value": "displayName"
-        },
-        {
-          "displayName": "External ID",
-          "value": "externalId"
-        }
-      ],
+      "title": "Operation",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "scimGroupPath_string": {
+      "default": "members",
+      "description": "The path of the attribute that you wish to change. Only 'members' is supported.",
       "title": "Path",
       "type": "string",
       "x-ms-visibility": "important"
@@ -7297,7 +7809,7 @@
     },
     "scimSchemaGet_object": {
       "description": "A schema supported by the response.",
-      "title": "internal",
+      "title": "Schema",
       "type": "string",
       "x-ms-visibility": "important"
     },
@@ -7306,7 +7818,7 @@
       "items": {
         "$ref": "#/definitions/scimSchemaGet_object"
       },
-      "title": "internal",
+      "title": "Schemas",
       "type": "array",
       "x-ms-visibility": "important"
     },
@@ -7373,39 +7885,26 @@
       "title": "Operations",
       "type": "array"
     },
-    "scimUserPath_string": {
-      "description": "The path of the attribute that you wish to change.",
-      "enum": [
-        "userName",
-        "name.givenName",
-        "name.familyName",
-        "title",
-        "emails"
+    "scimUserOperationsPatch_object": {
+      "description": "Request body for patching a SCIM user.",
+      "properties": {
+        "Operations": {
+          "$ref": "#/definitions/scimUserOperations_array"
+        },
+        "schemas": {
+          "$ref": "#/definitions/scimPatchOpSchemasPost_array"
+        }
+      },
+      "required": [
+        "schemas",
+        "Operations"
       ],
+      "type": "object"
+    },
+    "scimUserPath_string": {
+      "description": "The path of the attribute that you wish to change. Common values: userName, name.givenName, name.familyName, title, emails. Custom attributes are also supported.",
       "title": "Path",
       "type": "string",
-      "x-ms-enum-values": [
-        {
-          "displayName": "Username",
-          "value": "userName"
-        },
-        {
-          "displayName": "Given Name",
-          "value": "name.givenName"
-        },
-        {
-          "displayName": "Family Name",
-          "value": "name.familyName"
-        },
-        {
-          "displayName": "Title",
-          "value": "title"
-        },
-        {
-          "displayName": "Emails",
-          "value": "emails"
-        }
-      ],
       "x-ms-visibility": "important"
     },
     "scimUserResourcesGet_array": {
@@ -7437,6 +7936,143 @@
       "description": "The value you wish to use for 'add' or 'replace' operations. The 'remove' operation does not take the 'value' parameter.",
       "title": "Value",
       "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "scimExtensionProperty_object": {
+      "description": "A SCIM extension attribute with a path (attribute name) and string value.",
+      "properties": {
+        "path": {
+          "description": "The attribute name within the extension (e.g., 'department', 'departmentHead', 'allowProviderConversion').",
+          "title": "Path",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "value": {
+          "description": "The value to set. Booleans ('true'/'false') and numbers are automatically converted from string.",
+          "title": "Value",
+          "type": "string",
+          "x-ms-visibility": "important"
+        }
+      },
+      "required": [
+        "path",
+        "value"
+      ],
+      "title": "Extension Property",
+      "type": "object"
+    },
+    "scimEnterpriseExtensionProperty_object": {
+      "description": "An enterprise extension attribute (attribute + value).",
+      "properties": {
+        "path": {
+          "description": "The enterprise extension attribute to set. These are the fixed attributes defined by the IETF enterprise SCIM standard and supported by Ironclad.",
+          "title": "Attribute",
+          "type": "string",
+          "enum": [
+            "department",
+            "division",
+            "organization",
+            "costCenter",
+            "employeeNumber",
+            "manager"
+          ],
+          "x-ms-enum-values": [
+            { "value": "department", "displayName": "Department" },
+            { "value": "division", "displayName": "Division" },
+            { "value": "organization", "displayName": "Organization" },
+            { "value": "costCenter", "displayName": "Cost Center" },
+            { "value": "employeeNumber", "displayName": "Employee Number" },
+            { "value": "manager", "displayName": "Manager" }
+          ],
+          "x-ms-summary": "Attribute",
+          "x-ms-visibility": "important"
+        },
+        "value": {
+          "description": "The value to set for this attribute.",
+          "title": "Value",
+          "type": "string",
+          "x-ms-summary": "Value",
+          "x-ms-visibility": "important"
+        }
+      },
+      "required": [
+        "path",
+        "value"
+      ],
+      "title": "Enterprise Attribute",
+      "type": "object"
+    },
+    "scimIroncladExtensionProperty_object": {
+      "description": "An Ironclad custom extension attribute (path + value).",
+      "properties": {
+        "path": {
+          "description": "The name of the custom attribute as configured in your Ironclad instance. Custom SCIM attributes must first be enabled by contacting Ironclad Support.",
+          "title": "Attribute Name",
+          "type": "string",
+          "x-ms-summary": "Attribute Name",
+          "x-ms-visibility": "important"
+        },
+        "value": {
+          "description": "The value to set for this attribute.",
+          "title": "Value",
+          "type": "string",
+          "x-ms-summary": "Value",
+          "x-ms-visibility": "important"
+        }
+      },
+      "required": [
+        "path",
+        "value"
+      ],
+      "title": "Ironclad Custom Attribute",
+      "type": "object"
+    },
+    "scimEnterpriseUserProperties_array": {
+      "description": "Standard enterprise HR attributes (IETF enterprise SCIM extension). Select from the fixed list of attributes supported by Ironclad: department, division, organization, costCenter, employeeNumber, manager.",
+      "items": {
+        "$ref": "#/definitions/scimEnterpriseExtensionProperty_object"
+      },
+      "title": "Enterprise User Properties",
+      "type": "array",
+      "x-ms-summary": "Enterprise User Properties",
+      "x-ms-visibility": "advanced"
+    },
+    "scimIroncladUserProperties_array": {
+      "description": "Custom user attributes defined in your Ironclad instance (Ironclad SCIM extension). Requires the 'SCIM Custom User Attributes' feature to be enabled — contact Ironclad Support to configure custom attributes before using this.",
+      "items": {
+        "$ref": "#/definitions/scimIroncladExtensionProperty_object"
+      },
+      "title": "Ironclad User Properties",
+      "type": "array",
+      "x-ms-summary": "Ironclad User Properties",
+      "x-ms-visibility": "advanced"
+    },
+    "scimUserActivePost_boolean": {
+      "default": true,
+      "description": "Whether the user account is active. Defaults to true.",
+      "title": "Active",
+      "type": "boolean",
+      "x-ms-visibility": "advanced"
+    },
+    "scimUserActivePut_boolean": {
+      "default": true,
+      "description": "Whether the user account is active. Setting to false removes the user from the company.",
+      "enum": [
+        true,
+        false
+      ],
+      "title": "Active",
+      "type": "boolean",
+      "x-ms-enum-values": [
+        {
+          "displayName": "Active",
+          "value": true
+        },
+        {
+          "displayName": "Inactive (removes user from company)",
+          "value": false
+        }
+      ],
       "x-ms-visibility": "important"
     },
     "sentSignaturePacket_array": {
@@ -9263,6 +9899,456 @@
       "title": "Title",
       "type": "string",
       "x-ms-visibility": "important"
+    },
+    "workflowRoleAssigneeUser_object": {
+      "description": "An Ironclad user.",
+      "properties": {
+        "userId": {
+          "description": "The unique identifier of the user.",
+          "title": "User ID",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "displayName": {
+          "description": "The display name of the user.",
+          "title": "Display Name",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "email": {
+          "description": "The email address of the user.",
+          "title": "Email",
+          "type": "string",
+          "x-ms-visibility": "important"
+        }
+      },
+      "title": "User",
+      "type": "object"
+    },
+    "workflowRoleAssignmentUpdated_object": {
+      "description": "The updated role assignment.",
+      "properties": {
+        "roleName": {
+          "$ref": "#/definitions/workflowRoleDisplayName_string"
+        },
+        "assignee": {
+          "$ref": "#/definitions/workflowRoleAssigneeUser_object"
+        }
+      },
+      "title": "Role Assignment",
+      "type": "object"
+    },
+    "workflowRoleEligibleAssigneesGet_object": {
+      "description": "A paginated list of users eligible to be assigned to a workflow role.",
+      "properties": {
+        "page": {
+          "$ref": "#/definitions/page_integer"
+        },
+        "pageSize": {
+          "$ref": "#/definitions/pageSize_integer"
+        },
+        "count": {
+          "$ref": "#/definitions/count_integer"
+        },
+        "list": {
+          "description": "The list of users eligible to be assigned to the role.",
+          "items": {
+            "$ref": "#/definitions/workflowRoleAssigneeUser_object"
+          },
+          "title": "Eligible Assignees",
+          "type": "array"
+        },
+        "defaultAssignee": {
+          "description": "The user assigned to the role by default.",
+          "title": "Default Assignee",
+          "allOf": [
+            {
+              "$ref": "#/definitions/workflowRoleAssigneeUser_object"
+            }
+          ],
+          "x-ms-visibility": "important"
+        }
+      },
+      "title": "Eligible Assignees",
+      "type": "object"
+    },
+    "obligationId_string": {
+      "description": "The unique identifier of the obligation.",
+      "title": "Obligation ID",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationName_string": {
+      "description": "The display name of the obligation.",
+      "title": "Obligation Name",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationStatus_string": {
+      "description": "The current status of the obligation.",
+      "title": "Status",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationPropertiesGet_object": {
+      "description": "The obligation's properties as a key to typed-value map. Each value has 'type' and 'value' fields.",
+      "title": "Properties (Raw)",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Data type (string, date, number, etc.)"
+          },
+          "value": {
+            "description": "The property value"
+          }
+        }
+      },
+      "x-ms-visibility": "internal"
+    },
+    "obligationPropertiesAsArrayGet_array": {
+      "description": "The obligation's properties as an array, for easy iteration in Power Automate.",
+      "title": "Properties",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "title": "Property",
+        "properties": {
+          "key": {
+            "description": "The property key (system name, e.g. 'userFacingObligations_status').",
+            "title": "Key",
+            "type": "string",
+            "x-ms-visibility": "important"
+          },
+          "type": {
+            "description": "The data type of the value (string, date, number, etc.).",
+            "title": "Type",
+            "type": "string",
+            "x-ms-visibility": "important"
+          },
+          "value": {
+            "description": "The property value.",
+            "title": "Value",
+            "x-ms-visibility": "important"
+          }
+        }
+      },
+      "x-ms-visibility": "important"
+    },
+    "obligationPropertiesInputArray_array": {
+      "description": "A list of properties to set on the obligation. Each entry needs a key, value, and optionally a type (defaults to 'string').",
+      "title": "Properties",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "title": "Property",
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "description": "The obligation property key (system name, e.g. 'userFacingObligations_status').",
+            "title": "Key",
+            "type": "string",
+            "x-ms-visibility": "important"
+          },
+          "type": {
+            "description": "The data type of the value. Defaults to 'string'. Use 'date' for date values (YYYY-MM-DD), 'number' for numeric values.",
+            "title": "Type",
+            "type": "string",
+            "default": "string",
+            "enum": [
+              "string",
+              "date",
+              "number",
+              "boolean"
+            ],
+            "x-ms-visibility": "advanced"
+          },
+          "value": {
+            "description": "The property value.",
+            "title": "Value",
+            "type": "string",
+            "x-ms-visibility": "important"
+          }
+        }
+      }
+    },
+    "obligationRemoveProperties_array": {
+      "description": "A list of property keys to remove from the obligation.",
+      "title": "Remove Properties",
+      "type": "array",
+      "items": {
+        "description": "A property key to remove.",
+        "title": "Property Key",
+        "type": "string"
+      },
+      "x-ms-visibility": "advanced"
+    },
+    "obligationGet_object": {
+      "description": "An obligation and its associated data.",
+      "title": "Obligation",
+      "type": "object",
+      "x-ms-visibility": "important",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/obligationId_string"
+        },
+        "ironcladId": {
+          "description": "The human-readable Ironclad ID (e.g. OB-1).",
+          "title": "Ironclad ID",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "name": {
+          "$ref": "#/definitions/obligationName_string"
+        },
+        "label": {
+          "description": "Display label (name or ID).",
+          "title": "Label",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "namedTypeIds": {
+          "description": "The UUIDs of the obligation types associated with this obligation (e.g. Payment, Compliance).",
+          "title": "Type IDs",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-visibility": "important"
+        },
+        "parentReadableId": {
+          "description": "The human-readable ID of the parent contract (e.g. IC-46011).",
+          "title": "Parent Contract ID",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "parentRecordName": {
+          "description": "The display name of the parent contract.",
+          "title": "Parent Contract Name",
+          "type": "string",
+          "x-ms-visibility": "important"
+        },
+        "status": {
+          "$ref": "#/definitions/obligationStatus_string"
+        },
+        "properties": {
+          "$ref": "#/definitions/obligationPropertiesGet_object"
+        },
+        "propertiesAsArray": {
+          "$ref": "#/definitions/obligationPropertiesAsArrayGet_array"
+        },
+        "lastUpdated": {
+          "description": "When the obligation was last updated (ISO 8601).",
+          "title": "Last Updated",
+          "type": "string",
+          "format": "date-time",
+          "x-ms-visibility": "important"
+        }
+      }
+    },
+    "obligationListGet_object": {
+      "description": "A paginated list of obligations.",
+      "title": "Obligations",
+      "type": "object",
+      "x-ms-visibility": "important",
+      "properties": {
+        "list": {
+          "description": "The list of obligations.",
+          "title": "List",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/obligationGet_object"
+          },
+          "x-ms-visibility": "important"
+        },
+        "count": {
+          "description": "The total number of obligations matching the query.",
+          "title": "Count",
+          "type": "integer",
+          "x-ms-visibility": "important"
+        },
+        "page": {
+          "$ref": "#/definitions/page_integer"
+        },
+        "pageSize": {
+          "$ref": "#/definitions/pageSize_integer"
+        }
+      }
+    },
+    "obligationPost_object": {
+      "description": "The data for a new obligation.",
+      "title": "Obligation",
+      "type": "object",
+      "x-ms-visibility": "important",
+      "required": [
+        "name",
+        "obligationTypeKey",
+        "parentId"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/obligationName_string"
+        },
+        "obligationTypeKey": {
+          "type": "array",
+          "description": "The obligation type key. Select one of the built-in types, or enter a custom type key as configured in your Ironclad Data Manager.",
+          "items": {
+            "type": "string",
+            "x-ms-summary": "Type Key"
+          },
+          "minItems": 1,
+          "maxItems": 1,
+          "x-ms-summary": "Obligation Type Key"
+        },
+        "propertiesAsArray": {
+          "$ref": "#/definitions/obligationPropertiesInputArray_array"
+        },
+        "parentId": {
+          "$ref": "#/definitions/obligationParentId_string",
+          "description": "The ID of the parent contract (required)"
+        }
+      }
+    },
+    "obligationPatch_object": {
+      "description": "Fields to update on an obligation. Only provided fields are changed.",
+      "title": "Obligation Update",
+      "type": "object",
+      "x-ms-visibility": "important",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/obligationName_string"
+        },
+        "obligationTypeKey": {
+          "type": "array",
+          "description": "The obligation type key. Select one of the built-in types, or enter a custom type key as configured in your Ironclad Data Manager.",
+          "items": {
+            "type": "string",
+            "x-ms-summary": "Type Key"
+          },
+          "minItems": 1,
+          "maxItems": 1,
+          "x-ms-summary": "Obligation Type Key"
+        },
+        "addPropertiesAsArray": {
+          "$ref": "#/definitions/obligationPropertiesInputArray_array"
+        },
+        "removeProperties": {
+          "$ref": "#/definitions/obligationRemoveProperties_array"
+        }
+      }
+    },
+    "obligationParentId_string": {
+      "description": "The ID of the parent contract",
+      "title": "Contract ID",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "conversationalSearchRequest_object": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "title": "Query",
+          "description": "Natural language search query, e.g. 'Find all NDAs signed in 2024'.",
+          "x-ms-visibility": "important"
+        },
+        "userTimezone": {
+          "type": "string",
+          "title": "User Timezone",
+          "description": "IANA timezone name used to interpret relative dates in the query.",
+          "default": "America/Los_Angeles",
+          "enum": [
+            "America/Los_Angeles",
+            "America/Denver",
+            "America/Chicago",
+            "America/New_York",
+            "America/Sao_Paulo",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Helsinki",
+            "Asia/Dubai",
+            "Asia/Kolkata",
+            "Asia/Bangkok",
+            "Asia/Singapore",
+            "Asia/Tokyo",
+            "Australia/Sydney",
+            "Pacific/Auckland"
+          ],
+          "x-ms-visibility": "advanced"
+        }
+      }
+    },
+    "conversationalSearchResponse_object": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "title": "Result",
+          "description": "Markdown-formatted summary of the search results, including links to matching documents.",
+          "x-ms-visibility": "important"
+        },
+        "records": {
+          "type": "object",
+          "title": "Records",
+          "description": "Map of record identifiers to their Ironclad URLs. Keys are workflow or record IDs.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "title": "URL",
+                "description": "Direct URL to the record or workflow in Ironclad."
+              }
+            }
+          },
+          "x-ms-visibility": "important"
+        },
+        "results": {
+          "type": "array",
+          "title": "Results",
+          "description": "Iterable list of matching records, each with an id and a direct Ironclad URL.",
+          "x-ms-visibility": "important",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "ID",
+                "description": "The record or workflow identifier."
+              },
+              "url": {
+                "type": "string",
+                "title": "URL",
+                "description": "Direct URL to the record or workflow in Ironclad."
+              }
+            }
+          }
+        }
+      }
+    },
+    "conversationalSearchResult_object": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "ID",
+          "description": "The record or workflow identifier."
+        },
+        "url": {
+          "type": "string",
+          "title": "URL",
+          "description": "Direct URL to the record or workflow in Ironclad."
+        }
+      }
     }
   },
   "parameters": {
@@ -10180,6 +11266,15 @@
       "required": true,
       "schema": {
         "properties": {
+          "active": {
+            "$ref": "#/definitions/scimUserActivePost_boolean"
+          },
+          "enterpriseUserProperties": {
+            "$ref": "#/definitions/scimEnterpriseUserProperties_array"
+          },
+          "ironcladUserProperties": {
+            "$ref": "#/definitions/scimIroncladUserProperties_array"
+          },
           "name": {
             "$ref": "#/definitions/scimName_object"
           },
@@ -10199,8 +11294,46 @@
         "required": [
           "schemas",
           "userName",
-          "name",
-          "password"
+          "name"
+        ],
+        "type": "object"
+      }
+    },
+    "scimUserPut_body": {
+      "in": "body",
+      "name": "body",
+      "required": true,
+      "schema": {
+        "properties": {
+          "active": {
+            "$ref": "#/definitions/scimUserActivePut_boolean"
+          },
+          "enterpriseUserProperties": {
+            "$ref": "#/definitions/scimEnterpriseUserProperties_array"
+          },
+          "ironcladUserProperties": {
+            "$ref": "#/definitions/scimIroncladUserProperties_array"
+          },
+          "name": {
+            "$ref": "#/definitions/scimName_object"
+          },
+          "password": {
+            "$ref": "#/definitions/scimPassword_string"
+          },
+          "schemas": {
+            "$ref": "#/definitions/scimUserSchemasPost_array"
+          },
+          "title": {
+            "$ref": "#/definitions/scimTitle_string"
+          },
+          "userName": {
+            "$ref": "#/definitions/username_string"
+          }
+        },
+        "required": [
+          "schemas",
+          "userName",
+          "name"
         ],
         "type": "object"
       }
@@ -10210,19 +11343,7 @@
       "name": "body",
       "required": true,
       "schema": {
-        "properties": {
-          "Operations": {
-            "$ref": "#/definitions/scimUserOperations_array"
-          },
-          "schemas": {
-            "$ref": "#/definitions/scimPatchOpSchemasPost_array"
-          }
-        },
-        "required": [
-          "schemas",
-          "Operations"
-        ],
-        "type": "object"
+        "$ref": "#/definitions/scimUserOperationsPatch_object"
       }
     },
     "recordSmartImport_path": {
@@ -10514,6 +11635,44 @@
       "default": false,
       "description": "When true, only properties that support filter operators (Equals, LessThan, etc.) are returned. Excludes complex types like duration, address, clause, and document.",
       "x-ms-summary": "Filterable Only",
+      "x-ms-visibility": "important"
+    },
+    "workflowRoleName_path": {
+      "description": "The display name of the role, URL-encoded (e.g. Legal%20Approver).",
+      "in": "path",
+      "name": "RoleName",
+      "required": true,
+      "type": "string",
+      "x-ms-summary": "Role Name",
+      "x-ms-url-encoding": "single",
+      "x-ms-visibility": "important",
+      "x-ms-dynamic-values": {
+        "operationId": "RetrieveWorkflow",
+        "parameters": {
+          "Workflow": {
+            "parameter": "Workflow"
+          }
+        },
+        "value-collection": "roles",
+        "value-path": "displayName",
+        "value-title": "displayName"
+      }
+    },
+    "obligationId_path": {
+      "description": "The ID or Ironclad ID of the Obligation.",
+      "in": "path",
+      "name": "Obligation",
+      "required": true,
+      "type": "string",
+      "x-ms-dynamic-values": {
+        "operationId": "ListAllObligations",
+        "parameters": {},
+        "value-collection": "list",
+        "value-path": "id",
+        "value-title": "label"
+      },
+      "x-ms-summary": "Obligation",
+      "x-ms-url-encoding": "single",
       "x-ms-visibility": "important"
     }
   },

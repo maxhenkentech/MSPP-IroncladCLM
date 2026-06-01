@@ -130,6 +130,10 @@ public class Script : ScriptBase
             case "UpdateUser":
                 await updUsr_TransformUpdateUserRequest().ConfigureAwait(false);
                 break;
+            case "CreateUser":
+            case "ReplaceUser":
+                await crtUsr_TransformUserRequest().ConfigureAwait(false);
+                break;
             case "GetEntityRelationshipType":
                 await this.getEntRltTyp_TransformRequest().ConfigureAwait(false);
                 break;
@@ -150,6 +154,15 @@ public class Script : ScriptBase
                 break;
             case "ListAllRecordsV2":
                 await lstAllRcdV2_TransformRequest().ConfigureAwait(false);
+                break;
+            case "CreateObligation":
+                await crtObl_TransformCreateObligationRequest().ConfigureAwait(false);
+                break;
+            case "UpdateObligation":
+                await updObl_TransformUpdateObligationRequest().ConfigureAwait(false);
+                break;
+            case "ListAllObligations":
+                await lstOblV2_TransformRequest().ConfigureAwait(false);
                 break;
             case "RetrieveFormattedWorkflowSchema":
                 await rtrWflFmtSch_TransformRequest().ConfigureAwait(false);
@@ -286,6 +299,29 @@ public class Script : ScriptBase
                 break;
             case "UpdateWorkflowMetadata":
                 await this.updWflMd_TransformUpdateWorkflowMetadataResponse(response).ConfigureAwait(false);
+                break;
+            case "ListAllObligations":
+                await this.TransformResponseJsonBody(
+                        this.lstObl_TransformListAllObligationsResponse,
+                        response
+                    )
+                    .ConfigureAwait(false);
+                break;
+            case "CreateObligation":
+            case "RetrieveObligation":
+            case "UpdateObligation":
+                await this.TransformResponseJsonBody(
+                        this.rtrObl_TransformRetrieveObligation,
+                        response
+                    )
+                    .ConfigureAwait(false);
+                break;
+            case "ConversationalSearch":
+                await this.TransformResponseJsonBody(
+                        this.cSrch_TransformConversationalSearchResponse,
+                        response
+                    )
+                    .ConfigureAwait(false);
                 break;
         }
     }
@@ -2487,6 +2523,53 @@ public class Script : ScriptBase
     {
         var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
         EnsureScimPatchSchema(jsonBody);
+        ReplaceRequestJsonBody(jsonBody);
+    }
+
+    // ################################################################################
+    // Create User / Replace User #####################################################
+    // ################################################################################
+
+    /// <summary>
+    /// Converts ironcladUserProperties and enterpriseUserProperties arrays into the
+    /// SCIM extension object format expected by Ironclad, then removes the helper
+    /// arrays from the body before forwarding the request.
+    /// </summary>
+    private async Task crtUsr_TransformUserRequest()
+    {
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+
+        const string ironcladExtKey = "urn:ietf:params:scim:schemas:extension:ironclad:2.0:User";
+        const string enterpriseExtKey = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
+
+        if (jsonBody["ironcladUserProperties"] is JArray ironcladProps && ironcladProps.Count > 0)
+        {
+            var extObj = new JObject();
+            foreach (var item in ironcladProps.OfType<JObject>())
+            {
+                var path = item["path"]?.ToString();
+                var rawValue = item["value"];
+                if (!string.IsNullOrEmpty(path) && rawValue != null)
+                    extObj[path] = ConvertStringToProperType(rawValue);
+            }
+            jsonBody[ironcladExtKey] = extObj;
+            jsonBody.Remove("ironcladUserProperties");
+        }
+
+        if (jsonBody["enterpriseUserProperties"] is JArray enterpriseProps && enterpriseProps.Count > 0)
+        {
+            var extObj = new JObject();
+            foreach (var item in enterpriseProps.OfType<JObject>())
+            {
+                var path = item["path"]?.ToString();
+                var rawValue = item["value"];
+                if (!string.IsNullOrEmpty(path) && rawValue != null)
+                    extObj[path] = ConvertStringToProperType(rawValue);
+            }
+            jsonBody[enterpriseExtKey] = extObj;
+            jsonBody.Remove("enterpriseUserProperties");
+        }
+
         ReplaceRequestJsonBody(jsonBody);
     }
 
@@ -6628,4 +6711,274 @@ public class Script : ScriptBase
         }
         return string.Empty;
     }
+
+    // ################################################################################
+    // Obligations ####################################################################
+    // ################################################################################
+
+    /// <summary>
+    /// Converts the connector's array-based obligation properties into Ironclad's
+    /// key-value properties object for the Create Obligation endpoint.
+    /// Input:  { name, obligationTypeKey (array), parentId, propertiesAsArray: [{key, type?, value}, ...] }
+    /// Output: { name, obligationTypeKey (array), parentId, properties: {key1: {type, value}, ...} }
+    /// </summary>
+    private async Task crtObl_TransformCreateObligationRequest()
+    {
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+
+        if (
+            jsonBody.TryGetValue("propertiesAsArray", out var propsToken)
+            && propsToken is JArray propsArray
+        )
+        {
+            var properties = new JObject();
+
+            foreach (var item in propsArray)
+            {
+                if (
+                    item is JObject propObj
+                    && propObj.TryGetValue("key", out var keyToken)
+                    && propObj.TryGetValue("value", out var valueToken)
+                )
+                {
+                    var dataType = propObj.TryGetValue("type", out var typeToken)
+                        ? typeToken.ToString()
+                        : "string";
+
+                    properties[keyToken.ToString()] = new JObject
+                    {
+                        ["type"]  = dataType,
+                        ["value"] = valueToken
+                    };
+                }
+            }
+
+            jsonBody["properties"] = properties;
+            jsonBody.Remove("propertiesAsArray");
+        }
+        else if (!jsonBody.ContainsKey("properties"))
+        {
+            // The Ironclad POST /obligations API requires the "properties" field to be
+            // present (even as an empty object) — omitting it causes a schema validation
+            // error regardless of whether other required fields are valid.
+            jsonBody["properties"] = new JObject();
+        }
+
+        ReplaceRequestJsonBody(jsonBody);
+    }
+
+    /// <summary>
+    /// Converts the connector's array-based obligation properties into Ironclad's
+    /// typed-value properties object for the Update Obligation endpoint.
+    /// Input:  { name, obligationTypeKey, addPropertiesAsArray: [{key, type?, value}, ...], removeProperties: [...] }
+    /// Output: { name, obligationTypeKey, properties: {key1: {type, value}, ...}, removeProperties: [...] }
+    /// </summary>
+    private async Task updObl_TransformUpdateObligationRequest()
+    {
+        var jsonBody = await ReadRequestBodyAsObjectAsync().ConfigureAwait(false);
+
+        if (
+            jsonBody.TryGetValue("addPropertiesAsArray", out var propsToken)
+            && propsToken is JArray propsArray
+        )
+        {
+            var properties = new JObject();
+
+            foreach (var item in propsArray)
+            {
+                if (
+                    item is JObject propObj
+                    && propObj.TryGetValue("key", out var keyToken)
+                    && propObj.TryGetValue("value", out var valueToken)
+                )
+                {
+                    var dataType = propObj.TryGetValue("type", out var typeToken)
+                        ? typeToken.ToString()
+                        : "string";
+
+                    properties[keyToken.ToString()] = new JObject
+                    {
+                        ["type"]  = dataType,
+                        ["value"] = valueToken
+                    };
+                }
+            }
+
+            jsonBody["properties"] = properties;
+            jsonBody.Remove("addPropertiesAsArray");
+        }
+
+        ReplaceRequestJsonBody(jsonBody);
+    }
+
+    /// <summary>
+    /// Normalises an obligation response by adding a label display field and a
+    /// propertiesAsArray helper for easy property iteration in Power Automate.
+    /// Properties from Ironclad arrive as {key: {type, value}} — we flatten to
+    /// [{key, type, value}] for easy iteration.
+    /// Used for RetrieveObligation, CreateObligation, and UpdateObligation.
+    /// </summary>
+    private JObject rtrObl_TransformRetrieveObligation(JObject body)
+    {
+        // Add label field for consistent UI display
+        if (!body.ContainsKey("label"))
+        {
+            body["label"] = body["name"]?.ToString() ?? body["id"]?.ToString();
+        }
+
+        // Add propertiesAsArray helper: flatten {key: {type, value}} → [{key, type, value}]
+        if (body["properties"] is JObject properties)
+        {
+            var propertiesAsArray = new JArray();
+
+            foreach (var prop in properties.Properties())
+            {
+                var entry = new JObject { ["key"] = prop.Name };
+
+                if (prop.Value is JObject typedVal)
+                {
+                    entry["type"]  = typedVal["type"]?.ToString() ?? "string";
+                    entry["value"] = typedVal["value"];
+                }
+                else
+                {
+                    entry["type"]  = "string";
+                    entry["value"] = prop.Value;
+                }
+
+                propertiesAsArray.Add(entry);
+            }
+
+            body["propertiesAsArray"] = propertiesAsArray;
+        }
+
+        return body;
+    }
+
+    /// <summary>
+    /// Normalises the List All Obligations response by enriching each obligation item
+    /// with a label field and a propertiesAsArray helper.
+    /// </summary>
+    private JObject lstObl_TransformListAllObligationsResponse(JObject body)
+    {
+        if (body["list"] is JArray list)
+        {
+            foreach (var item in list)
+            {
+                if (item is JObject obligation)
+                {
+                    // Add label field for consistent UI display
+                    if (!obligation.ContainsKey("label"))
+                    {
+                        obligation["label"] = obligation["name"]?.ToString() ?? obligation["id"]?.ToString();
+                    }
+
+                    // Add propertiesAsArray helper: flatten {key: {type, value}} → [{key, type, value}]
+                    if (obligation["properties"] is JObject props)
+                    {
+                        var propertiesAsArray = new JArray();
+
+                        foreach (var prop in props.Properties())
+                        {
+                            var entry = new JObject { ["key"] = prop.Name };
+
+                            if (prop.Value is JObject typedVal)
+                            {
+                                entry["type"]  = typedVal["type"]?.ToString() ?? "string";
+                                entry["value"] = typedVal["value"];
+                            }
+                            else
+                            {
+                                entry["type"]  = "string";
+                                entry["value"] = prop.Value;
+                            }
+
+                            propertiesAsArray.Add(entry);
+                        }
+
+                        obligation["propertiesAsArray"] = propertiesAsArray;
+                    }
+                }
+            }
+        }
+
+        return body;
+    }
+
+    /// <summary>
+    /// Rewrites POST /public/api/v1/obligations/query → GET /public/api/v1/obligations
+    /// with pagination, sort, obligation type key, and filter formula query parameters.
+    /// Reuses lstAllRcdV2_BuildFilterString for identical formula syntax.
+    /// </summary>
+    private async Task lstOblV2_TransformRequest()
+    {
+        JObject body;
+        if (this.Context.Request.Content != null)
+        {
+            var raw = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            body = string.IsNullOrWhiteSpace(raw) ? new JObject() : (JObject.Parse(raw) ?? new JObject());
+        }
+        else
+        {
+            body = new JObject();
+        }
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+
+        var page = body["page"];
+        if (page != null) query["page"] = page.ToString();
+
+        var pageSize = body["pageSize"];
+        if (pageSize != null) query["pageSize"] = pageSize.ToString();
+
+        var sortField = body["sortField"]?.ToString();
+        if (!string.IsNullOrEmpty(sortField)) query["sortField"] = sortField;
+
+        var sortDirection = body["sortDirection"]?.ToString();
+        if (!string.IsNullOrEmpty(sortDirection)) query["sortDirection"] = sortDirection;
+
+        var lastUpdated = body["lastUpdated"]?.ToString();
+        if (!string.IsNullOrEmpty(lastUpdated)) query["lastUpdated"] = lastUpdated;
+
+        // Build and append the filter formula (same syntax as records V2)
+        var filters = body["filters"] as JArray;
+        var filterString = lstAllRcdV2_BuildFilterString(filters);
+        if (!string.IsNullOrEmpty(filterString)) query["filter"] = filterString;
+
+        // Rewrite request: POST /public/api/v1/obligations/query → GET /public/api/v1/obligations
+        var uri = this.Context.Request.RequestUri;
+        var baseUrl = uri.GetLeftPart(UriPartial.Authority) + "/public/api/v1/obligations";
+        var newUri = new Uri(baseUrl + "?" + query.ToString());
+
+        this.Context.Request.Method = HttpMethod.Get;
+        this.Context.Request.RequestUri = newUri;
+        this.Context.Request.Content = null;
+    }
+
+    /// <summary>
+    /// Flattens the <c>records</c> dictionary in the conversational search response into an
+    /// iterable <c>results</c> array so Power Automate flows can loop over matches.
+    /// Each entry gets an <c>id</c> (the original dictionary key) and a <c>url</c>.
+    /// </summary>
+    private JObject cSrch_TransformConversationalSearchResponse(JObject body)
+    {
+        var results = new JArray();
+
+        if (body["records"] is JObject records)
+        {
+            foreach (var prop in records.Properties())
+            {
+                var entry = new JObject { ["id"] = prop.Name };
+                if (prop.Value is JObject record)
+                {
+                    entry["url"] = record["url"]?.ToString() ?? string.Empty;
+                }
+                results.Add(entry);
+            }
+        }
+
+        body["results"] = results;
+        return body;
+    }
 }
+
