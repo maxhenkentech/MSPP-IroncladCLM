@@ -303,6 +303,449 @@
 					}
 				},
 				{
+					"name": "oauthUSncs",
+					"uiDefinition": {
+						"displayName": "Global (No Conversational Search)",
+						"description": "ironcladapp.com — excludes public.search.conversational scope"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment",
+									"public.obligations.readObligations",
+									"public.obligations.updateObligations",
+									"public.obligations.createObligations",
+									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthUSnoObl",
+					"uiDefinition": {
+						"displayName": "Global (No Obligations)",
+						"description": "ironcladapp.com — excludes public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.search.conversational",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthUSncsnoObl",
+					"uiDefinition": {
+						"displayName": "Global (No Conversational Search and Obligations)",
+						"description": "ironcladapp.com — excludes public.search.conversational and public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
 					"name": "oauthPREVIEW",
 					"uiDefinition": {
 						"displayName": "Preview",
@@ -379,6 +822,449 @@
 									"public.obligations.updateObligations",
 									"public.obligations.createObligations",
 									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "preview.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthPREVIEWncs",
+					"uiDefinition": {
+						"displayName": "Preview (No Conversational Search)",
+						"description": "preview.ironcladapp.com — excludes public.search.conversational scope"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment",
+									"public.obligations.readObligations",
+									"public.obligations.updateObligations",
+									"public.obligations.createObligations",
+									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "preview.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthPREVIEWnoObl",
+					"uiDefinition": {
+						"displayName": "Preview (No Obligations)",
+						"description": "preview.ironcladapp.com — excludes public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.search.conversational",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://preview.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "preview.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthPREVIEWncsnoObl",
+					"uiDefinition": {
+						"displayName": "Preview (No Conversational Search and Obligations)",
+						"description": "preview.ironcladapp.com — excludes public.search.conversational and public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -755,6 +1641,299 @@
 					}
 				},
 				{
+					"name": "oauthDEMOnoObl",
+					"uiDefinition": {
+						"displayName": "Demo (No Obligations)",
+						"description": "demo.ironcladapp.com — excludes public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.search.conversational",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "demo.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthDEMOncsnoObl",
+					"uiDefinition": {
+						"displayName": "Demo (No Conversational Search and Obligations)",
+						"description": "demo.ironcladapp.com — excludes public.search.conversational and public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://demo.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "demo.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
 					"name": "oauthEU1",
 					"uiDefinition": {
 						"displayName": "EU1",
@@ -831,6 +2010,449 @@
 									"public.obligations.updateObligations",
 									"public.obligations.createObligations",
 									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthEU1ncs",
+					"uiDefinition": {
+						"displayName": "EU1 (No Conversational Search)",
+						"description": "eu1.ironcladapp.com — excludes public.search.conversational scope"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment",
+									"public.obligations.readObligations",
+									"public.obligations.updateObligations",
+									"public.obligations.createObligations",
+									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthEU1noObl",
+					"uiDefinition": {
+						"displayName": "EU1 (No Obligations)",
+						"description": "eu1.ironcladapp.com — excludes public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.search.conversational",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "GlobalPerConnector",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
+								"properties": {
+									"IsFirstParty": "False",
+									"IsOnbehalfofLoginSupported": false
+								},
+								"customParameters": {
+									"authorizationUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/authorize"
+									},
+									"tokenUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									},
+									"refreshUrl": {
+										"value": "https://eu1.ironcladapp.com/oauth/token"
+									}
+								}
+							},
+							"uiDefinition": {
+								"displayName": "Login to Ironclad",
+								"description": "Login to Ironclad",
+								"tooltip": "Login to Ironclad",
+								"constraints": {
+									"required": "true"
+								}
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 5,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"required": "true",
+									"tabIndex": 3,
+									"allowedValues": [
+										{
+											"text": "Default",
+											"value": "eu1.ironcladapp.com"
+										}
+									]
+								},
+								"displayName": "Version",
+								"description": "Select default to continue"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "oauthEU1ncsnoObl",
+					"uiDefinition": {
+						"displayName": "EU1 (No Conversational Search and Obligations)",
+						"description": "eu1.ironcladapp.com — excludes public.search.conversational and public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2",
+								"clientId": "dummy",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
 								],
 								"redirectMode": "GlobalPerConnector",
 								"redirectUrl": "https://global.consent.azure-apim.net/redirect/ironcladclm",
@@ -1003,6 +2625,488 @@
 									},
 									"tokenBodyTemplate": {
 										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.search.conversational public.workflows.readRoleAssignees public.workflows.updateRoleAssignment public.obligations.readObligations public.obligations.updateObligations public.obligations.createObligations public.obligations.deleteObligations"
+									},
+									"tokenUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									}
+								}
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"allowedValues": [
+										{
+											"text": "Demo",
+											"value": "demo.ironcladapp.com"
+										},
+										{
+											"text": "EU1",
+											"value": "eu1.ironcladapp.com"
+										},
+										{
+											"text": "Global",
+											"value": "ironcladapp.com"
+										},
+										{
+											"text": "Preview",
+											"value": "preview.ironcladapp.com"
+										}
+									],
+									"tabIndex": 2,
+									"required": "true"
+								},
+								"displayName": "Ironclad Instance",
+								"description": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator.",
+								"tooltip": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator."
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 3,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "ClientCredentialsncs",
+					"uiDefinition": {
+						"displayName": "Client Credentials (No Conversational Search)",
+						"description": "Connect using client credentials — excludes public.search.conversational scope"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2generic",
+								"clientId": "{clientId}",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment",
+									"public.obligations.readObligations",
+									"public.obligations.updateObligations",
+									"public.obligations.createObligations",
+									"public.obligations.deleteObligations"
+								],
+								"redirectMode": "Global",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect",
+								"properties": {
+									"IsFirstParty": "False"
+								},
+								"customParameters": {
+									"authorizationUrlTemplate": {
+										"value": "https://{customHost}/oauth/authorize"
+									},
+									"refreshBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.workflows.readRoleAssignees public.workflows.updateRoleAssignment public.obligations.readObligations public.obligations.updateObligations public.obligations.createObligations public.obligations.deleteObligations"
+									},
+									"refreshUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									},
+									"scopeListDelimiter": {
+										"value": " "
+									},
+									"tokenBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.workflows.readRoleAssignees public.workflows.updateRoleAssignment public.obligations.readObligations public.obligations.updateObligations public.obligations.createObligations public.obligations.deleteObligations"
+									},
+									"tokenUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									}
+								}
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"allowedValues": [
+										{
+											"text": "Demo",
+											"value": "demo.ironcladapp.com"
+										},
+										{
+											"text": "EU1",
+											"value": "eu1.ironcladapp.com"
+										},
+										{
+											"text": "Global",
+											"value": "ironcladapp.com"
+										},
+										{
+											"text": "Preview",
+											"value": "preview.ironcladapp.com"
+										}
+									],
+									"tabIndex": 2,
+									"required": "true"
+								},
+								"displayName": "Ironclad Instance",
+								"description": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator.",
+								"tooltip": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator."
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 3,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "ClientCredentialsnoObl",
+					"uiDefinition": {
+						"displayName": "Client Credentials (No Obligations)",
+						"description": "Connect using client credentials — excludes public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2generic",
+								"clientId": "{clientId}",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.search.conversational",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "Global",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect",
+								"properties": {
+									"IsFirstParty": "False"
+								},
+								"customParameters": {
+									"authorizationUrlTemplate": {
+										"value": "https://{customHost}/oauth/authorize"
+									},
+									"refreshBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.search.conversational public.workflows.readRoleAssignees public.workflows.updateRoleAssignment"
+									},
+									"refreshUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									},
+									"scopeListDelimiter": {
+										"value": " "
+									},
+									"tokenBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.search.conversational public.workflows.readRoleAssignees public.workflows.updateRoleAssignment"
+									},
+									"tokenUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									}
+								}
+							}
+						},
+						"token:customHost": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"allowedValues": [
+										{
+											"text": "Demo",
+											"value": "demo.ironcladapp.com"
+										},
+										{
+											"text": "EU1",
+											"value": "eu1.ironcladapp.com"
+										},
+										{
+											"text": "Global",
+											"value": "ironcladapp.com"
+										},
+										{
+											"text": "Preview",
+											"value": "preview.ironcladapp.com"
+										}
+									],
+									"tabIndex": 2,
+									"required": "true"
+								},
+								"displayName": "Ironclad Instance",
+								"description": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator.",
+								"tooltip": "Select the Ironclad instance you wish to connect to. If you are unsure, check with your Ironclad administrator."
+							}
+						},
+						"token:clientId": {
+							"type": "string",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 3,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Id",
+								"displayName": "Ironclad Client Id",
+								"tooltip": "Ironclad Client Id"
+							}
+						},
+						"token:clientSecret": {
+							"type": "securestring",
+							"uiDefinition": {
+								"constraints": {
+									"tabIndex": 4,
+									"required": "true"
+								},
+								"description": "Enter Ironclad Client Secret",
+								"displayName": "Ironclad Client Secret",
+								"tooltip": "Ironclad Client Secret"
+							}
+						}
+					},
+					"metadata": {
+						"allowSharing": false
+					}
+				},
+				{
+					"name": "ClientCredentialsncsnoObl",
+					"uiDefinition": {
+						"displayName": "Client Credentials (No Conversational Search and Obligations)",
+						"description": "Connect using client credentials — excludes public.search.conversational and public.obligations.* scopes"
+					},
+					"parameters": {
+						"token": {
+							"type": "oauthSetting",
+							"oAuthSettings": {
+								"identityProvider": "oauth2generic",
+								"clientId": "{clientId}",
+								"scopes": [
+									"public.records.createRecords",
+									"public.records.readRecords",
+									"public.records.updateRecords",
+									"public.records.deleteRecords",
+									"public.records.readSchemas",
+									"public.records.createAttachments",
+									"public.records.readAttachments",
+									"public.records.deleteAttachments",
+									"public.records.createSmartImportRecords",
+									"public.records.readSmartImportRecords",
+									"public.webhooks.createWebhooks",
+									"public.webhooks.readWebhooks",
+									"public.webhooks.updateWebhooks",
+									"public.webhooks.deleteWebhooks",
+									"public.workflows.createWorkflows",
+									"public.workflows.readWorkflows",
+									"public.workflows.updateWorkflows",
+									"public.workflows.readApprovals",
+									"public.workflows.updateApprovals",
+									"public.workflows.readSignatures",
+									"public.workflows.uploadSignedDocuments",
+									"public.workflows.readParticipants",
+									"public.workflows.revertToReview",
+									"public.workflows.cancel",
+									"public.workflows.pauseAndResume",
+									"public.workflows.createComments",
+									"public.workflows.readComments",
+									"public.workflows.createDocuments",
+									"public.workflows.readDocuments",
+									"public.workflows.readSchemas",
+									"public.workflows.readTurnHistory",
+									"public.workflows.readEmailCommunications",
+									"scim.groups.createGroups",
+									"scim.groups.readGroups",
+									"scim.groups.updateGroups",
+									"scim.groups.deleteGroups",
+									"scim.users.createUsers",
+									"scim.users.readUsers",
+									"scim.users.updateUsers",
+									"scim.users.deleteUsers",
+									"scim.schemas.readSchemas",
+									"public.export.createReports",
+									"public.export.readReports",
+									"public.records.applyContractActions",
+									"public.workflows.readSignStatus",
+									"public.workflows.sendSignatureRequests",
+									"public.workflows.cancelSignatureRequests",
+									"public.workflows.deleteSigners",
+									"public.workflows.remindSigners",
+									"public.workflows.updateSigners",
+									"public.entities.updateEntities",
+									"public.workflows.updateFromSource",
+									"public.workflows.createFromSource",
+									"public.entities.readRelationshipTypes",
+									"public.entities.readEntities",
+									"public.entities.deleteEntities",
+									"public.entities.createEntities",
+									"public.workflows.readRoleAssignees",
+									"public.workflows.updateRoleAssignment"
+								],
+								"redirectMode": "Global",
+								"redirectUrl": "https://global.consent.azure-apim.net/redirect",
+								"properties": {
+									"IsFirstParty": "False"
+								},
+								"customParameters": {
+									"authorizationUrlTemplate": {
+										"value": "https://{customHost}/oauth/authorize"
+									},
+									"refreshBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.workflows.readRoleAssignees public.workflows.updateRoleAssignment"
+									},
+									"refreshUrlTemplate": {
+										"value": "https://{customHost}/oauth/token"
+									},
+									"scopeListDelimiter": {
+										"value": " "
+									},
+									"tokenBodyTemplate": {
+										"value": "client_id={clientId}&grant_type=client_credentials&client_secret={clientSecret}&scope=public.records.createRecords public.records.readRecords public.records.updateRecords public.records.deleteRecords public.records.readSchemas public.records.createAttachments public.records.readAttachments public.records.deleteAttachments public.records.createSmartImportRecords public.records.readSmartImportRecords public.webhooks.createWebhooks public.webhooks.readWebhooks public.webhooks.updateWebhooks public.webhooks.deleteWebhooks public.workflows.createWorkflows public.workflows.readWorkflows public.workflows.updateWorkflows public.workflows.readApprovals public.workflows.updateApprovals public.workflows.readSignatures public.workflows.uploadSignedDocuments public.workflows.readParticipants public.workflows.revertToReview public.workflows.cancel public.workflows.pauseAndResume public.workflows.createComments public.workflows.readComments public.workflows.createDocuments public.workflows.readDocuments public.workflows.readSchemas public.workflows.readTurnHistory public.workflows.readEmailCommunications scim.groups.createGroups scim.groups.readGroups scim.groups.updateGroups scim.groups.deleteGroups scim.users.createUsers scim.users.readUsers scim.users.updateUsers scim.users.deleteUsers scim.schemas.readSchemas public.export.createReports public.export.readReports public.records.applyContractActions public.workflows.readSignStatus public.workflows.sendSignatureRequests public.workflows.cancelSignatureRequests public.workflows.deleteSigners public.workflows.remindSigners public.workflows.updateSigners public.entities.updateEntities public.workflows.updateFromSource public.workflows.createFromSource public.entities.readRelationshipTypes public.entities.readEntities public.entities.deleteEntities public.entities.createEntities public.workflows.readRoleAssignees public.workflows.updateRoleAssignment"
 									},
 									"tokenUrlTemplate": {
 										"value": "https://{customHost}/oauth/token"
