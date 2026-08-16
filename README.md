@@ -660,6 +660,14 @@ The Ironclad API does not expose obligation property schemas. When creating or u
 
 For guidance on your organisation's obligation schema, check the Ironclad Data Manager or contact your Ironclad administrator.
 
+### ⏱️ Filtering Obligations by Contract (`parentId`) Can Lag Right After Creation
+
+`parentId` is not one of Ironclad's documented built-in filterable obligation properties, but it works: filtering `List All Obligations` with `{"property": "parentId", "operator": "Equals", "values": ["<record GUID>"]}` returns obligations belonging to that contract record. Two things to know:
+
+- **Use the record's GUID, not its readable ID.** The obligation list response only ever surfaces `parentReadableId` (e.g. `IC-70`) and `parentRecordName` — never the GUID. Resolve the GUID first via `Equals([readableId],'IC-70')` against the records endpoint (or `List All Records`/`Get a Record` in the connector), then use that GUID as the `parentId` filter value.
+- **There can be a brief indexing delay immediately after creating an obligation.** Filtering by `parentId` right after `Create an Obligation` can return 0 results; a retry moments later returns the expected obligation. If you're chaining "create obligation" → "filter by contract" in the same flow, add a short delay (a few seconds) or a retry before trusting a 0-result response.
+- Filtering by any other parent-related name (`parentReadableId`, `parentRecordId`, `recordId`) returns a `500 SERVER_ERROR` rather than a clean validation error — only `parentId` (as the GUID) is recognized.
+
 ### 🚫 Custom Values Blocked by Enum Restrictions (Fixed in v2.x)
 
 Certain connector fields previously had `enum` constraints that blocked users from entering custom values outside the built-in list:

@@ -1673,6 +1673,8 @@ Returns a specific obligation and its associated data.
 
 **Output enrichment:** The connector adds `label` (name or ID) and `propertiesAsArray` (properties flattened from Ironclad's `{key: {type, value}}` map into `[{key, type, value}]`).
 
+**Contract association:** When the obligation belongs to a contract record, the response includes `parentReadableId` (e.g. `IC-70`) and `parentRecordName` — but not the record's GUID. If you need the GUID (e.g. to filter [List All Obligations](#list-all-obligations) by `parentId`), look it up separately via `Equals([readableId],'IC-70')` against **List All Records**.
+
 ---
 
 ### Update an Obligation
@@ -1729,6 +1731,12 @@ Query obligations with type filtering, property filters (combined with AND), and
 **Output:** `{list: [...], count, page, pageSize}`. Each item in `list` gets the same enrichment as **Retrieve an Obligation**.
 
 > 🔧 Internally, the connector rewrites this into a `GET /obligations` request with query parameters, reusing the same filter-formula syntax as [List All Records V2](#list-all-records-v2).
+
+**Filtering by parent contract (`parentId`):** Not one of the documented built-in properties above, but it works — use expression mode with `{"property": "parentId", "operator": "Equals", "values": ["<record GUID>"]}`. Requirements and quirks:
+
+- The value must be the parent record's **GUID** (the `id` field from the records API), not its readable ID (e.g. `IC-70`) or its `parentRecordName`. Obligation responses only expose `parentReadableId`/`parentRecordName`, never the GUID, so resolve it first via `Equals([readableId],'IC-70')` against **List All Records**.
+- Other parent-related property names (`parentReadableId`, `parentRecordId`, `recordId`) are not recognized and return a `500 SERVER_ERROR` instead of a validation error.
+- ⚠️ See [Known Issues: Filtering Obligations by Contract Can Lag Right After Creation](README.md#️-filtering-obligations-by-contract-parentid-can-lag-right-after-creation) — filtering by `parentId` immediately after `Create an Obligation` can return 0 results until the link is indexed; retry after a short delay.
 
 ---
 
