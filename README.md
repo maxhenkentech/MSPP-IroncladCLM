@@ -283,6 +283,8 @@ Almost all Ironclad API operations are available. For complete API documentation
 
 > ⚠️ **Important:** Ironclad does not expose obligation property schemas via the API. When creating or updating obligations, property keys and their expected types must be entered manually based on your Ironclad configuration in the Data Manager.
 
+> 💡 **Note:** Like Conversational Search, Obligations (`public.obligations.*`) may not be enabled on all Ironclad instances/plans. If you receive a scope error when connecting, use the **No Obligations** variant of your environment's connection type to exclude these scopes.
+
 <table style="width:100%">
 <thead>
 <tr><th>Method</th><th>Operation</th><th>Description</th></tr>
@@ -291,13 +293,15 @@ Almost all Ironclad API operations are available. For complete API documentation
 <tr><td><code>POST</code></td><td><a href="REFERENCE.md#create-an-obligation">Create an Obligation</a></td><td>Create a new obligation on a record</td></tr>
 <tr><td><code>GET</code></td><td><a href="REFERENCE.md#retrieve-an-obligation">Retrieve an Obligation</a></td><td>View a specific obligation and its associated data</td></tr>
 <tr><td><code>PATCH</code></td><td><a href="REFERENCE.md#update-an-obligation">Update an Obligation</a></td><td>Update an existing obligation</td></tr>
+<tr><td><code>DELETE</code></td><td><a href="REFERENCE.md#delete-an-obligation">Delete an Obligation</a></td><td>Delete an obligation (recurring instances return a 409 identifying the parent to delete instead)</td></tr>
 <tr><td><code>POST</code></td><td><a href="REFERENCE.md#list-all-obligations">List All Obligations</a></td><td>Query obligations with type filtering, property filters, and sort options</td></tr>
+<tr><td><code>GET</code></td><td><a href="REFERENCE.md#list-obligation-types">List Obligation Types</a></td><td>Retrieve all obligation types configured in your Ironclad Data Manager</td></tr>
 </tbody>
 </table>
 
 ### 🔍 Search Operations
 
-> 💡 **Note:** The `public.search.conversational` scope may not be available in all Ironclad instances. If you receive a scope error when connecting, contact [Ironclad Support](https://support.ironcladapp.com) to have this feature enabled for your account. Alternatively, use the **Demo (No Conversational Search)** connection type to exclude this scope.
+> 💡 **Note:** The `public.search.conversational` scope may not be available in all Ironclad instances. If you receive a scope error when connecting, contact [Ironclad Support](https://support.ironcladapp.com) to have this feature enabled for your account. Alternatively, use the **No Conversational Search** variant of your environment's connection type to exclude this scope.
 
 <table style="width:100%">
 <thead>
@@ -342,10 +346,21 @@ Almost all Ironclad API operations are available. For complete API documentation
 <tr><td>🌐 Global</td><td><code>ironcladapp.com</code></td><td>Production (majority of customers)</td></tr>
 <tr><td>🇪🇺 EU1</td><td><code>eu1.ironcladapp.com</code></td><td>EU Production</td></tr>
 <tr><td>🧪 Demo</td><td><code>demo.ironcladapp.com</code></td><td>Sandbox environment</td></tr>
-<tr><td>🧪 Demo (No Conversational Search)</td><td><code>demo.ironcladapp.com</code></td><td>Sandbox environment — <code>public.search.conversational</code> scope excluded. Use this if your Ironclad instance does not have Conversational Search enabled.</td></tr>
 <tr><td>🔮 Preview</td><td><code>preview.ironcladapp.com</code></td><td>Preview features</td></tr>
+<tr><td>🔑 Client Credentials</td><td>any of the above</td><td>Machine-to-machine auth (no interactive login)</td></tr>
 </tbody>
 </table>
+
+Each environment above is offered in **4 scope variants**, selectable when creating the connection:
+
+| Variant | Excludes |
+|---|---|
+| **Full** | nothing (all scopes) |
+| **No Conversational Search** | `public.search.conversational` |
+| **No Obligations** | `public.obligations.*` |
+| **No Conversational Search and Obligations** | both of the above |
+
+These variants exist because Conversational Search and Obligations are not enabled on every Ironclad instance/plan — connecting with a scope your instance doesn't support causes an "Invalid scope" error. Pick the variant matching what your instance actually has enabled.
 
 ---
 
@@ -568,14 +583,17 @@ scim.schemas.readSchemas
 </details>
 
 <details>
-<summary><b>📌 Obligations</b></summary>
+<summary><b>📌 Obligations</b> (may require enablement — contact Ironclad)</summary>
 
 ```
 public.obligations.readObligations
 public.obligations.createObligations
 public.obligations.updateObligations
 public.obligations.deleteObligations
+public.obligations.readTypes
 ```
+
+> ⚠️ **This scope may not be available in all Ironclad instances**, similar to Conversational Search. If you see an "invalid scope" error, contact [Ironclad Support](https://support.ironcladapp.com) to request enablement, or use the **No Obligations** variant of your environment's connection type, which excludes these scopes.
 </details>
 
 <details>
@@ -585,7 +603,7 @@ public.obligations.deleteObligations
 public.search.conversational
 ```
 
-> ⚠️ **This scope may not be available in all Ironclad instances.** If you see an "invalid scope" or similar error during the OAuth connection flow, contact [Ironclad Support](https://support.ironcladapp.com) to request enablement for your account. If your instance does not support Conversational Search, use the **Demo (No Conversational Search)** connection type, which excludes this scope.
+> ⚠️ **This scope may not be available in all Ironclad instances.** If you see an "invalid scope" or similar error during the OAuth connection flow, contact [Ironclad Support](https://support.ironcladapp.com) to request enablement for your account. If your instance does not support Conversational Search, use the **No Conversational Search** variant of your environment's connection type, which excludes this scope.
 </details>
 
 ---
@@ -701,6 +719,18 @@ There are currently active bugs in both Flow Editor v1 and v2 that can prevent c
 
 ## Change Log
 
+### v2.2.0
+
+**New Operations**
+- **Delete an Obligation** — removes an obligation (triggered instances delete immediately; recurring instances return a `409 Conflict` identifying the parent to delete instead)
+- **List Obligation Types** — retrieves all obligation types configured in your Ironclad Data Manager, powering a dynamic dropdown for `obligationTypeKey`
+
+**Webhook Trigger Events**
+- Expanded the webhook `events` enum from 22 to 42 values, adding the `*` (all events) wildcard, signer/signature-packet events (`workflow_signer_added`, `workflow_signer_removed`, `workflow_signer_reassigned`, `workflow_signature_packet_fully_signed`, `workflow_signature_packet_signatures_collected`, `workflow_signature_packet_signer_first_viewed`, `workflow_signature_packet_signer_viewed`, `workflow_signature_packet_document_moved`), `workflow_changed_turn`, `workflow_step_updated`, `workflow_roles_assigned`, and the full Record & Obligation event category (`record_contract_status_changed`, `obligation_created`, `obligation_status_changed`, `obligation_due_date_changed`, `obligation_assignee_changed`, `obligation_updated`, `obligations_extraction_completed`)
+
+**Connection Parameter Sets**
+- Every environment (Global, EU1, Demo, Preview) and Client Credentials now offers 4 scope variants — Full, No Conversational Search, No Obligations, and No Conversational Search and Obligations — replacing the single Demo-only "No Conversational Search" variant
+
 ### v2.1.0
 
 **New Operations**
@@ -749,7 +779,8 @@ There are currently active bugs in both Flow Editor v1 and v2 that can prevent c
 **Solution:**
 - Ensure you have added **ALL** [required scopes](#-required-scopes) to your Ironclad app
 - The connector requires all scopes to function properly — partial scope configuration is not supported
-- **`public.search.conversational` scope error?** This scope is not available in all Ironclad instances. Contact [Ironclad Support](https://support.ironcladapp.com) to request enablement, or use the **Demo (No Conversational Search)** connection type to connect without this scope.
+- **`public.search.conversational` scope error?** This scope is not available in all Ironclad instances. Contact [Ironclad Support](https://support.ironcladapp.com) to request enablement, or use the **No Conversational Search** variant of your environment's connection type to connect without this scope.
+- **`public.obligations.*` scope error?** Obligations may not be enabled on your Ironclad plan. Use the **No Obligations** variant of your environment's connection type to connect without these scopes.
 
 ---
 

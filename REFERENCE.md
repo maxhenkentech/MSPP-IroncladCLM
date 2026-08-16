@@ -104,6 +104,13 @@ A complete reference for every action available in the Ironclad CLM custom conne
 - [User & Group Operations (SCIM)](#user-group-operations-scim)
   - [Users](#users)
   - [Groups](#groups)
+- [Obligation Operations](#obligation-operations)
+  - [Create an Obligation](#create-an-obligation)
+  - [Retrieve an Obligation](#retrieve-an-obligation)
+  - [Update an Obligation](#update-an-obligation)
+  - [Delete an Obligation](#delete-an-obligation)
+  - [List All Obligations](#list-all-obligations)
+  - [List Obligation Types](#list-obligation-types)
 
 ---
 
@@ -1405,6 +1412,7 @@ Registers a new webhook endpoint. In Power Automate, this is used as a **trigger
 
 | Event | Description |
 |-------|-------------|
+| `*` | Subscribe to all events (not recommended for high-volume environments) |
 | `workflow_launched` | A workflow was created/launched |
 | `workflow_updated` | A workflow was updated |
 | `workflow_completed` | A workflow reached completion |
@@ -1425,9 +1433,27 @@ Registers a new webhook endpoint. In Power Automate, this is used as a **trigger
 | `workflow_documents_updated` | Documents were updated |
 | `workflow_documents_renamed` | Documents were renamed |
 | `workflow_document_edited` | A document was edited |
+| `workflow_changed_turn` | The workflow's turn changed |
 | `workflow_signature_packet_sent` | A signature packet was sent |
 | `workflow_signature_packet_uploaded` | A signed packet was uploaded |
 | `workflow_signature_packet_cancelled` | A signature request was cancelled |
+| `workflow_signature_packet_document_moved` | A document was moved within a signature packet |
+| `workflow_signature_packet_fully_signed` | A signature packet was fully signed |
+| `workflow_signature_packet_signatures_collected` | All signatures were collected for a packet |
+| `workflow_signature_packet_signer_first_viewed` | A signer viewed the packet for the first time |
+| `workflow_signature_packet_signer_viewed` | A signer viewed the packet |
+| `workflow_signer_added` | A signer was added |
+| `workflow_signer_removed` | A signer was removed |
+| `workflow_signer_reassigned` | A signer was reassigned |
+| `workflow_step_updated` | A workflow step was updated |
+| `workflow_roles_assigned` | Workflow roles were assigned |
+| `record_contract_status_changed` | A record's contract status changed |
+| `obligation_created` | An obligation was created |
+| `obligation_status_changed` | An obligation's status changed |
+| `obligation_due_date_changed` | An obligation's due date changed |
+| `obligation_assignee_changed` | An obligation's assignee changed |
+| `obligation_updated` | An obligation was updated |
+| `obligations_extraction_completed` | Obligation extraction completed |
 
 **Webhook payload** (received by Power Automate trigger):
 
@@ -1607,6 +1633,114 @@ Removes a group.
 | Input | Type | Required | Description |
 |-------|------|----------|-------------|
 | `Group` | string | Yes | The group ID |
+
+---
+
+## 📌 Obligation Operations
+
+Obligations track deadlines, deliverables, or commitments tied to a contract record (e.g. payment schedules, renewal deadlines, compliance requirements).
+
+> ⚠️ **Property Keys Are Not Schema-Driven:** Ironclad does not expose obligation property schemas via the API. Property keys and their expected types must be entered manually based on your Ironclad configuration in the Data Manager (**Data Manager → Obligation Types**).
+
+### Create an Obligation
+
+> `POST` · `CreateObligation`
+
+Creates a new obligation on a record.
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Obligation name |
+| `obligationTypeKey` | array (1 item) | Yes | The obligation type key — picked from the [List Obligation Types](#list-obligation-types) dynamic dropdown, or entered as a custom type key configured in your Ironclad Data Manager |
+| `parentId` | string | Yes | The ID of the parent contract record |
+| `propertiesAsArray` | array | No | Properties to set: `[{key, value, type?}]` — `type` defaults to `string` (also accepts `date`, `number`, `boolean`) |
+
+The connector converts `propertiesAsArray` into Ironclad's typed-value `properties` object before sending the request. If no properties are supplied, the connector still sends an empty `properties: {}` object, since Ironclad's API rejects the request if the field is missing entirely.
+
+**Output:** The created obligation, enriched with `label` (display name) and `propertiesAsArray` (properties flattened for easy iteration — see [Complex Data Types](#complex-data-types)).
+
+---
+
+### Retrieve an Obligation
+
+> `GET` · `RetrieveObligation`
+
+Returns a specific obligation and its associated data.
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `Obligation` | string | Yes | The obligation ID or Ironclad ID (e.g. `OB-1`) |
+
+**Output enrichment:** The connector adds `label` (name or ID) and `propertiesAsArray` (properties flattened from Ironclad's `{key: {type, value}}` map into `[{key, type, value}]`).
+
+---
+
+### Update an Obligation
+
+> `PATCH` · `UpdateObligation`
+
+Updates an existing obligation.
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `Obligation` | string | Yes | The obligation ID or Ironclad ID |
+| `name` | string | No | Obligation name |
+| `obligationTypeKey` | array (1 item) | No | The obligation type key — picked from the [List Obligation Types](#list-obligation-types) dynamic dropdown, or entered as a custom type key |
+| `addPropertiesAsArray` | array | No | Properties to add or update: `[{key, value, type?}]` |
+| `removeProperties` | array | No | Property keys to remove |
+
+Same output enrichment as **Retrieve an Obligation**.
+
+---
+
+### Delete an Obligation
+
+> `DELETE` · `DeleteObligation`
+
+Deletes an obligation.
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `Obligation` | string | Yes | The obligation ID or Ironclad ID |
+
+Triggered instances are deleted immediately. Deleting a **recurring instance** returns a `409 Conflict` — the parent obligation must be deleted instead to remove it.
+
+---
+
+### List All Obligations
+
+> `POST` · `ListAllObligations`
+
+Query obligations with type filtering, property filters (combined with AND), and sort options.
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `page` | integer | No | Page number |
+| `pageSize` | integer | No | Results per page |
+| `lastUpdated` | string | No | Filter to obligations updated after this ISO 8601 timestamp |
+| `sortField` | string | No | `lastUpdated` (default) or `name` |
+| `sortDirection` | string | No | `DESC` (default) or `ASC` |
+| `filters` | array | No | Filter conditions, combined with AND: `[{property, operator, values}]` |
+
+**Built-in filterable properties:** `name`, `ironcladId`, `userFacingObligations_status`, `userFacingObligations_dueDate`, `userFacingObligations_assignee`, `userFacingObligations_description`. Custom property keys can be entered in expression mode.
+
+**Operators:** `Equals`, `NotEqual`, `Contains`, `IsEmpty`, `IsNotEmpty`, `LessThan`, `LessThanOrEqual`, `GreaterThan`, `GreaterThanOrEqual`. `values` accepts multiple entries, combined with OR, and isn't required for `IsEmpty`/`IsNotEmpty`.
+
+**Output:** `{list: [...], count, page, pageSize}`. Each item in `list` gets the same enrichment as **Retrieve an Obligation**.
+
+> 🔧 Internally, the connector rewrites this into a `GET /obligations` request with query parameters, reusing the same filter-formula syntax as [List All Records V2](#list-all-records-v2).
+
+---
+
+### List Obligation Types
+
+> `GET` · `ListObligationTypes`
+
+Returns all obligation types configured in your Ironclad Data Manager (built-in types like Payment plus any custom types).
+
+**Output:** Array of `{id, name, displayName, description}`. `name` is the type key to use for `obligationTypeKey` when creating or updating an obligation.
+
+> 🔧 This action also powers the dynamic dropdown on the **Obligation Type Key** field of Create an Obligation and Update an Obligation.
 
 ---
 

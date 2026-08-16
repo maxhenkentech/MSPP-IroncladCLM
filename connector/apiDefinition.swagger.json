@@ -4558,6 +4558,33 @@
         "x-ms-visibility": "advanced"
       }
     },
+    "/public/api/v1/obligations/types": {
+      "get": {
+        "summary": "List Obligation Types",
+        "description": "Returns all obligation types.",
+        "operationId": "ListObligationTypes",
+        "parameters": [
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligation Types Retrieved",
+            "schema": {
+              "$ref": "#/definitions/obligationTypeListGet_array"
+            }
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        },
+        "x-ms-visibility": "important"
+      }
+    },
     "/public/api/v1/obligations": {
       "post": {
         "summary": "Create an Obligation",
@@ -4696,6 +4723,49 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "default": {
+            "description": "Operation Failed."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an Obligation",
+        "description": "Delete an obligation. Triggered instances are deleted immediately. Deleting a recurring instance returns a 409 Conflict identifying the parent obligation, which must be deleted instead to remove it.",
+        "operationId": "DeleteObligation",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/obligationId_path"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-email_header"
+          },
+          {
+            "$ref": "#/parameters/x-as-user-id_header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Obligation Deleted"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict — the obligation is a recurring instance and cannot be deleted directly. Delete the parent obligation instead."
           },
           "500": {
             "description": "Internal Server Error"
@@ -8395,17 +8465,18 @@
     "webhookEvent_string": {
       "default": "workflow_updated",
       "enum": [
-        "workflow_updated",
+        "*",
         "workflow_launched",
+        "workflow_updated",
         "workflow_cancelled",
         "workflow_completed",
         "workflow_approval_status_changed",
         "workflow_attribute_updated",
-        "workflow_comment_reaction_added",
-        "workflow_comment_reaction_removed",
         "workflow_comment_added",
         "workflow_comment_removed",
         "workflow_comment_updated",
+        "workflow_comment_reaction_added",
+        "workflow_comment_reaction_removed",
         "workflow_counterparty_invite_sent",
         "workflow_counterparty_invite_revoked",
         "workflow_documents_added",
@@ -8413,23 +8484,45 @@
         "workflow_documents_updated",
         "workflow_documents_renamed",
         "workflow_document_edited",
+        "workflow_changed_turn",
         "workflow_paused",
         "workflow_resumed",
+        "workflow_signature_packet_cancelled",
+        "workflow_signature_packet_document_moved",
+        "workflow_signature_packet_fully_signed",
         "workflow_signature_packet_sent",
+        "workflow_signature_packet_signatures_collected",
+        "workflow_signature_packet_signer_first_viewed",
+        "workflow_signature_packet_signer_viewed",
         "workflow_signature_packet_uploaded",
-        "workflow_signature_packet_cancelled"
+        "workflow_signer_added",
+        "workflow_signer_removed",
+        "workflow_signer_reassigned",
+        "workflow_step_updated",
+        "workflow_roles_assigned",
+        "record_contract_status_changed",
+        "obligation_created",
+        "obligation_status_changed",
+        "obligation_due_date_changed",
+        "obligation_assignee_changed",
+        "obligation_updated",
+        "obligations_extraction_completed"
       ],
       "title": "Trigger Event",
       "description": "The event that triggers the webhook.",
       "type": "string",
       "x-ms-enum-values": [
         {
-          "displayName": "Workflow Updated",
-          "value": "workflow_updated"
+          "displayName": "All Events",
+          "value": "*"
         },
         {
           "displayName": "Workflow Launched",
           "value": "workflow_launched"
+        },
+        {
+          "displayName": "Workflow Updated",
+          "value": "workflow_updated"
         },
         {
           "displayName": "Workflow Cancelled",
@@ -8448,14 +8541,6 @@
           "value": "workflow_attribute_updated"
         },
         {
-          "displayName": "Comment Reaction Added",
-          "value": "workflow_comment_reaction_added"
-        },
-        {
-          "displayName": "Comment Reaction Removed",
-          "value": "workflow_comment_reaction_removed"
-        },
-        {
           "displayName": "Comment Added",
           "value": "workflow_comment_added"
         },
@@ -8466,6 +8551,14 @@
         {
           "displayName": "Comment Updated",
           "value": "workflow_comment_updated"
+        },
+        {
+          "displayName": "Comment Reaction Added",
+          "value": "workflow_comment_reaction_added"
+        },
+        {
+          "displayName": "Comment Reaction Removed",
+          "value": "workflow_comment_reaction_removed"
         },
         {
           "displayName": "Counterparty Invite Sent",
@@ -8488,8 +8581,16 @@
           "value": "workflow_documents_updated"
         },
         {
+          "displayName": "Workflow Document Renamed",
+          "value": "workflow_documents_renamed"
+        },
+        {
           "displayName": "Workflow Document Edited",
           "value": "workflow_document_edited"
+        },
+        {
+          "displayName": "Workflow Turn Changed",
+          "value": "workflow_changed_turn"
         },
         {
           "displayName": "Workflow Paused",
@@ -8500,16 +8601,84 @@
           "value": "workflow_resumed"
         },
         {
+          "displayName": "Signature Packet Cancelled",
+          "value": "workflow_signature_packet_cancelled"
+        },
+        {
+          "displayName": "Signature Packet Document Moved",
+          "value": "workflow_signature_packet_document_moved"
+        },
+        {
+          "displayName": "Signature Packet Fully Signed",
+          "value": "workflow_signature_packet_fully_signed"
+        },
+        {
           "displayName": "Signature Packet Sent",
           "value": "workflow_signature_packet_sent"
+        },
+        {
+          "displayName": "Signature Packet Signatures Collected",
+          "value": "workflow_signature_packet_signatures_collected"
+        },
+        {
+          "displayName": "Signature Packet Signer First Viewed",
+          "value": "workflow_signature_packet_signer_first_viewed"
+        },
+        {
+          "displayName": "Signature Packet Signer Viewed",
+          "value": "workflow_signature_packet_signer_viewed"
         },
         {
           "displayName": "Signature Packet Uploaded",
           "value": "workflow_signature_packet_uploaded"
         },
         {
-          "displayName": "Signature Packet Cancelled",
-          "value": "workflow_signature_packet_cancelled"
+          "displayName": "Signer Added",
+          "value": "workflow_signer_added"
+        },
+        {
+          "displayName": "Signer Removed",
+          "value": "workflow_signer_removed"
+        },
+        {
+          "displayName": "Signer Reassigned",
+          "value": "workflow_signer_reassigned"
+        },
+        {
+          "displayName": "Workflow Step Updated",
+          "value": "workflow_step_updated"
+        },
+        {
+          "displayName": "Workflow Roles Assigned",
+          "value": "workflow_roles_assigned"
+        },
+        {
+          "displayName": "Record Contract Status Changed",
+          "value": "record_contract_status_changed"
+        },
+        {
+          "displayName": "Obligation Created",
+          "value": "obligation_created"
+        },
+        {
+          "displayName": "Obligation Status Changed",
+          "value": "obligation_status_changed"
+        },
+        {
+          "displayName": "Obligation Due Date Changed",
+          "value": "obligation_due_date_changed"
+        },
+        {
+          "displayName": "Obligation Assignee Changed",
+          "value": "obligation_assignee_changed"
+        },
+        {
+          "displayName": "Obligation Updated",
+          "value": "obligation_updated"
+        },
+        {
+          "displayName": "Obligations Extraction Completed",
+          "value": "obligations_extraction_completed"
         }
       ],
       "x-ms-visibility": "important"
@@ -10195,15 +10364,7 @@
           "$ref": "#/definitions/obligationName_string"
         },
         "obligationTypeKey": {
-          "type": "array",
-          "description": "The obligation type key. Select one of the built-in types, or enter a custom type key as configured in your Ironclad Data Manager.",
-          "items": {
-            "type": "string",
-            "x-ms-summary": "Type Key"
-          },
-          "minItems": 1,
-          "maxItems": 1,
-          "x-ms-summary": "Obligation Type Key"
+          "$ref": "#/definitions/obligationTypeKey_array"
         },
         "propertiesAsArray": {
           "$ref": "#/definitions/obligationPropertiesInputArray_array"
@@ -10224,15 +10385,7 @@
           "$ref": "#/definitions/obligationName_string"
         },
         "obligationTypeKey": {
-          "type": "array",
-          "description": "The obligation type key. Select one of the built-in types, or enter a custom type key as configured in your Ironclad Data Manager.",
-          "items": {
-            "type": "string",
-            "x-ms-summary": "Type Key"
-          },
-          "minItems": 1,
-          "maxItems": 1,
-          "x-ms-summary": "Obligation Type Key"
+          "$ref": "#/definitions/obligationTypeKey_array"
         },
         "addPropertiesAsArray": {
           "$ref": "#/definitions/obligationPropertiesInputArray_array"
@@ -10246,6 +10399,81 @@
       "description": "The ID of the parent contract",
       "title": "Contract ID",
       "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationTypeDescription_string": {
+      "description": "An explanation of the obligation type.",
+      "title": "Description",
+      "type": "string",
+      "x-ms-visibility": "advanced"
+    },
+    "obligationTypeDisplayName_string": {
+      "description": "The human-readable name of the obligation type.",
+      "title": "Display Name",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationTypeId_string": {
+      "description": "The unique identifier of the obligation type.",
+      "title": "ID",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationTypeKey_array": {
+      "title": "Obligation Type Key",
+      "type": "array",
+      "description": "The obligation type key. Select one of the built-in types from the dynamic list, or enter a custom type key as configured in your Ironclad Data Manager.",
+      "items": {
+        "type": "string",
+        "x-ms-summary": "Type Key",
+        "x-ms-dynamic-values": {
+          "operationId": "ListObligationTypes",
+          "value-path": "name",
+          "value-title": "displayName"
+        },
+        "x-ms-dynamic-list": {
+          "operationId": "ListObligationTypes",
+          "itemValuePath": "name",
+          "itemTitlePath": "displayName"
+        }
+      },
+      "minItems": 1,
+      "maxItems": 1,
+      "x-ms-summary": "Obligation Type Key"
+    },
+    "obligationTypeListGet_array": {
+      "title": "Obligation Types",
+      "type": "array",
+      "description": "A list of obligation types.",
+      "items": {
+        "$ref": "#/definitions/obligationType_object"
+      },
+      "x-ms-visibility": "important"
+    },
+    "obligationTypeName_string": {
+      "description": "The unique key corresponding to the obligation type (e.g. 'payment'). Use this as the Obligation Type Key when creating or updating an obligation.",
+      "title": "System Name",
+      "type": "string",
+      "x-ms-visibility": "important"
+    },
+    "obligationType_object": {
+      "title": "Obligation Type",
+      "type": "object",
+      "description": "An obligation type.",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/obligationTypeId_string"
+        },
+        "name": {
+          "$ref": "#/definitions/obligationTypeName_string"
+        },
+        "displayName": {
+          "$ref": "#/definitions/obligationTypeDisplayName_string"
+        },
+        "description": {
+          "$ref": "#/definitions/obligationTypeDescription_string"
+        }
+      },
       "x-ms-visibility": "important"
     },
     "conversationalSearchRequest_object": {
